@@ -3,6 +3,7 @@
 A class of High Order Component which can do http requests with few
 interesting property such as composition and laziness.
 
+[![Documentation](https://godoc.org/github.com/fogfish/gurl?status.svg)](http://godoc.org/github.com/fogfish/gurl)
 [![Build Status](https://secure.travis-ci.org/fogfish/gurl.svg?branch=master)](http://travis-ci.org/fogfish/gurl)
 [![Git Hub](https://img.shields.io/github/last-commit/fogfish/gurl.svg)](http://travis-ci.org/fogfish/gurl)
 [![Coverage Status](https://coveralls.io/repos/github/fogfish/gurl/badge.svg?branch=master)](https://coveralls.io/github/fogfish/gurl?branch=master)
@@ -65,6 +66,8 @@ import (
   "github.com/fogfish/gurl"
 )
 ```
+
+See the [documentation](http://godoc.org/github.com/fogfish/gurl)
 
 ## Basics
 
