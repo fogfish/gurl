@@ -8,10 +8,10 @@
 
 /*
 
-A class of High Order Component which can do http requests with few
-interesting property such as composition and laziness. The library implements
-rough and naive Haskell's equivalent of do-notation, so called monadic
-binding form. This construction decorates http i/o pipeline(s) with
+Package gurl is A class of High Order Component which can do http requests
+with few interesting property such as composition and laziness. The library
+implements rough and naive Haskell's equivalent of do-notation, so called
+monadic binding form. This construction decorates http i/o pipeline(s) with
 "programmable commas".
 
 Inspiration

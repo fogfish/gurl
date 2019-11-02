@@ -7,7 +7,7 @@ interesting property such as composition and laziness.
 [![Build Status](https://secure.travis-ci.org/fogfish/gurl.svg?branch=master)](http://travis-ci.org/fogfish/gurl)
 [![Git Hub](https://img.shields.io/github/last-commit/fogfish/gurl.svg)](http://travis-ci.org/fogfish/gurl)
 [![Coverage Status](https://coveralls.io/repos/github/fogfish/gurl/badge.svg?branch=master)](https://coveralls.io/github/fogfish/gurl?branch=master)
-
+[![Go Report Card](https://goreportcard.com/badge/github.com/fogfish/gurl)](https://goreportcard.com/report/github.com/fogfish/gurl)
 
 
 The library implements rough and naive Haskell's equivalent of 
