@@ -1,10 +1,17 @@
 # HTTP High Order Component
 
 A class of High Order Component which can do http requests with few
-interesting property such as composition and laziness. The library implements
-rough and naive Haskell's equivalent of do-notation, so called monadic
-binding form. This construction decorates http i/o pipeline(s) with
-"programmable commas".
+interesting property such as composition and laziness.
+
+[![Build Status](https://secure.travis-ci.org/fogfish/gurl.svg?branch=master)](http://travis-ci.org/fogfish/gurl)
+[![Git Hub](https://img.shields.io/github/last-commit/fogfish/gurl.svg)](http://travis-ci.org/fogfish/gurl)
+[![Coverage Status](https://coveralls.io/repos/github/fogfish/gurl/badge.svg?branch=master)](https://coveralls.io/github/fogfish/gurl?branch=master)
+
+
+
+The library implements rough and naive Haskell's equivalent of 
+do-notation, so called monadic binding form. This construction decorates
+http i/o pipeline(s) with "programmable commas".
 
 ## Inspiration
 
