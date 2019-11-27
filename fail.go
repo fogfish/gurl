@@ -16,7 +16,7 @@ type BadSchema struct {
 }
 
 func (e *BadSchema) Error() string {
-	return fmt.Sprintf("Bad protocol argument.%v", e.Schema)
+	return fmt.Sprintf("Bad protocol argument %v", e.Schema)
 }
 
 // BadMatchCode is returned by api if HTTP status code expectation is failed
