@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/fogfish/gurl"
+	"github.com/fogfish/it"
 )
 
 type Test struct {
@@ -24,30 +25,21 @@ type Test struct {
 func TestSchemaHTTP(t *testing.T) {
 	io := gurl.NewIO().URL("GET", "http://example.com")
 
-	if io.Fail != nil {
-		t.Error(io.Fail)
-	}
+	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
 func TestSchemaHTTPS(t *testing.T) {
 	io := gurl.NewIO().URL("GET", "https://example.com")
 
-	if io.Fail != nil {
-		t.Error(io.Fail)
-	}
+	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
 func TestSchemaUnsupported(t *testing.T) {
 	io := gurl.NewIO().URL("GET", "other://example.com")
 
-	if io.Fail == nil {
-		t.Errorf("accepted unsupported schema.")
-	}
-
-	schema := io.Fail.(*gurl.BadSchema).Schema
-	if schema != "other" {
-		t.Errorf("invalid schema %v at error", schema)
-	}
+	it.Ok(t).
+		If(io.Fail).ShouldNot().Equal(nil).
+		If(io.Fail).Should().Equal(&gurl.BadSchema{"other"})
 }
 
 func TestWith(t *testing.T) {
@@ -67,9 +59,7 @@ func TestWith(t *testing.T) {
 		With(gurl.Accept, gurl.ApplicationJson).
 		Code(200)
 
-	if io.Fail != nil {
-		t.Errorf("Unable to define header")
-	}
+	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
 func TestSend(t *testing.T) {
@@ -93,9 +83,7 @@ func TestSend(t *testing.T) {
 		Send(Test{"example.com"}).
 		Code(200)
 
-	if io.Fail != nil {
-		t.Errorf("failed to set a payload")
-	}
+	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
 func TestCodeOk(t *testing.T) {
@@ -111,9 +99,7 @@ func TestCodeOk(t *testing.T) {
 		GET(ts.URL).
 		Code(200)
 
-	if io.Fail != nil {
-		t.Error(io.Fail)
-	}
+	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
 func TestCodeFail(t *testing.T) {
@@ -128,14 +114,9 @@ func TestCodeFail(t *testing.T) {
 		GET(ts.URL).
 		Code(200)
 
-	if io.Fail == nil {
-		t.Errorf("failed to match status code")
-	}
-
-	code := io.Fail.(*gurl.BadMatchCode).Actual
-	if code != http.StatusNotFound {
-		t.Errorf("invalid status code %v at error", code)
-	}
+	it.Ok(t).
+		If(io.Fail).ShouldNot().Equal(nil).
+		If(io.Fail).Should().Equal(&gurl.BadMatchCode{[]int{200}, 404})
 }
 
 func TestHeadOk(t *testing.T) {
@@ -152,9 +133,7 @@ func TestHeadOk(t *testing.T) {
 		Code(200).
 		Head(gurl.ContentType, gurl.ApplicationJson)
 
-	if io.Fail != nil {
-		t.Error(io.Fail)
-	}
+	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
 func TestHeadAny(t *testing.T) {
@@ -171,9 +150,7 @@ func TestHeadAny(t *testing.T) {
 		Code(200).
 		Head(gurl.ContentType, "*")
 
-	if io.Fail != nil {
-		t.Error(io.Fail)
-	}
+	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
 func TestHeadFail(t *testing.T) {
@@ -190,19 +167,9 @@ func TestHeadFail(t *testing.T) {
 		Code(200).
 		Head(gurl.ContentType, gurl.ApplicationForm)
 
-	if io.Fail == nil {
-		t.Errorf("failed to match http header")
-	}
-
-	head := io.Fail.(*gurl.BadMatchHead).Header
-	if head != gurl.ContentType {
-		t.Errorf("invalid header %v at error", head)
-	}
-
-	code := io.Fail.(*gurl.BadMatchHead).Actual
-	if code != gurl.ApplicationJson {
-		t.Errorf("invalid header value %v at error", code)
-	}
+	it.Ok(t).
+		If(io.Fail).ShouldNot().Equal(nil).
+		If(io.Fail).Should().Equal(&gurl.BadMatchHead{gurl.ContentType, gurl.ApplicationForm, gurl.ApplicationJson})
 }
 
 func TestRecv(t *testing.T) {
@@ -221,12 +188,9 @@ func TestRecv(t *testing.T) {
 		Head(gurl.ContentType, gurl.ApplicationJson).
 		Recv(&data)
 
-	if io.Fail != nil {
-		t.Error(io.Fail)
-	}
-	if data.Site != "example.com" {
-		t.Errorf("unable to decode json payload")
-	}
+	it.Ok(t).
+		If(io.Fail).Should().Equal(nil).
+		If(data.Site).Should().Equal("example.com")
 }
 
 func TestSeq(t *testing.T) {
@@ -255,9 +219,7 @@ func TestSeq(t *testing.T) {
 		Head(gurl.ContentType, gurl.ApplicationJson).
 		Recv(&data)
 
-	if io.Fail != nil {
-		t.Error(io.Fail)
-	}
+	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
 func TestHoF(t *testing.T) {
@@ -273,9 +235,7 @@ func TestHoF(t *testing.T) {
 	val := doThis(io, ts.URL)
 	doThat(io, ts.URL, val)
 
-	if io.Fail != nil {
-		t.Error(io.Fail)
-	}
+	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
 func doThis(io *gurl.IO, url string) (data Test) {
