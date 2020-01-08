@@ -74,7 +74,7 @@ uses dot (.) to compose http primitives and evaluate a "program".
   }
 
   var data Payload
-  io := gurl.NewIO().
+  io := gurl.IO().
     GET("http://httpbin.org/get").
     With("Accept", "application/json").
     Code(200).
@@ -96,7 +96,7 @@ The composition is handled in context of IO category. For example,
 RESTfull API primitives declared as function, each deals with gurl.IO.
 
   func hof() {
-    io := gurl.NewIO()
+    io := gurl.IO()
     token := githubAccessToken(io)
     user := githubUserProfile(io, token)
     orgs := githubUserContribution(io, token)
@@ -106,7 +106,7 @@ RESTfull API primitives declared as function, each deals with gurl.IO.
     io.URL("POST", "...").
       // ...
       Recv(&token)
-    return token
+    return
   }
 
   func githubUserProfile(io *gurl.IO, token AccessToken) (user User) {

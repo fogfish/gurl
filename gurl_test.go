@@ -23,19 +23,19 @@ type Test struct {
 }
 
 func TestSchemaHTTP(t *testing.T) {
-	io := gurl.NewIO().URL("GET", "http://example.com")
+	io := gurl.IO().URL("GET", "http://example.com")
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
 func TestSchemaHTTPS(t *testing.T) {
-	io := gurl.NewIO().URL("GET", "https://example.com")
+	io := gurl.IO().URL("GET", "https://example.com")
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
 func TestSchemaUnsupported(t *testing.T) {
-	io := gurl.NewIO().URL("GET", "other://example.com")
+	io := gurl.IO().URL("GET", "other://example.com")
 
 	it.Ok(t).
 		If(io.Fail).ShouldNot().Equal(nil).
@@ -54,7 +54,7 @@ func TestWith(t *testing.T) {
 	)
 	defer ts.Close()
 
-	io := gurl.NewIO().
+	io := gurl.IO().
 		GET(ts.URL).
 		With(gurl.Accept, gurl.ApplicationJson).
 		Code(200)
@@ -77,7 +77,7 @@ func TestSend(t *testing.T) {
 	)
 	defer ts.Close()
 
-	io := gurl.NewIO().
+	io := gurl.IO().
 		POST(ts.URL).
 		With(gurl.ContentType, gurl.ApplicationJson).
 		Send(Test{"example.com"}).
@@ -95,7 +95,7 @@ func TestCodeOk(t *testing.T) {
 	)
 	defer ts.Close()
 
-	io := gurl.NewIO().
+	io := gurl.IO().
 		GET(ts.URL).
 		Code(200)
 
@@ -110,7 +110,7 @@ func TestCodeFail(t *testing.T) {
 	)
 	defer ts.Close()
 
-	io := gurl.NewIO().
+	io := gurl.IO().
 		GET(ts.URL).
 		Code(200)
 
@@ -128,7 +128,7 @@ func TestHeadOk(t *testing.T) {
 	)
 	defer ts.Close()
 
-	io := gurl.NewIO().
+	io := gurl.IO().
 		GET(ts.URL).
 		Code(200).
 		Head(gurl.ContentType, gurl.ApplicationJson)
@@ -145,7 +145,7 @@ func TestHeadAny(t *testing.T) {
 	)
 	defer ts.Close()
 
-	io := gurl.NewIO().
+	io := gurl.IO().
 		GET(ts.URL).
 		Code(200).
 		Head(gurl.ContentType, "*")
@@ -162,7 +162,7 @@ func TestHeadFail(t *testing.T) {
 	)
 	defer ts.Close()
 
-	io := gurl.NewIO().
+	io := gurl.IO().
 		GET(ts.URL).
 		Code(200).
 		Head(gurl.ContentType, gurl.ApplicationForm)
@@ -182,7 +182,7 @@ func TestRecv(t *testing.T) {
 	defer ts.Close()
 
 	var data Test
-	io := gurl.NewIO().
+	io := gurl.IO().
 		GET(ts.URL).
 		Code(200).
 		Head(gurl.ContentType, gurl.ApplicationJson).
@@ -203,7 +203,7 @@ func TestSeq(t *testing.T) {
 	defer ts.Close()
 
 	var data Test
-	io := gurl.NewIO().
+	io := gurl.IO().
 		GET(ts.URL).
 		Code(200).
 		Head(gurl.ContentType, gurl.ApplicationJson).
@@ -231,21 +231,21 @@ func TestHoF(t *testing.T) {
 	)
 	defer ts.Close()
 
-	io := gurl.NewIO()
+	io := gurl.IO()
 	val := doThis(io, ts.URL)
 	doThat(io, ts.URL, val)
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
-func doThis(io *gurl.IO, url string) (data Test) {
+func doThis(io *gurl.IOCat, url string) (data Test) {
 	io.GET(url).
 		Code(200).
 		Recv(&data)
 	return
 }
 
-func doThat(io *gurl.IO, url string, user Test) (data Test) {
+func doThat(io *gurl.IOCat, url string, user Test) (data Test) {
 	io.PUT(url).
 		With(gurl.ContentType, gurl.ApplicationJson).
 		Send(user).

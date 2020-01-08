@@ -29,7 +29,7 @@ const ApplicationForm = "application/x-www-form-urlencoded"
 // ContentType is a HTTP header literal "Content-Type"
 const ContentType = "Content-Type"
 
-// IO defines the category or type for HTTP I/O. A composition of
+// IOCat defines the category or type for HTTP I/O. A composition of
 // HTTP primitives within the category are written with the following syntax:
 //
 //   gurl.NewIO().Arrow1(). ... ArrowN()
@@ -42,7 +42,7 @@ const ContentType = "Content-Type"
 //
 // The type IO implements http primitives ("arrow"). Fail is only exported
 // value that provides the final status of the execution.
-type IO struct {
+type IOCat struct {
 	pool *http.Client
 	uri  *url.URL
 	http *httpio
@@ -57,11 +57,11 @@ type httpio struct {
 	ingress *http.Response
 }
 
-// NewIO creates the instance of HTTP I/O category with default HTTP client.
+// IO creates the instance of HTTP I/O category with default HTTP client.
 // Please note that default client disables TLS verification.
 // Use this only for testing.
-func NewIO() *IO {
-	return NewIOC(
+func IO() *IOCat {
+	return Use(
 		&http.Client{
 			Transport: &http.Transport{
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -73,14 +73,20 @@ func NewIO() *IO {
 	)
 }
 
-// NewIOC creates the instance of HTTP I/O category with well-defined
+// Use creates the instance of HTTP I/O category with well-defined
 // http client.
-func NewIOC(client *http.Client) *IO {
-	return &IO{client, nil, nil, nil}
+func Use(client *http.Client) *IOCat {
+	return &IOCat{client, nil, nil, nil}
 }
 
+//-----------------------------------------------------------------------------
+//
+// up stream, output HTTP request
+//
+//-----------------------------------------------------------------------------
+
 // URL defines a mandatory parameters such as HTTP method and destination URL
-func (io *IO) URL(method string, uri string) *IO {
+func (io *IOCat) URL(method string, uri string) *IOCat {
 	io.http = nil
 	io.uri, io.Fail = url.Parse(uri)
 
@@ -94,27 +100,27 @@ func (io *IO) URL(method string, uri string) *IO {
 }
 
 // GET is warpper to IO("GET", ...)
-func (io *IO) GET(uri string) *IO {
+func (io *IOCat) GET(uri string) *IOCat {
 	return io.URL("GET", uri)
 }
 
 // POST is warpper to IO("POST", ...)
-func (io *IO) POST(uri string) *IO {
+func (io *IOCat) POST(uri string) *IOCat {
 	return io.URL("POST", uri)
 }
 
 // PUT is warpper to IO("PUT", ...)
-func (io *IO) PUT(uri string) *IO {
+func (io *IOCat) PUT(uri string) *IOCat {
 	return io.URL("PUT", uri)
 }
 
 // DELETE is warpper to IO("DELETE", ...)
-func (io *IO) DELETE(uri string) *IO {
+func (io *IOCat) DELETE(uri string) *IOCat {
 	return io.URL("DELETE", uri)
 }
 
 // With defines HTTP headers, you can add as many headers as needed using With syntax.
-func (io *IO) With(head string, value string) *IO {
+func (io *IOCat) With(head string, value string) *IOCat {
 	if io.Fail != nil {
 		return io
 	}
@@ -125,7 +131,7 @@ func (io *IO) With(head string, value string) *IO {
 // Send payload to destination URL. You can also use native Go data types
 // (e.g. maps, struct, etc) as egress payload. The library implicitly encodes
 // input structures to binary using Content-Type as a hint
-func (io *IO) Send(data interface{}) *IO {
+func (io *IOCat) Send(data interface{}) *IOCat {
 	if io.Fail != nil {
 		return io
 	}
@@ -133,10 +139,16 @@ func (io *IO) Send(data interface{}) *IO {
 	return io
 }
 
+//-----------------------------------------------------------------------------
+//
+// down stream, input HTTP response
+//
+//-----------------------------------------------------------------------------
+
 // Code is a mandatory statement to match expected HTTP Status Code against
 // received one. The execution fails with BadMatchCode if service responds
 // with other value then specified one.
-func (io *IO) Code(code ...int) *IO {
+func (io *IOCat) Code(code ...int) *IOCat {
 	if io.Fail != nil {
 		return io
 	}
@@ -151,7 +163,7 @@ func (io *IO) Code(code ...int) *IO {
 
 // Head matches presence of header in the response or match its entire content.
 // The execution fails with BadMatchHead  if the matched value do not meet expectations.
-func (io *IO) Head(head string, value string) *IO {
+func (io *IOCat) Head(head string, value string) *IOCat {
 	if io.Fail != nil {
 		return io
 	}
@@ -168,7 +180,7 @@ func (io *IO) Head(head string, value string) *IO {
 
 // Recv applies auto decoders for response and returns either binary or
 // native Go data structure. The Content-Type header give a hint to decoder.
-func (io *IO) Recv(out interface{}) *IO {
+func (io *IOCat) Recv(out interface{}) *IOCat {
 	if io.Fail != nil {
 		return io
 	}
@@ -177,8 +189,14 @@ func (io *IO) Recv(out interface{}) *IO {
 	return io
 }
 
+//-----------------------------------------------------------------------------
 //
-func (io *IO) unsafe() *IO {
+// internal state
+//
+//-----------------------------------------------------------------------------
+
+//
+func (io *IOCat) unsafe() *IOCat {
 	if io.Fail != nil {
 		return io
 	}
