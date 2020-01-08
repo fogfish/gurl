@@ -85,8 +85,12 @@ func Use(client *http.Client) *IOCat {
 //
 //-----------------------------------------------------------------------------
 
-// URL defines a mandatory parameters such as HTTP method and destination URL
+// URL defines a mandatory parameters to the request such as
+// HTTP method and destination URL
 func (io *IOCat) URL(method string, uri string) *IOCat {
+	if io.Fail != nil {
+		return io
+	}
 	io.http = nil
 	io.uri, io.Fail = url.Parse(uri)
 
@@ -99,27 +103,27 @@ func (io *IOCat) URL(method string, uri string) *IOCat {
 	return io
 }
 
-// GET is warpper to IO("GET", ...)
+// GET is warpper to URL("GET", ...)
 func (io *IOCat) GET(uri string) *IOCat {
 	return io.URL("GET", uri)
 }
 
-// POST is warpper to IO("POST", ...)
+// POST is warpper to URL("POST", ...)
 func (io *IOCat) POST(uri string) *IOCat {
 	return io.URL("POST", uri)
 }
 
-// PUT is warpper to IO("PUT", ...)
+// PUT is warpper to URL("PUT", ...)
 func (io *IOCat) PUT(uri string) *IOCat {
 	return io.URL("PUT", uri)
 }
 
-// DELETE is warpper to IO("DELETE", ...)
+// DELETE is warpper to URL("DELETE", ...)
 func (io *IOCat) DELETE(uri string) *IOCat {
 	return io.URL("DELETE", uri)
 }
 
-// With defines HTTP headers, you can add as many headers as needed using With syntax.
+// With defines output HTTP headers, you can add as many headers as needed using With syntax.
 func (io *IOCat) With(head string, value string) *IOCat {
 	if io.Fail != nil {
 		return io
