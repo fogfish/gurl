@@ -223,6 +223,15 @@ func (io *IOCat) Require(actual interface{}, expect interface{}) *IOCat {
 	return io
 }
 
+// Assert implements custom assert logic on decoded value
+func (io *IOCat) Assert(f func() error) *IOCat {
+	if io.Fail != nil {
+		return io
+	}
+	io.Fail = f()
+	return io
+}
+
 //-----------------------------------------------------------------------------
 //
 // internal state

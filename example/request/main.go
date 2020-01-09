@@ -32,9 +32,16 @@ func request() (val httpbin, err error) {
 		Head("Content-Type", "application/json").
 		Recv(&val).
 		Require(val.Headers.UserAgent, "gurl").
+		Assert(validate(val)).
 		Fail
 
 	return
+}
+
+func validate(val httpbin) func() error {
+	return func() error {
+		return nil
+	}
 }
 
 func main() {
