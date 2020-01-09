@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strings"
 )
 
@@ -190,6 +191,35 @@ func (io *IOCat) Recv(out interface{}) *IOCat {
 	}
 	defer io.http.ingress.Body.Close()
 	json.NewDecoder(io.http.ingress.Body).Decode(&out)
+	return io
+}
+
+// Defined checks if the value is defined
+func (io *IOCat) Defined(x interface{}) *IOCat {
+	if io.Fail != nil {
+		return io
+	}
+
+	val := reflect.ValueOf(x)
+	if !val.IsValid() {
+		io.Fail = &Undefined{val.Type().Name()}
+	}
+
+	if val.IsValid() && val.IsZero() {
+		io.Fail = &Undefined{val.Type().Name()}
+	}
+	return io
+
+}
+
+// Require checks if the value equals to defined one
+func (io *IOCat) Require(actual interface{}, expect interface{}) *IOCat {
+	if io.Fail != nil {
+		return io
+	}
+	if !reflect.DeepEqual(actual, expect) {
+		io.Fail = &BadMatch{expect, actual}
+	}
 	return io
 }
 

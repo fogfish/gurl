@@ -31,6 +31,7 @@ func request() (val httpbin, err error) {
 		Code(200).
 		Head("Content-Type", "application/json").
 		Recv(&val).
+		Require(val.Headers.UserAgent, "gurl").
 		Fail
 
 	return

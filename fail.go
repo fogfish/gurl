@@ -39,3 +39,22 @@ type BadMatchHead struct {
 func (e *BadMatchHead) Error() string {
 	return fmt.Sprintf("Mismatch of http header %v value %v, required %v.", e.Header, e.Actual, e.Expect)
 }
+
+// Undefined is returned by api if expectation at body value is failed
+type Undefined struct {
+	Type string
+}
+
+func (e *Undefined) Error() string {
+	return fmt.Sprintf("Value of type %v is not defined.", e.Type)
+}
+
+// BadMatch is returned by api if expectation at body value is failed
+type BadMatch struct {
+	Expect interface{}
+	Actual interface{}
+}
+
+func (e *BadMatch) Error() string {
+	return fmt.Sprintf("Mismatch of value %v, required %v.", e.Actual, e.Expect)
+}
