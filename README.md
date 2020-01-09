@@ -57,6 +57,8 @@ programming.
 
 ## Getting started
 
+The library requires **Go 1.13** or later 
+
 The latest version of the library is available at its `master` branch. All development, including new features and bug fixes, take place on the `master` branch using forking and pull requests as described in contribution guidelines.
 
 Import the library in your code
