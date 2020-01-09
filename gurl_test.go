@@ -222,6 +222,88 @@ func TestSeq(t *testing.T) {
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
+func TestDefined(t *testing.T) {
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("Content-Type", "application/json")
+			w.Write([]byte(`{"site": "example.com"}`))
+		}),
+	)
+	defer ts.Close()
+
+	var data Test
+	io := gurl.IO().
+		GET(ts.URL).
+		Code(200).
+		Recv(&data).
+		Defined(data.Site)
+
+	it.Ok(t).If(io.Fail).Should().Equal(nil)
+}
+
+func TestNotDefined(t *testing.T) {
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("Content-Type", "application/json")
+			w.Write([]byte(`{}`))
+		}),
+	)
+	defer ts.Close()
+
+	var data Test
+	io := gurl.IO().
+		GET(ts.URL).
+		Code(200).
+		Recv(&data).
+		Defined(data.Site)
+
+	it.Ok(t).If(io.Fail).Should().Equal(&gurl.Undefined{"string"})
+}
+
+func TestRequire(t *testing.T) {
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("Content-Type", "application/json")
+			w.Write([]byte(`{"site": "example.com"}`))
+		}),
+	)
+	defer ts.Close()
+
+	var data Test
+	io := gurl.IO().
+		GET(ts.URL).
+		Code(200).
+		Recv(&data).
+		Require(data.Site, "example.com")
+
+	it.Ok(t).If(io.Fail).Should().Equal(nil)
+}
+
+func TestRequireFail(t *testing.T) {
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("Content-Type", "application/json")
+			w.Write([]byte(`{"site": "example.com"}`))
+		}),
+	)
+	defer ts.Close()
+
+	var data Test
+	io := gurl.IO().
+		GET(ts.URL).
+		Code(200).
+		Recv(&data).
+		Require(data.Site, "localhost")
+
+	it.Ok(t).
+		If(io.Fail).Should().
+		Equal(&gurl.BadMatch{"localhost", "example.com"})
+}
+
+type HoF struct {
+	*gurl.IOCat
+}
+
 func TestHoF(t *testing.T) {
 	ts := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -231,21 +313,21 @@ func TestHoF(t *testing.T) {
 	)
 	defer ts.Close()
 
-	io := gurl.IO()
-	val := doThis(io, ts.URL)
-	doThat(io, ts.URL, val)
+	io := &HoF{gurl.IO()}
+	val := io.doThis(ts.URL)
+	io.doThat(ts.URL, val)
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
-func doThis(io *gurl.IOCat, url string) (data Test) {
+func (io *HoF) doThis(url string) (data Test) {
 	io.GET(url).
 		Code(200).
 		Recv(&data)
 	return
 }
 
-func doThat(io *gurl.IOCat, url string, user Test) (data Test) {
+func (io *HoF) doThat(url string, user Test) (data Test) {
 	io.PUT(url).
 		With(gurl.ContentType, gurl.ApplicationJson).
 		Send(user).
