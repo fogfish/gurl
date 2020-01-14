@@ -10,6 +10,7 @@ package gurl_test
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -253,6 +254,48 @@ func TestRequireFail(t *testing.T) {
 	it.Ok(t).
 		If(io.Fail).Should().
 		Equal(&gurl.BadMatch{"localhost", "example.com"})
+}
+
+func TestAssert(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	var data Test
+	io := gurl.IO().
+		GET(ts.URL).
+		With(gurl.Accept, gurl.ApplicationJson).
+		Code(200).
+		Recv(&data).
+		Assert(func() (err error) {
+			if data.Site != "example.com" {
+				err = errors.New("something wrong!")
+			}
+			return
+		})
+
+	it.Ok(t).If(io.Fail).Should().Equal(nil)
+}
+
+func TestAssertFailure(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	var data Test
+	io := gurl.IO().
+		GET(ts.URL).
+		With(gurl.Accept, gurl.ApplicationJson).
+		Code(200).
+		Recv(&data).
+		Assert(func() (err error) {
+			if data.Site == "example.com" {
+				err = errors.New("something wrong!")
+			}
+			return
+		})
+
+	it.Ok(t).
+		If(io.Fail).Should().
+		Equal(errors.New("something wrong!"))
 }
 
 type HoF struct {
