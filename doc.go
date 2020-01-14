@@ -74,7 +74,7 @@ uses dot (.) to compose http primitives and evaluate a "program".
   }
 
   var data Payload
-  io := gurl.NewIO().
+  io := gurl.IO().
     GET("http://httpbin.org/get").
     With("Accept", "application/json").
     Code(200).
@@ -93,31 +93,35 @@ Composition
 
 The composition of multiple HTTP I/O is an essential part of the library.
 The composition is handled in context of IO category. For example,
-RESTfull API primitives declared as function, each deals with gurl.IO.
+RESTfull API primitives declared as function, each deals with gurl.IOCat.
+
+  type IO struct {
+    *gurl.IOCat
+  }
 
   func hof() {
-    io := gurl.NewIO()
-    token := githubAccessToken(io)
-    user := githubUserProfile(io, token)
-    orgs := githubUserContribution(io, token)
+    github := &IO{gurl.IO()}
+    token := github.AccessToken()
+    user := github.UserProfile(token)
+    orgs := github.UserContribution(token)
   }
 
-  func githubAccessToken(io *gurl.IO) (token AccessToken) {
-    io.URL("POST", "...").
+  func (github *IO) AccessToken() (token AccessToken) {
+    github.URL("POST", "...").
       // ...
       Recv(&token)
-    return token
+    return
   }
 
-  func githubUserProfile(io *gurl.IO, token AccessToken) (user User) {
-    io.URL("POST", "...")
+  func (github *IO) UserProfile(token AccessToken) (user User) {
+    github.URL("POST", "...")
       // ...
       Recv(&user)
     return
   }
 
-  func githubUserContribution(io *gurl.IO, token string, token AccessToken) (orgs []Org) {
-    io.URL("POST", "...")
+  func (github *IO) UserContribution(token AccessToken) (orgs []Org) {
+    github.URL("POST", "...")
       // ...
       Recv(&orgs)
     return

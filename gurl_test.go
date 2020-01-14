@@ -10,6 +10,7 @@ package gurl_test
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -20,22 +21,23 @@ import (
 
 type Test struct {
 	Site string `json:"site"`
+	Host string `json:"host,omitempty"`
 }
 
 func TestSchemaHTTP(t *testing.T) {
-	io := gurl.NewIO().URL("GET", "http://example.com")
+	io := gurl.IO().URL("GET", "http://example.com")
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
 func TestSchemaHTTPS(t *testing.T) {
-	io := gurl.NewIO().URL("GET", "https://example.com")
+	io := gurl.IO().URL("GET", "https://example.com")
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
 func TestSchemaUnsupported(t *testing.T) {
-	io := gurl.NewIO().URL("GET", "other://example.com")
+	io := gurl.IO().URL("GET", "other://example.com")
 
 	it.Ok(t).
 		If(io.Fail).ShouldNot().Equal(nil).
@@ -43,18 +45,10 @@ func TestSchemaUnsupported(t *testing.T) {
 }
 
 func TestWith(t *testing.T) {
-	ts := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.Header.Get(gurl.Accept) == gurl.ApplicationJson {
-				w.WriteHeader(http.StatusOK)
-			} else {
-				w.WriteHeader(http.StatusBadRequest)
-			}
-		}),
-	)
+	ts := mock()
 	defer ts.Close()
 
-	io := gurl.NewIO().
+	io := gurl.IO().
 		GET(ts.URL).
 		With(gurl.Accept, gurl.ApplicationJson).
 		Code(200)
@@ -77,26 +71,22 @@ func TestSend(t *testing.T) {
 	)
 	defer ts.Close()
 
-	io := gurl.NewIO().
+	io := gurl.IO().
 		POST(ts.URL).
 		With(gurl.ContentType, gurl.ApplicationJson).
-		Send(Test{"example.com"}).
+		Send(Test{"example.com", ""}).
 		Code(200)
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
 func TestCodeOk(t *testing.T) {
-	ts := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Add("Content-Type", "application/json")
-			w.Write([]byte(`{"site": "example.com"}`))
-		}),
-	)
+	ts := mock()
 	defer ts.Close()
 
-	io := gurl.NewIO().
+	io := gurl.IO().
 		GET(ts.URL).
+		With(gurl.Accept, gurl.ApplicationJson).
 		Code(200)
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
@@ -110,7 +100,7 @@ func TestCodeFail(t *testing.T) {
 	)
 	defer ts.Close()
 
-	io := gurl.NewIO().
+	io := gurl.IO().
 		GET(ts.URL).
 		Code(200)
 
@@ -120,16 +110,12 @@ func TestCodeFail(t *testing.T) {
 }
 
 func TestHeadOk(t *testing.T) {
-	ts := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Add("Content-Type", "application/json")
-			w.Write([]byte(`{"site": "example.com"}`))
-		}),
-	)
+	ts := mock()
 	defer ts.Close()
 
-	io := gurl.NewIO().
+	io := gurl.IO().
 		GET(ts.URL).
+		With(gurl.Accept, gurl.ApplicationJson).
 		Code(200).
 		Head(gurl.ContentType, gurl.ApplicationJson)
 
@@ -137,16 +123,12 @@ func TestHeadOk(t *testing.T) {
 }
 
 func TestHeadAny(t *testing.T) {
-	ts := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Add("Content-Type", "application/json")
-			w.Write([]byte(`{"site": "example.com"}`))
-		}),
-	)
+	ts := mock()
 	defer ts.Close()
 
-	io := gurl.NewIO().
+	io := gurl.IO().
 		GET(ts.URL).
+		With(gurl.Accept, gurl.ApplicationJson).
 		Code(200).
 		Head(gurl.ContentType, "*")
 
@@ -154,16 +136,12 @@ func TestHeadAny(t *testing.T) {
 }
 
 func TestHeadFail(t *testing.T) {
-	ts := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Add("Content-Type", "application/json")
-			w.Write([]byte(`{"site": "example.com"}`))
-		}),
-	)
+	ts := mock()
 	defer ts.Close()
 
-	io := gurl.NewIO().
+	io := gurl.IO().
 		GET(ts.URL).
+		With(gurl.Accept, gurl.ApplicationJson).
 		Code(200).
 		Head(gurl.ContentType, gurl.ApplicationForm)
 
@@ -173,17 +151,13 @@ func TestHeadFail(t *testing.T) {
 }
 
 func TestRecv(t *testing.T) {
-	ts := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Add("Content-Type", "application/json")
-			w.Write([]byte(`{"site": "example.com"}`))
-		}),
-	)
+	ts := mock()
 	defer ts.Close()
 
 	var data Test
-	io := gurl.NewIO().
+	io := gurl.IO().
 		GET(ts.URL).
+		With(gurl.Accept, gurl.ApplicationJson).
 		Code(200).
 		Head(gurl.ContentType, gurl.ApplicationJson).
 		Recv(&data)
@@ -194,27 +168,25 @@ func TestRecv(t *testing.T) {
 }
 
 func TestSeq(t *testing.T) {
-	ts := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Add("Content-Type", "application/json")
-			w.Write([]byte(`{"site": "example.com"}`))
-		}),
-	)
+	ts := mock()
 	defer ts.Close()
 
 	var data Test
-	io := gurl.NewIO().
+	io := gurl.IO().
 		GET(ts.URL).
+		With(gurl.Accept, gurl.ApplicationJson).
 		Code(200).
 		Head(gurl.ContentType, gurl.ApplicationJson).
 		Recv(&data).
 		//
 		GET(ts.URL).
+		With(gurl.Accept, gurl.ApplicationJson).
 		Code(200).
 		Head(gurl.ContentType, gurl.ApplicationJson).
 		Recv(&data).
 		//
 		GET(ts.URL).
+		With(gurl.Accept, gurl.ApplicationJson).
 		Code(200).
 		Head(gurl.ContentType, gurl.ApplicationJson).
 		Recv(&data)
@@ -222,34 +194,153 @@ func TestSeq(t *testing.T) {
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
-func TestHoF(t *testing.T) {
-	ts := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Add("Content-Type", "application/json")
-			w.Write([]byte(`{"site": "example.com"}`))
-		}),
-	)
+func TestDefined(t *testing.T) {
+	ts := mock()
 	defer ts.Close()
 
-	io := gurl.NewIO()
-	val := doThis(io, ts.URL)
-	doThat(io, ts.URL, val)
+	var data Test
+	io := gurl.IO().
+		GET(ts.URL).
+		With(gurl.Accept, gurl.ApplicationJson).
+		Code(200).
+		Recv(&data).
+		Defined(data.Site)
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
-func doThis(io *gurl.IO, url string) (data Test) {
+func TestNotDefined(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	var data Test
+	io := gurl.IO().
+		GET(ts.URL).
+		With(gurl.Accept, gurl.ApplicationJson).
+		Code(200).
+		Recv(&data).
+		Defined(data.Host)
+
+	it.Ok(t).If(io.Fail).Should().Equal(&gurl.Undefined{"string"})
+}
+
+func TestRequire(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	var data Test
+	io := gurl.IO().
+		GET(ts.URL).
+		With(gurl.Accept, gurl.ApplicationJson).
+		Code(200).
+		Recv(&data).
+		Require(data.Site, "example.com")
+
+	it.Ok(t).If(io.Fail).Should().Equal(nil)
+}
+
+func TestRequireFail(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	var data Test
+	io := gurl.IO().
+		GET(ts.URL).
+		With(gurl.Accept, gurl.ApplicationJson).
+		Code(200).
+		Recv(&data).
+		Require(data.Site, "localhost")
+
+	it.Ok(t).
+		If(io.Fail).Should().
+		Equal(&gurl.BadMatch{"localhost", "example.com"})
+}
+
+func TestAssert(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	var data Test
+	io := gurl.IO().
+		GET(ts.URL).
+		With(gurl.Accept, gurl.ApplicationJson).
+		Code(200).
+		Recv(&data).
+		Assert(func() (err error) {
+			if data.Site != "example.com" {
+				err = errors.New("something wrong!")
+			}
+			return
+		})
+
+	it.Ok(t).If(io.Fail).Should().Equal(nil)
+}
+
+func TestAssertFailure(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	var data Test
+	io := gurl.IO().
+		GET(ts.URL).
+		With(gurl.Accept, gurl.ApplicationJson).
+		Code(200).
+		Recv(&data).
+		Assert(func() (err error) {
+			if data.Site == "example.com" {
+				err = errors.New("something wrong!")
+			}
+			return
+		})
+
+	it.Ok(t).
+		If(io.Fail).Should().
+		Equal(errors.New("something wrong!"))
+}
+
+type HoF struct {
+	*gurl.IOCat
+}
+
+func TestHoF(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	io := &HoF{gurl.IO()}
+	val := io.doThis(ts.URL)
+	io.doThat(ts.URL, val)
+
+	it.Ok(t).If(io.Fail).Should().Equal(nil)
+}
+
+func (io *HoF) doThis(url string) (data Test) {
 	io.GET(url).
+		With(gurl.Accept, gurl.ApplicationJson).
 		Code(200).
 		Recv(&data)
 	return
 }
 
-func doThat(io *gurl.IO, url string, user Test) (data Test) {
+func (io *HoF) doThat(url string, user Test) (data Test) {
 	io.PUT(url).
+		With(gurl.Accept, gurl.ApplicationJson).
 		With(gurl.ContentType, gurl.ApplicationJson).
 		Send(user).
 		Code(200).
 		Recv(&data)
 	return
+}
+
+//
+func mock() *httptest.Server {
+	return httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Header.Get(gurl.Accept) == gurl.ApplicationJson {
+				w.Header().Add("Content-Type", "application/json")
+				w.Write([]byte(`{"site": "example.com"}`))
+			} else {
+				w.WriteHeader(http.StatusBadRequest)
+			}
+		}),
+	)
 }

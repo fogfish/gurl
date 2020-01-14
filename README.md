@@ -57,6 +57,8 @@ programming.
 
 ## Getting started
 
+The library requires **Go 1.13** or later 
+
 The latest version of the library is available at its `master` branch. All development, including new features and bug fixes, take place on the `master` branch using forking and pull requests as described in contribution guidelines.
 
 Import the library in your code
@@ -83,7 +85,7 @@ type Payload struct {
 }
 
 var data Payload
-io := gurl.NewIO().
+io := gurl.IO().
   GET("http://httpbin.org/get").
   With("Accept", "application/json").
   Code(200).
@@ -103,32 +105,36 @@ each operation. The composition is smart enough to terminate "program" execution
 
 The composition of multiple HTTP I/O is an essential part of the library.
 The composition is handled in context of IO category. For example,
-RESTfull API primitives declared as function, each deals with gurl.IO.
+RESTfull API primitives declared as function, each deals with `gurl.IOCat`.
 
 ```go
-func hof() {
-  io := gurl.NewIO()
-  token := githubAccessToken(io)
-  user := githubUserProfile(io, token)
-  orgs := githubUserContribution(io, token)
+type IO struct {
+	*gurl.IOCat
 }
 
-func githubAccessToken(io *gurl.IO) (token AccessToken) {
-  io.URL("POST", "...").
+func hof() {
+  github := &IO{gurl.IO()}
+  token := github.AccessToken()
+  user := github.UserProfile(token)
+  orgs := github.UserContribution(token)
+}
+
+func (github *IO) AccessToken() (token AccessToken) {
+  github.URL("POST", "...").
     // ...
     Recv(&token)
-  return token
+  return
 }
 
-func githubUserProfile(io *gurl.IO, token AccessToken) (user User) {
-  io.URL("POST", "...")
+func (github *IO) UserProfile(token AccessToken) (user User) {
+  github.URL("POST", "...")
     // ...
     Recv(&user)
   return
 }
 
-func githubUserContribution(io *gurl.IO, token string, token AccessToken) (orgs []Org) {
-  io.URL("POST", "...")
+func (github *IO) UserContribution(token AccessToken) (orgs []Org) {
+  github.URL("POST", "...")
     // ...
     Recv(&orgs)
   return
