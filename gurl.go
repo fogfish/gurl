@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"reflect"
 	"strings"
+	"time"
 )
 
 // Accept is a HTTP header literal "Accept"
@@ -47,6 +48,7 @@ type IOCat struct {
 	pool *http.Client
 	uri  *url.URL
 	http *httpio
+	dur  time.Duration
 	Body interface{}
 	Fail error
 }
@@ -57,6 +59,15 @@ type httpio struct {
 	head    map[string]string
 	payload *bytes.Buffer
 	ingress *http.Response
+}
+
+// Status contains summary about the IO
+type Status struct {
+	ID       string      `json:"id"`
+	Status   string      `json:"status"`
+	Duration int64       `json:"duration"`
+	Expect   interface{} `json:"expect,omitempty"`
+	Actual   interface{} `json:"actual,omitempty"`
 }
 
 // IO creates the instance of HTTP I/O category with default HTTP client.
@@ -78,7 +89,7 @@ func IO() *IOCat {
 // Use creates the instance of HTTP I/O category with well-defined
 // http client.
 func Use(client *http.Client) *IOCat {
-	return &IOCat{client, nil, nil, nil, nil}
+	return &IOCat{client, nil, nil, 0, nil, nil}
 }
 
 //-----------------------------------------------------------------------------
@@ -256,7 +267,9 @@ func (io *IOCat) unsafe() *IOCat {
 		eg.Header.Set(head, value)
 	}
 
+	t := time.Now()
 	io.http.ingress, io.Fail = io.pool.Do(eg)
+	io.dur = time.Now().Sub(t)
 	return io
 }
 

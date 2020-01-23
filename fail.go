@@ -26,7 +26,7 @@ type BadMatchCode struct {
 }
 
 func (e *BadMatchCode) Error() string {
-	return fmt.Sprintf("Mismatch of http status code %v, required one of %v.", e.Actual, e.Expect)
+	return fmt.Sprintf("Mismatch of http status code %v, required %v.", e.Actual, e.Expect)
 }
 
 // BadMatchHead is returned by api if HTTP header expectation is failed
