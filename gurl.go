@@ -47,6 +47,7 @@ type IOCat struct {
 	pool *http.Client
 	uri  *url.URL
 	http *httpio
+	Body interface{}
 	Fail error
 }
 
@@ -77,7 +78,7 @@ func IO() *IOCat {
 // Use creates the instance of HTTP I/O category with well-defined
 // http client.
 func Use(client *http.Client) *IOCat {
-	return &IOCat{client, nil, nil, nil}
+	return &IOCat{client, nil, nil, nil, nil}
 }
 
 //-----------------------------------------------------------------------------
@@ -190,7 +191,8 @@ func (io *IOCat) Recv(out interface{}) *IOCat {
 		return io
 	}
 	defer io.http.ingress.Body.Close()
-	json.NewDecoder(io.http.ingress.Body).Decode(&out)
+	io.Fail = json.NewDecoder(io.http.ingress.Body).Decode(&out)
+	io.Body = out
 	return io
 }
 
