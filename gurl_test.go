@@ -11,6 +11,7 @@ package gurl_test
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -296,6 +297,60 @@ func TestAssertFailure(t *testing.T) {
 	it.Ok(t).
 		If(io.Fail).Should().
 		Equal(errors.New("something wrong!"))
+}
+
+func TestStatusSuccess(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	var data Test
+	status := gurl.IO().
+		GET(ts.URL).
+		With(gurl.Accept, gurl.ApplicationJson).
+		Code(200).
+		Recv(&data).
+		Status("test")
+
+	it.Ok(t).
+		If(status.ID).Should().Equal("test").
+		If(status.Status).Should().Equal("success").
+		If(status.Actual).Should().Equal(&data)
+}
+
+func TestStatusFailure(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	status := gurl.IO().
+		GET(ts.URL).
+		With(gurl.Accept, gurl.ApplicationJson).
+		Code(400).
+		Status("test")
+
+	it.Ok(t).
+		If(status.ID).Should().Equal("test").
+		If(status.Status).Should().Equal("failure").
+		If(status.Actual).Should().Equal(fmt.Sprint(&gurl.BadMatchCode{[]int{400}, 200}))
+}
+
+func TestStatusFailureBadMatch(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	var data Test
+	status := gurl.IO().
+		GET(ts.URL).
+		With(gurl.Accept, gurl.ApplicationJson).
+		Code(200).
+		Recv(&data).
+		Require(data.Site, "gurl").
+		Status("test")
+
+	it.Ok(t).
+		If(status.ID).Should().Equal("test").
+		If(status.Status).Should().Equal("failure").
+		If(status.Actual).Should().Equal("example.com").
+		If(status.Expect).Should().Equal("gurl")
 }
 
 type HoF struct {
