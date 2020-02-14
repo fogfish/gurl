@@ -12,6 +12,9 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -77,6 +80,10 @@ func IO() *IOCat {
 	return Use(
 		&http.Client{
 			Transport: &http.Transport{
+				ReadBufferSize: 128 * 1024,
+				Dial: (&net.Dialer{
+					Timeout: 10 * time.Second,
+				}).Dial,
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			},
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -169,7 +176,12 @@ func (io *IOCat) Code(code ...int) *IOCat {
 	if io.Fail != nil {
 		return io
 	}
+
 	io.unsafe()
+	if io.Fail != nil {
+		fmt.Println(io.Fail)
+		return io
+	}
 
 	status := io.http.ingress.StatusCode
 	if !hasInt(code, status) {
@@ -204,6 +216,21 @@ func (io *IOCat) Recv(out interface{}) *IOCat {
 	defer io.http.ingress.Body.Close()
 	io.Fail = json.NewDecoder(io.http.ingress.Body).Decode(&out)
 	io.Body = out
+	return io
+}
+
+// Skip flushes response to nowhere
+func (io *IOCat) Skip() *IOCat {
+	if io.Fail != nil {
+		return io
+	}
+
+	ioutil.ReadAll(io.http.ingress.Body)
+	err := io.http.ingress.Body.Close()
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	return io
 }
 
