@@ -66,6 +66,7 @@ Import the library in your code
 ```go
 import (
   "github.com/fogfish/gurl"
+  ø "github.com/fogfish/gurl/http"
 )
 ```
 
