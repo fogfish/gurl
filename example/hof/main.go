@@ -5,17 +5,15 @@
 // of the MIT license.  See the LICENSE file for details.
 // https://github.com/fogfish/gurl
 //
+
 package main
 
 import (
 	"fmt"
 
 	"github.com/fogfish/gurl"
+	ø "github.com/fogfish/gurl/http"
 )
-
-type IO struct {
-	*gurl.IOCat
-}
 
 type headers struct {
 	Host string `json:"Host,omitempty"`
@@ -24,36 +22,39 @@ type headers struct {
 type httpbin struct {
 	URL     string  `json:"url,omitempty"`
 	Headers headers `json:"headers,omitempty"`
+	Data    string  `json:"data,omitempty"`
 }
 
 func main() {
-	io := &IO{gurl.IO()}
-	input := io.readHttpBin()
-	val := io.writeHttpBin(input)
+	var val httpbin
+	http := gurl.Join(
+		read(&val),
+		post(&val),
+	)
 
-	if io.Fail != nil {
-		fmt.Printf("fail %v\n", io.Fail)
+	if err := http(gurl.IO()).Fail; err != nil {
+		fmt.Printf("fail %v\n", err)
 	}
 	fmt.Printf("==> %v\n", val)
 }
 
-func (io *IO) readHttpBin() (val httpbin) {
-	io.GET("https://httpbin.org/get").
-		With("Accept", "application/json").
-		Code(200).
-		Head("Content-Type", "application/json").
-		Recv(&val)
-
-	return
+func read(val *httpbin) gurl.Arrow {
+	return gurl.HTTP(
+		ø.GET("https://httpbin.org/get"),
+		ø.Accept("application/json"),
+		ø.Code(200),
+		ø.Served("application/json"),
+		ø.Recv(val),
+	)
 }
 
-func (io *IO) writeHttpBin(json httpbin) (val httpbin) {
-	io.POST("https://httpbin.org/post").
-		With("Content-Type", "application/json").
-		With("Accept", "application/json").
-		Send(json).
-		Code(200).
-		Recv(&val)
-
-	return
+func post(val *httpbin) gurl.Arrow {
+	return gurl.HTTP(
+		ø.POST("https://httpbin.org/post"),
+		ø.Accept("application/json"),
+		ø.Content("application/json"),
+		ø.Send(val),
+		ø.Code(200),
+		ø.Recv(val),
+	)
 }

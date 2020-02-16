@@ -49,7 +49,7 @@ programming.
 
 * cause-and-effect abstraction of HTTP request/response, naive do-notation
 * high-order composition of individual HTTP requests to complex networking computations
-* human-friendly, Erlang native and declarative syntax to depict HTTP operations
+* human-friendly, Go native and declarative syntax to depict HTTP operations
 * implements a declarative approach for testing of RESTful interfaces
 * automatically encodes/decodes Go native HTTP payload using Content-Type hints
 * supports generic transformation to algebraic data types
@@ -66,6 +66,7 @@ Import the library in your code
 ```go
 import (
   "github.com/fogfish/gurl"
+  ø "github.com/fogfish/gurl/http"
 )
 ```
 
@@ -73,11 +74,13 @@ See the [documentation](http://godoc.org/github.com/fogfish/gurl)
 
 ## Basics
 
-The following code snippet demonstrates a typical usage scenario. The code
-uses dot (.) to compose http primitives and evaluate a "program".
+The following code snippet demonstrates a typical usage scenario.
 
 ```go
-import "github.com/fogfish/gurl"
+import (
+  "github.com/fogfish/gurl"
+  ø "github.com/fogfish/gurl/http"
+)
 
 type Payload struct {
   Origin string `json:"origin"`
@@ -85,14 +88,19 @@ type Payload struct {
 }
 
 var data Payload
-io := gurl.IO().
-  GET("http://httpbin.org/get").
-  With("Accept", "application/json").
-  Code(200).
-  Head("Content-Type", "application/json").
-  Recv(&data)
+var http := gurl.HTTP(
+  // request specification
+  ø.GET("http://httpbin.org/get"),
+  ø.Accept("application/json"),
 
-if io.Fail != nil {
+  // match response
+  ø.Code(200),
+  ø.Served("application/json"),
+  ø.Recv(&data)
+)
+
+// Evaluate a side-effect of HTTP "computation"
+if http(gurl.IO()).Fail != nil {
   // error handling
 }
 ```
@@ -105,39 +113,53 @@ each operation. The composition is smart enough to terminate "program" execution
 
 The composition of multiple HTTP I/O is an essential part of the library.
 The composition is handled in context of IO category. For example,
-RESTfull API primitives declared as function, each deals with `gurl.IOCat`.
+RESTfull API primitives declared as arrow functions, each deals with `gurl.IOCat`.
 
 ```go
-type IO struct {
-	*gurl.IOCat
+import (
+  "github.com/fogfish/gurl"
+  ø "github.com/fogfish/gurl/http"
+)
+
+func HoF() {
+  var token AccessToken
+  var user User
+  var org Org
+
+  http := gurl.Join(
+    AccessToken(&token),
+    UserProfile(token, &user),
+    UserContribution(token, &org)
+  )
+
+  if http(gurl.IO()).Fail != nil {
+    // error handling
+  }
 }
 
-func hof() {
-  github := &IO{gurl.IO()}
-  token := github.AccessToken()
-  user := github.UserProfile(token)
-  orgs := github.UserContribution(token)
-}
-
-func (github *IO) AccessToken() (token AccessToken) {
-  github.URL("POST", "...").
+func AccessToken(token *AccessToken) gurl.Arrow {
+  return gurl.HTTP(
     // ...
-    Recv(&token)
-  return
+    ø.Recv(token),
+  )
 }
 
-func (github *IO) UserProfile(token AccessToken) (user User) {
-  github.URL("POST", "...")
+func UserProfile(token AccessToken, user *User) gurl.Arrow {
+  return gurl.HTTP(
+    ø.POST("..."),
+    ø.Authorization(token.Bearer),
     // ...
-    Recv(&user)
-  return
+    ø.Recv(user),
+  )
 }
 
-func (github *IO) UserContribution(token AccessToken) (orgs []Org) {
-  github.URL("POST", "...")
+func UserContribution(token AccessToken, org *Org) {
+  return gurl.HTTP(
+    ø.POST("..."),
+    ø.Authorization(token.Bearer),
     // ...
-    Recv(&orgs)
-  return
+    ø.Recv(org),
+  )
 }
 ```
 
