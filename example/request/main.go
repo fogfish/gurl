@@ -11,6 +11,7 @@ import (
 	"fmt"
 
 	"github.com/fogfish/gurl"
+	ø "github.com/fogfish/gurl/http"
 )
 
 type headers struct {
@@ -23,31 +24,31 @@ type httpbin struct {
 	Headers headers `json:"headers,omitempty"`
 }
 
-func request() (val httpbin, err error) {
-	err = gurl.IO().
-		GET("https://httpbin.org/get").
-		With("Accept", "application/json").
-		With("X-User-Agent", "gurl").
-		Code(200).
-		Head("Content-Type", "application/json").
-		Recv(&val).
-		Require(val.Headers.UserAgent, "gurl").
-		Assert(validate(val)).
-		Fail
-
-	return
+func request(val *httpbin) gurl.Arrow {
+	return gurl.HTTP(
+		ø.GET("https://httpbin.org/get"),
+		ø.Accept("application/json"),
+		ø.With("X-User-Agent", "gurl"),
+		ø.Code(200),
+		ø.Served("application/json"),
+		ø.Recv(val),
+		ø.Defined(&val.Headers.UserAgent),
+		ø.Require(&val.Headers.UserAgent, "gurl"),
+		ø.Test(validate(val)),
+	)
 }
 
-func validate(val httpbin) func() error {
+func validate(val *httpbin) func() error {
 	return func() error {
 		return nil
 	}
 }
 
 func main() {
-	val, err := request()
+	var val httpbin
+	http := request(&val)
 
-	if err != nil {
+	if err := http(gurl.IO()).Fail; err != nil {
 		fmt.Printf("fail %v\n", err)
 	}
 	fmt.Printf("==> %v\n", val)

@@ -6,7 +6,7 @@
 // https://github.com/fogfish/gurl
 //
 
-package gurl
+package http
 
 import (
 	"bytes"
@@ -17,7 +17,7 @@ import (
 //
 func encode(content string, data interface{}) (buf *bytes.Buffer, err error) {
 	switch content {
-	case ApplicationJson:
+	case "application/json":
 		buf, err = encodeJSON(data)
 	// case "application/x-www-form-urlencoded":
 	// 	req.payload, req.fail = encodeForm(data)
