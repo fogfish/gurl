@@ -89,13 +89,17 @@ type Payload struct {
 
 var data Payload
 var http := gurl.HTTP(
+  // request specification
   ø.GET("http://httpbin.org/get"),
   ø.Accept("application/json"),
+
+  // match response
   ø.Code(200),
   ø.Served("application/json"),
   ø.Recv(&data)
 )
 
+// Evaluate a side-effect of HTTP "computation"
 if http(gurl.IO()).Fail != nil {
   // error handling
 }
