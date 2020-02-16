@@ -14,10 +14,6 @@ import (
 	ø "github.com/fogfish/gurl/http"
 )
 
-type IO struct {
-	gurl.Arrow
-}
-
 type headers struct {
 	Host string `json:"Host,omitempty"`
 }
