@@ -9,6 +9,7 @@
 package gurl
 
 import (
+	"encoding/json"
 	"fmt"
 )
 
@@ -47,4 +48,23 @@ func (io *IOCat) Status(id string) Status {
 			Actual:   fmt.Sprint(io.Fail),
 		}
 	}
+}
+
+// Tagged is an alias for Arrow type
+type Tagged struct {
+	Label string
+	Arrow Arrow
+}
+
+// Once evaluate set of arrows once
+func Once(arrows ...Tagged) []byte {
+	status := []Status{}
+	for _, f := range arrows {
+		status = append(status, f.Arrow(IO()).Status(f.Label))
+	}
+	if bytes, err := json.Marshal(status); err == nil {
+		return bytes
+	}
+
+	return []byte{}
 }
