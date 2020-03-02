@@ -53,18 +53,24 @@ func (io *IOCat) Status(id string) Status {
 // Tagged is an alias for Arrow type
 type Tagged struct {
 	Label string
-	Arrow Arrow
+	Arrow func() Arrow
 }
 
-// Once evaluate set of arrows once
-func Once(arrows ...Tagged) []byte {
+// Once evaluates set of tagged arrows
+func Once(tagged ...Tagged) []byte {
 	status := []Status{}
-	for _, f := range arrows {
-		status = append(status, f.Arrow(IO()).Status(f.Label))
+	for _, f := range tagged {
+		arrow := f.Arrow()
+		status = append(status, arrow(IO()).Status(f.Label))
 	}
 	if bytes, err := json.Marshal(status); err == nil {
 		return bytes
 	}
 
-	return []byte{}
+	return []byte{'{', '}'}
+}
+
+// Println evaluates set of tagged arrows and output results
+func Println(tagged ...Tagged) {
+	fmt.Println(string(Once(tagged...)))
 }

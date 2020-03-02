@@ -365,17 +365,18 @@ func TestOnce(t *testing.T) {
 	defer ts.Close()
 
 	var data Test
-	http := gurl.HTTP(
-		ø.GET(ts.URL),
-		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.Recv(&data),
-		ø.Require(&data.Site, "example.com"),
-	)
+	http := func() gurl.Arrow {
+		return gurl.HTTP(
+			ø.GET(ts.URL),
+			ø.AcceptJSON(),
+			ø.Code(200),
+			ø.Recv(&data),
+			ø.Require(&data.Site, "example.com"),
+		)
+	}
 	it.Ok(t).
 		If(string(gurl.Once(gurl.Tagged{"test", http}))).
 		Should().Equal("[{\"id\":\"test\",\"status\":\"success\",\"duration\":0,\"actual\":{\"site\":\"example.com\"}}]")
-
 }
 
 func TestHoF(t *testing.T) {
