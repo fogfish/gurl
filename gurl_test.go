@@ -47,13 +47,21 @@ func TestSchemaUnsupported(t *testing.T) {
 		If(io.Fail).Should().Equal(&gurl.BadSchema{"other"})
 }
 
-func TestWith(t *testing.T) {
+func TestMethod(t *testing.T) {
+	mthd := []func(string) gurl.Arrow{ø.GET, ø.POST, ø.PUT, ø.DELETE}
+	for _, f := range mthd {
+		io := f("https://example.com")(gurl.IO())
+		it.Ok(t).If(io.Fail).Should().Equal(nil)
+	}
+}
+
+func TestHeader(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
-		ø.AcceptJSON(),
+		ø.Header("Accept", "application/json"),
 		ƒ.Code(200),
 	)(gurl.IO())
 
