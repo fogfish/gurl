@@ -17,7 +17,8 @@ import (
 	"testing"
 
 	"github.com/fogfish/gurl"
-	ø "github.com/fogfish/gurl/http"
+	ƒ "github.com/fogfish/gurl/http/recv"
+	ø "github.com/fogfish/gurl/http/send"
 	"github.com/fogfish/it"
 )
 
@@ -46,18 +47,122 @@ func TestSchemaUnsupported(t *testing.T) {
 		If(io.Fail).Should().Equal(&gurl.BadSchema{"other"})
 }
 
-func TestWith(t *testing.T) {
+func TestMethod(t *testing.T) {
+	mthd := []func(string) gurl.Arrow{ø.GET, ø.POST, ø.PUT, ø.DELETE}
+	for _, f := range mthd {
+		io := f("https://example.com")(gurl.IO())
+		it.Ok(t).
+			If(io.Fail).Should().Equal(nil)
+	}
+}
+
+func TestHeader(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
-		ø.AcceptJSON(),
-		ø.Code(200),
+		ø.Header("Accept", "application/json"),
+		ƒ.Code(200),
 	)(gurl.IO())
 
 	it.Ok(t).
 		If(io.Fail).Should().Equal(nil)
+}
+
+func TestHeaderAccept(t *testing.T) {
+	io := gurl.HTTP(
+		ø.GET("https://example.com"),
+		ø.Accept("application/json"),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.HTTP.Header["Accept"]).Should().Equal("application/json")
+}
+
+func TestHeaderAcceptJSON(t *testing.T) {
+	io := gurl.HTTP(
+		ø.GET("https://example.com"),
+		ø.AcceptJSON(),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.HTTP.Header["Accept"]).Should().Equal("application/json")
+}
+
+func TestHeaderContent(t *testing.T) {
+	io := gurl.HTTP(
+		ø.GET("https://example.com"),
+		ø.Content("application/json"),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.HTTP.Header["Content-Type"]).Should().Equal("application/json")
+}
+
+func TestHeaderContentJSON(t *testing.T) {
+	io := gurl.HTTP(
+		ø.GET("https://example.com"),
+		ø.ContentJSON(),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.HTTP.Header["Content-Type"]).Should().Equal("application/json")
+}
+
+func TestHeaderKeepAlive(t *testing.T) {
+	io := gurl.HTTP(
+		ø.GET("https://example.com"),
+		ø.KeepAlive(),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.HTTP.Header["Connection"]).Should().Equal("keep-alive")
+}
+
+func TestHeaderAuthorization(t *testing.T) {
+	io := gurl.HTTP(
+		ø.GET("https://example.com"),
+		ø.Authorization("token"),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.HTTP.Header["Authorization"]).Should().Equal("token")
+}
+
+func TestParams(t *testing.T) {
+	io := gurl.HTTP(
+		ø.GET("https://example.com"),
+		ø.Params(Test{"host", "site"}),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.URL.String()).Should().
+		Equal("https://example.com?host=site&site=host")
+}
+
+func TestSendJSON(t *testing.T) {
+	io := gurl.HTTP(
+		ø.GET("https://example.com"),
+		ø.ContentJSON(),
+		ø.Send(Test{"host", "site"}),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.HTTP.Payload.String()).Should().
+		Equal("{\"site\":\"host\",\"host\":\"site\"}")
+}
+
+func TestSendForm(t *testing.T) {
+	io := gurl.HTTP(
+		ø.GET("https://example.com"),
+		ø.ContentForm(),
+		ø.Send(Test{"host", "site"}),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.HTTP.Payload.String()).Should().
+		Equal("host=site&site=host")
 }
 
 func TestSend(t *testing.T) {
@@ -79,7 +184,7 @@ func TestSend(t *testing.T) {
 		ø.POST(ts.URL),
 		ø.ContentJSON(),
 		ø.Send(Test{"example.com", ""}),
-		ø.Code(200),
+		ƒ.Code(200),
 	)(gurl.IO())
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
@@ -92,7 +197,7 @@ func TestCodeOk(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
+		ƒ.Code(200),
 	)(gurl.IO())
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
@@ -108,7 +213,7 @@ func TestCodeFail(t *testing.T) {
 
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
-		ø.Code(200),
+		ƒ.Code(200),
 	)(gurl.IO())
 
 	it.Ok(t).
@@ -116,43 +221,60 @@ func TestCodeFail(t *testing.T) {
 		If(io.Fail).Should().Equal(&gurl.BadMatchCode{[]int{200}, 404})
 }
 
-func TestHeadOk(t *testing.T) {
+func TestHeaderOk(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.ServedJSON(),
+		ƒ.Code(200),
+		ƒ.Header("Content-Type", "application/json"),
 	)(gurl.IO())
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
-func TestHeadAny(t *testing.T) {
+func TestHeaderAny(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.Content("*"),
+		ƒ.Code(200),
+		ƒ.Header("Content-Type", "*"),
 	)(gurl.IO())
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
-func TestHeadFail(t *testing.T) {
+func TestHeaderValue(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	var mime string
+	io := gurl.HTTP(
+		ø.GET(ts.URL),
+		ø.AcceptJSON(),
+		ƒ.Code(200),
+		ƒ.HeaderString("Content-Type", &mime),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.Fail).Should().Equal(nil).
+		If(mime).Should().Equal("application/json")
+}
+
+func TestHeaderFail(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.Served("application/x-www-form-urlencoded"),
+		ƒ.Code(200),
+		ƒ.Served("application/x-www-form-urlencoded"),
 	)(gurl.IO())
 
 	it.Ok(t).
@@ -168,14 +290,32 @@ func TestRecv(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.ServedJSON(),
-		ø.Recv(&data),
+		ƒ.Code(200),
+		ƒ.ServedJSON(),
+		ƒ.Recv(&data),
 	)(gurl.IO())
 
 	it.Ok(t).
 		If(io.Fail).Should().Equal(nil).
 		If(data.Site).Should().Equal("example.com")
+}
+
+func TestBytes(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	var data []byte
+	io := gurl.HTTP(
+		ø.GET(ts.URL),
+		ø.AcceptJSON(),
+		ƒ.Code(200),
+		ƒ.ServedJSON(),
+		ƒ.Bytes(&data),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.Fail).Should().Equal(nil).
+		If(string(data)).Should().Equal("{\"site\": \"example.com\"}")
 }
 
 func TestJoin(t *testing.T) {
@@ -186,9 +326,9 @@ func TestJoin(t *testing.T) {
 	http := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.ServedJSON(),
-		ø.Recv(&data),
+		ƒ.Code(200),
+		ƒ.ServedJSON(),
+		ƒ.Recv(&data),
 	)
 	io := gurl.Join(http, http, http)(gurl.IO())
 
@@ -203,9 +343,9 @@ func TestDefined(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.Recv(&data),
-		ø.Defined(&data.Site),
+		ƒ.Code(200),
+		ƒ.Recv(&data),
+		ƒ.Defined(&data.Site),
 	)(gurl.IO())
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
@@ -219,9 +359,9 @@ func TestNotDefined(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.Recv(&data),
-		ø.Defined(&data.Host),
+		ƒ.Code(200),
+		ƒ.Recv(&data),
+		ƒ.Defined(&data.Host),
 	)(gurl.IO())
 
 	it.Ok(t).If(io.Fail).Should().Equal(&gurl.Undefined{"string"})
@@ -235,9 +375,9 @@ func TestRequire(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.Recv(&data),
-		ø.Require(&data.Site, "example.com"),
+		ƒ.Code(200),
+		ƒ.Recv(&data),
+		ƒ.Require(&data.Site, "example.com"),
 	)(gurl.IO())
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
@@ -251,9 +391,9 @@ func TestRequireFail(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.Recv(&data),
-		ø.Require(&data.Site, "localhost"),
+		ƒ.Code(200),
+		ƒ.Recv(&data),
+		ƒ.Require(&data.Site, "localhost"),
 	)(gurl.IO())
 
 	it.Ok(t).
@@ -268,9 +408,9 @@ func TestAssert(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.Recv(&data),
-		ø.Test(func() (err error) {
+		ƒ.Code(200),
+		ƒ.Recv(&data),
+		ƒ.FMap(func() (err error) {
 			if data.Site != "example.com" {
 				err = errors.New("something wrong!")
 			}
@@ -289,9 +429,9 @@ func TestAssertFailure(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.Recv(&data),
-		ø.Test(func() (err error) {
+		ƒ.Code(200),
+		ƒ.Recv(&data),
+		ƒ.FMap(func() (err error) {
 			if data.Site == "example.com" {
 				err = errors.New("something wrong!")
 			}
@@ -312,8 +452,8 @@ func TestStatusSuccess(t *testing.T) {
 	status := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.Recv(&data),
+		ƒ.Code(200),
+		ƒ.Recv(&data),
 	)(gurl.IO()).Status("test")
 
 	it.Ok(t).
@@ -330,8 +470,8 @@ func TestStatusFailure(t *testing.T) {
 	status := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(400),
-		ø.Recv(&data),
+		ƒ.Code(400),
+		ƒ.Recv(&data),
 	)(gurl.IO()).Status("test")
 
 	it.Ok(t).
@@ -348,9 +488,9 @@ func TestStatusFailureBadMatch(t *testing.T) {
 	status := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.Recv(&data),
-		ø.Require(&data.Site, "gurl"),
+		ƒ.Code(200),
+		ƒ.Recv(&data),
+		ƒ.Require(&data.Site, "gurl"),
 	)(gurl.IO()).Status("test")
 
 	it.Ok(t).
@@ -369,9 +509,9 @@ func TestOnce(t *testing.T) {
 		return gurl.HTTP(
 			ø.GET(ts.URL),
 			ø.AcceptJSON(),
-			ø.Code(200),
-			ø.Recv(&data),
-			ø.Require(&data.Site, "example.com"),
+			ƒ.Code(200),
+			ƒ.Recv(&data),
+			ƒ.Require(&data.Site, "example.com"),
 		)
 	}
 	it.Ok(t).
@@ -396,8 +536,8 @@ func doThis(url string, data *Test) gurl.Arrow {
 	return gurl.HTTP(
 		ø.GET(url),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.Recv(&data),
+		ƒ.Code(200),
+		ƒ.Recv(&data),
 	)
 }
 
@@ -407,8 +547,8 @@ func doThat(url string, user Test, data *Test) gurl.Arrow {
 		ø.AcceptJSON(),
 		ø.ContentJSON(),
 		ø.Send(user),
-		ø.Code(200),
-		ø.Recv(&data),
+		ƒ.Code(200),
+		ƒ.Recv(&data),
 	)
 }
 

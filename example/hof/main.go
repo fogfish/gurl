@@ -12,25 +12,76 @@ import (
 	"fmt"
 
 	"github.com/fogfish/gurl"
-	ø "github.com/fogfish/gurl/http"
+	ƒ "github.com/fogfish/gurl/http/recv"
+	ø "github.com/fogfish/gurl/http/send"
 )
 
-type headers struct {
-	Host string `json:"Host,omitempty"`
+// ID implements payload for https://httpbin.org/uuid
+type ID struct {
+	UUID string `json:"uuid,omitempty"`
 }
 
-type httpbin struct {
-	URL     string  `json:"url,omitempty"`
-	Headers headers `json:"headers,omitempty"`
-	Data    string  `json:"data,omitempty"`
+// HTTPBin implements payload for https://httpbin.org/post
+type HTTPBin struct {
+	URL  string `json:"url,omitempty"`
+	Data string `json:"data,omitempty"`
 }
 
-func main() {
-	var val httpbin
-	http := gurl.Join(
-		read(&val),
-		post(&val),
+//
+// uuid declares HTTP I/O. Its result is returned via id variable.
+func uuid(id *ID) gurl.Arrow {
+	return gurl.HTTP(
+		ø.GET("https://httpbin.org/uuid"),
+		ø.AcceptJSON(),
+		ƒ.Code(200),
+		ƒ.ServedJSON(),
+		ƒ.Recv(id),
 	)
+}
+
+//
+// post declares HTTP I/O. The HTTP request requires uuid.
+// Its result is returned via doc variable.
+func post(uuid *ID, doc *HTTPBin) gurl.Arrow {
+	return gurl.HTTP(
+		ø.POST("https://httpbin.org/post"),
+		ø.AcceptJSON(),
+		ø.ContentJSON(),
+		ø.Send(&uuid.UUID),
+		ƒ.Code(200),
+		ƒ.Recv(doc),
+	)
+}
+
+//
+// hof is a high-order function. It is composed from atomic HTTP I/O into
+// the chain of requests. HoF returns results via val variable
+func hof(val *string) gurl.Arrow {
+	// HoF requires internal state
+	var (
+		id  ID
+		doc HTTPBin
+	)
+	//
+	// HoF combines HTTP requests to
+	//  * https://httpbin.org/uuid
+	//  * https://httpbin.org/post
+	//
+	// results of HTTP I/O is persisted in the internal state
+	return gurl.Join(
+		uuid(&id),
+		post(&id, &doc),
+		// results of HTTP chain is mapped to return value
+		ƒ.FMap(func() error {
+			*val = doc.Data
+			return nil
+		}),
+	)
+}
+
+func eval() {
+	var val string
+	http := hof(&val)
 
 	if err := http(gurl.IO()).Fail; err != nil {
 		fmt.Printf("fail %v\n", err)
@@ -38,23 +89,8 @@ func main() {
 	fmt.Printf("==> %v\n", val)
 }
 
-func read(val *httpbin) gurl.Arrow {
-	return gurl.HTTP(
-		ø.GET("https://httpbin.org/get"),
-		ø.Accept("application/json"),
-		ø.Code(200),
-		ø.Served("application/json"),
-		ø.Recv(val),
-	)
-}
-
-func post(val *httpbin) gurl.Arrow {
-	return gurl.HTTP(
-		ø.POST("https://httpbin.org/post"),
-		ø.Accept("application/json"),
-		ø.Content("application/json"),
-		ø.Send(val),
-		ø.Code(200),
-		ø.Recv(val),
-	)
+func main() {
+	for i := 0; i < 3; i++ {
+		eval()
+	}
 }

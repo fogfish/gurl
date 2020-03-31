@@ -66,7 +66,8 @@ Import the library in your code
 ```go
 import (
   "github.com/fogfish/gurl"
-  ø "github.com/fogfish/gurl/http"
+  ø "github.com/fogfish/gurl/http/send"
+  ƒ "github.com/fogfish/gurl/http/recv"
 )
 ```
 
@@ -79,7 +80,8 @@ The following code snippet demonstrates a typical usage scenario.
 ```go
 import (
   "github.com/fogfish/gurl"
-  ø "github.com/fogfish/gurl/http"
+  ø "github.com/fogfish/gurl/http/send"
+  ƒ "github.com/fogfish/gurl/http/recv"
 )
 
 type Payload struct {
@@ -94,9 +96,9 @@ var http := gurl.HTTP(
   ø.Accept("application/json"),
 
   // match response
-  ø.Code(200),
-  ø.Served("application/json"),
-  ø.Recv(&data)
+  ƒ.Code(200),
+  ƒ.Served("application/json"),
+  ƒ.Recv(&data)
 )
 
 // Evaluate a side-effect of HTTP "computation"
@@ -118,18 +120,23 @@ RESTfull API primitives declared as arrow functions, each deals with `gurl.IOCat
 ```go
 import (
   "github.com/fogfish/gurl"
-  ø "github.com/fogfish/gurl/http"
+  ø "github.com/fogfish/gurl/http/send"
+  ƒ "github.com/fogfish/gurl/http/recv"
 )
 
 func HoF() {
-  var token AccessToken
-  var user User
-  var org Org
+  // Internal state of HoF function
+  var (
+    token AccessToken
+    user  User
+    org   Org
+  )
 
+  // HoF combines multiple HTTP I/O to chain of execution 
   http := gurl.Join(
     AccessToken(&token),
-    UserProfile(token, &user),
-    UserContribution(token, &org)
+    UserProfile(&token, &user),
+    UserContribution(&token, &org)
   )
 
   if http(gurl.IO()).Fail != nil {
@@ -140,25 +147,25 @@ func HoF() {
 func AccessToken(token *AccessToken) gurl.Arrow {
   return gurl.HTTP(
     // ...
-    ø.Recv(token),
+    ƒ.Recv(token),
   )
 }
 
-func UserProfile(token AccessToken, user *User) gurl.Arrow {
+func UserProfile(token *AccessToken, user *User) gurl.Arrow {
   return gurl.HTTP(
     ø.POST("..."),
-    ø.Authorization(token.Bearer),
+    ø.Authorization(&token.Bearer),
     // ...
-    ø.Recv(user),
+    ƒ.Recv(user),
   )
 }
 
-func UserContribution(token AccessToken, org *Org) {
+func UserContribution(token *AccessToken, org *Org) {
   return gurl.HTTP(
     ø.POST("..."),
-    ø.Authorization(token.Bearer),
+    ø.Authorization(&token.Bearer),
     // ...
-    ø.Recv(org),
+    ƒ.Recv(org),
   )
 }
 ```
