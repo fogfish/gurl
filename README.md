@@ -125,10 +125,14 @@ import (
 )
 
 func HoF() {
-  var token AccessToken
-  var user User
-  var org Org
+  // Internal state of HoF function
+  var (
+    token AccessToken
+    user  User
+    org   Org
+  )
 
+  // HoF combines multiple HTTP I/O to chain of execution 
   http := gurl.Join(
     AccessToken(&token),
     UserProfile(&token, &user),

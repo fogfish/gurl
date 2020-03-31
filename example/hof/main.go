@@ -58,8 +58,10 @@ func post(uuid *ID, doc *HTTPBin) gurl.Arrow {
 // the chain of requests. HoF returns results via val variable
 func hof(val *string) gurl.Arrow {
 	// HoF requires internal state
-	var id ID
-	var doc HTTPBin
+	var (
+		id  ID
+		doc HTTPBin
+	)
 	//
 	// HoF combines HTTP requests to
 	//  * https://httpbin.org/uuid
