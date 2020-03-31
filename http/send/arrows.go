@@ -101,6 +101,11 @@ func ContentJSON() gurl.Arrow {
 	return Header("Content-Type", "application/json")
 }
 
+// ContentForm is syntax sugar of Header("Content-Type", "application/x-www-form-urlencoded")
+func ContentForm() gurl.Arrow {
+	return Header("Content-Type", "application/x-www-form-urlencoded")
+}
+
 // KeepAlive is a syntax sugar of Header("Connection", "keep-alive")
 func KeepAlive() gurl.Arrow {
 	return Header("Connection", "keep-alive")

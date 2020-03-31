@@ -51,7 +51,8 @@ func TestMethod(t *testing.T) {
 	mthd := []func(string) gurl.Arrow{ø.GET, ø.POST, ø.PUT, ø.DELETE}
 	for _, f := range mthd {
 		io := f("https://example.com")(gurl.IO())
-		it.Ok(t).If(io.Fail).Should().Equal(nil)
+		it.Ok(t).
+			If(io.Fail).Should().Equal(nil)
 	}
 }
 
@@ -67,6 +68,101 @@ func TestHeader(t *testing.T) {
 
 	it.Ok(t).
 		If(io.Fail).Should().Equal(nil)
+}
+
+func TestHeaderAccept(t *testing.T) {
+	io := gurl.HTTP(
+		ø.GET("https://example.com"),
+		ø.Accept("application/json"),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.HTTP.Header["Accept"]).Should().Equal("application/json")
+}
+
+func TestHeaderAcceptJSON(t *testing.T) {
+	io := gurl.HTTP(
+		ø.GET("https://example.com"),
+		ø.AcceptJSON(),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.HTTP.Header["Accept"]).Should().Equal("application/json")
+}
+
+func TestHeaderContent(t *testing.T) {
+	io := gurl.HTTP(
+		ø.GET("https://example.com"),
+		ø.Content("application/json"),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.HTTP.Header["Content-Type"]).Should().Equal("application/json")
+}
+
+func TestHeaderContentJSON(t *testing.T) {
+	io := gurl.HTTP(
+		ø.GET("https://example.com"),
+		ø.ContentJSON(),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.HTTP.Header["Content-Type"]).Should().Equal("application/json")
+}
+
+func TestHeaderKeepAlive(t *testing.T) {
+	io := gurl.HTTP(
+		ø.GET("https://example.com"),
+		ø.KeepAlive(),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.HTTP.Header["Connection"]).Should().Equal("keep-alive")
+}
+
+func TestHeaderAuthorization(t *testing.T) {
+	io := gurl.HTTP(
+		ø.GET("https://example.com"),
+		ø.Authorization("token"),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.HTTP.Header["Authorization"]).Should().Equal("token")
+}
+
+func TestParams(t *testing.T) {
+	io := gurl.HTTP(
+		ø.GET("https://example.com"),
+		ø.Params(Test{"host", "site"}),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.URL.String()).Should().
+		Equal("https://example.com?host=site&site=host")
+}
+
+func TestSendJSON(t *testing.T) {
+	io := gurl.HTTP(
+		ø.GET("https://example.com"),
+		ø.ContentJSON(),
+		ø.Send(Test{"host", "site"}),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.HTTP.Payload.String()).Should().
+		Equal("{\"site\":\"host\",\"host\":\"site\"}")
+}
+
+func TestSendForm(t *testing.T) {
+	io := gurl.HTTP(
+		ø.GET("https://example.com"),
+		ø.ContentForm(),
+		ø.Send(Test{"host", "site"}),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.HTTP.Payload.String()).Should().
+		Equal("host=site&site=host")
 }
 
 func TestSend(t *testing.T) {
