@@ -12,7 +12,8 @@ import (
 	"fmt"
 
 	"github.com/fogfish/gurl"
-	ø "github.com/fogfish/gurl/http"
+	ƒ "github.com/fogfish/gurl/http/recv"
+	ø "github.com/fogfish/gurl/http/send"
 )
 
 type headers struct {
@@ -29,13 +30,13 @@ func request(val *httpbin) gurl.Arrow {
 	return gurl.HTTP(
 		ø.GET("https://httpbin.org/get"),
 		ø.Accept("application/json"),
-		ø.With("X-User-Agent", "gurl"),
-		ø.Code(200),
-		ø.Served("application/json"),
-		ø.Recv(val),
-		ø.Defined(&val.Headers.UserAgent),
-		ø.Require(&val.Headers.UserAgent, "gurl"),
-		ø.Test(validate(val)),
+		ø.Header("X-User-Agent", "gurl"),
+		ƒ.Code(200),
+		ƒ.Served("application/json"),
+		ƒ.Recv(val),
+		ƒ.Defined(&val.Headers.UserAgent),
+		ƒ.Require(&val.Headers.UserAgent, "gurl"),
+		ƒ.FMap(validate(val)),
 	)
 }
 

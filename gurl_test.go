@@ -17,7 +17,8 @@ import (
 	"testing"
 
 	"github.com/fogfish/gurl"
-	ø "github.com/fogfish/gurl/http"
+	ƒ "github.com/fogfish/gurl/http/recv"
+	ø "github.com/fogfish/gurl/http/send"
 	"github.com/fogfish/it"
 )
 
@@ -53,7 +54,7 @@ func TestWith(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
+		ƒ.Code(200),
 	)(gurl.IO())
 
 	it.Ok(t).
@@ -79,7 +80,7 @@ func TestSend(t *testing.T) {
 		ø.POST(ts.URL),
 		ø.ContentJSON(),
 		ø.Send(Test{"example.com", ""}),
-		ø.Code(200),
+		ƒ.Code(200),
 	)(gurl.IO())
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
@@ -92,7 +93,7 @@ func TestCodeOk(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
+		ƒ.Code(200),
 	)(gurl.IO())
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
@@ -108,7 +109,7 @@ func TestCodeFail(t *testing.T) {
 
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
-		ø.Code(200),
+		ƒ.Code(200),
 	)(gurl.IO())
 
 	it.Ok(t).
@@ -123,8 +124,8 @@ func TestHeadOk(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.ServedJSON(),
+		ƒ.Code(200),
+		ƒ.ServedJSON(),
 	)(gurl.IO())
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
@@ -137,8 +138,8 @@ func TestHeadAny(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.Content("*"),
+		ƒ.Code(200),
+		ƒ.Header("Content-Type", "*"),
 	)(gurl.IO())
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
@@ -151,8 +152,8 @@ func TestHeadFail(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.Served("application/x-www-form-urlencoded"),
+		ƒ.Code(200),
+		ƒ.Served("application/x-www-form-urlencoded"),
 	)(gurl.IO())
 
 	it.Ok(t).
@@ -168,9 +169,9 @@ func TestRecv(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.ServedJSON(),
-		ø.Recv(&data),
+		ƒ.Code(200),
+		ƒ.ServedJSON(),
+		ƒ.Recv(&data),
 	)(gurl.IO())
 
 	it.Ok(t).
@@ -186,9 +187,9 @@ func TestJoin(t *testing.T) {
 	http := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.ServedJSON(),
-		ø.Recv(&data),
+		ƒ.Code(200),
+		ƒ.ServedJSON(),
+		ƒ.Recv(&data),
 	)
 	io := gurl.Join(http, http, http)(gurl.IO())
 
@@ -203,9 +204,9 @@ func TestDefined(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.Recv(&data),
-		ø.Defined(&data.Site),
+		ƒ.Code(200),
+		ƒ.Recv(&data),
+		ƒ.Defined(&data.Site),
 	)(gurl.IO())
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
@@ -219,9 +220,9 @@ func TestNotDefined(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.Recv(&data),
-		ø.Defined(&data.Host),
+		ƒ.Code(200),
+		ƒ.Recv(&data),
+		ƒ.Defined(&data.Host),
 	)(gurl.IO())
 
 	it.Ok(t).If(io.Fail).Should().Equal(&gurl.Undefined{"string"})
@@ -235,9 +236,9 @@ func TestRequire(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.Recv(&data),
-		ø.Require(&data.Site, "example.com"),
+		ƒ.Code(200),
+		ƒ.Recv(&data),
+		ƒ.Require(&data.Site, "example.com"),
 	)(gurl.IO())
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
@@ -251,9 +252,9 @@ func TestRequireFail(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.Recv(&data),
-		ø.Require(&data.Site, "localhost"),
+		ƒ.Code(200),
+		ƒ.Recv(&data),
+		ƒ.Require(&data.Site, "localhost"),
 	)(gurl.IO())
 
 	it.Ok(t).
@@ -268,9 +269,9 @@ func TestAssert(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.Recv(&data),
-		ø.Test(func() (err error) {
+		ƒ.Code(200),
+		ƒ.Recv(&data),
+		ƒ.FMap(func() (err error) {
 			if data.Site != "example.com" {
 				err = errors.New("something wrong!")
 			}
@@ -289,9 +290,9 @@ func TestAssertFailure(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.Recv(&data),
-		ø.Test(func() (err error) {
+		ƒ.Code(200),
+		ƒ.Recv(&data),
+		ƒ.FMap(func() (err error) {
 			if data.Site == "example.com" {
 				err = errors.New("something wrong!")
 			}
@@ -312,8 +313,8 @@ func TestStatusSuccess(t *testing.T) {
 	status := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.Recv(&data),
+		ƒ.Code(200),
+		ƒ.Recv(&data),
 	)(gurl.IO()).Status("test")
 
 	it.Ok(t).
@@ -330,8 +331,8 @@ func TestStatusFailure(t *testing.T) {
 	status := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(400),
-		ø.Recv(&data),
+		ƒ.Code(400),
+		ƒ.Recv(&data),
 	)(gurl.IO()).Status("test")
 
 	it.Ok(t).
@@ -348,9 +349,9 @@ func TestStatusFailureBadMatch(t *testing.T) {
 	status := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.Recv(&data),
-		ø.Require(&data.Site, "gurl"),
+		ƒ.Code(200),
+		ƒ.Recv(&data),
+		ƒ.Require(&data.Site, "gurl"),
 	)(gurl.IO()).Status("test")
 
 	it.Ok(t).
@@ -369,9 +370,9 @@ func TestOnce(t *testing.T) {
 		return gurl.HTTP(
 			ø.GET(ts.URL),
 			ø.AcceptJSON(),
-			ø.Code(200),
-			ø.Recv(&data),
-			ø.Require(&data.Site, "example.com"),
+			ƒ.Code(200),
+			ƒ.Recv(&data),
+			ƒ.Require(&data.Site, "example.com"),
 		)
 	}
 	it.Ok(t).
@@ -396,8 +397,8 @@ func doThis(url string, data *Test) gurl.Arrow {
 	return gurl.HTTP(
 		ø.GET(url),
 		ø.AcceptJSON(),
-		ø.Code(200),
-		ø.Recv(&data),
+		ƒ.Code(200),
+		ƒ.Recv(&data),
 	)
 }
 
@@ -407,8 +408,8 @@ func doThat(url string, user Test, data *Test) gurl.Arrow {
 		ø.AcceptJSON(),
 		ø.ContentJSON(),
 		ø.Send(user),
-		ø.Code(200),
-		ø.Recv(&data),
+		ƒ.Code(200),
+		ƒ.Recv(&data),
 	)
 }
 
