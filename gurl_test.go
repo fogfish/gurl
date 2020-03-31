@@ -221,7 +221,7 @@ func TestCodeFail(t *testing.T) {
 		If(io.Fail).Should().Equal(&gurl.BadMatchCode{[]int{200}, 404})
 }
 
-func TestHeadOk(t *testing.T) {
+func TestHeaderOk(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
@@ -229,13 +229,13 @@ func TestHeadOk(t *testing.T) {
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
 		ƒ.Code(200),
-		ƒ.ServedJSON(),
+		ƒ.Header("Content-Type", "application/json"),
 	)(gurl.IO())
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
-func TestHeadAny(t *testing.T) {
+func TestHeaderAny(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
@@ -249,7 +249,24 @@ func TestHeadAny(t *testing.T) {
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
-func TestHeadFail(t *testing.T) {
+func TestHeaderValue(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	var mime string
+	io := gurl.HTTP(
+		ø.GET(ts.URL),
+		ø.AcceptJSON(),
+		ƒ.Code(200),
+		ƒ.HeaderString("Content-Type", &mime),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.Fail).Should().Equal(nil).
+		If(mime).Should().Equal("application/json")
+}
+
+func TestHeaderFail(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
@@ -281,6 +298,24 @@ func TestRecv(t *testing.T) {
 	it.Ok(t).
 		If(io.Fail).Should().Equal(nil).
 		If(data.Site).Should().Equal("example.com")
+}
+
+func TestBytes(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	var data []byte
+	io := gurl.HTTP(
+		ø.GET(ts.URL),
+		ø.AcceptJSON(),
+		ƒ.Code(200),
+		ƒ.ServedJSON(),
+		ƒ.Bytes(&data),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.Fail).Should().Equal(nil).
+		If(string(data)).Should().Equal("{\"site\": \"example.com\"}")
 }
 
 func TestJoin(t *testing.T) {
