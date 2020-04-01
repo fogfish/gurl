@@ -16,6 +16,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/ajg/form"
 	"github.com/fogfish/gurl"
 )
 
@@ -90,9 +91,14 @@ func Served(mime string) gurl.Arrow {
 	return Header("Content-Type", mime)
 }
 
-// ServedJSON is a syntac sugar of Head("Content-Type", "application/json")
+// ServedJSON is a syntax sugar of Head("Content-Type", "application/json")
 func ServedJSON() gurl.Arrow {
 	return Header("Content-Type", "application/json")
+}
+
+// ServedForm is a syntax sugar of Head("Content-Type", "application/x-www-form-urlencoded")
+func ServedForm() gurl.Arrow {
+	return Header("Content-Type", "application/x-www-form-urlencoded")
 }
 
 /*
@@ -119,6 +125,8 @@ func decode(content string, stream io.ReadCloser, data interface{}) error {
 	switch {
 	case strings.HasPrefix(content, "application/json"):
 		return json.NewDecoder(stream).Decode(&data)
+	case strings.HasPrefix(content, "application/x-www-form-urlencoded"):
+		return form.NewDecoder(stream).Decode(&data)
 	default:
 		return &gurl.BadMatchHead{
 			Header: "Content-Type",

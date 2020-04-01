@@ -282,7 +282,7 @@ func TestHeaderFail(t *testing.T) {
 		If(io.Fail).Should().Equal(&gurl.BadMatchHead{"Content-Type", "application/x-www-form-urlencoded", "application/json"})
 }
 
-func TestRecv(t *testing.T) {
+func TestRecvJSON(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
@@ -298,6 +298,25 @@ func TestRecv(t *testing.T) {
 	it.Ok(t).
 		If(io.Fail).Should().Equal(nil).
 		If(data.Site).Should().Equal("example.com")
+}
+
+func TestRecvForm(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	var data Test
+	io := gurl.HTTP(
+		ø.GET(ts.URL),
+		ø.AcceptForm(),
+		ƒ.Code(200),
+		ƒ.ServedForm(),
+		ƒ.Recv(&data),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.Fail).Should().Equal(nil).
+		If(data.Site).Should().Equal("example.com")
+
 }
 
 func TestBytes(t *testing.T) {
@@ -556,10 +575,14 @@ func doThat(url string, user Test, data *Test) gurl.Arrow {
 func mock() *httptest.Server {
 	return httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.Header.Get("Accept") == "application/json" {
+			switch {
+			case r.Header.Get("Accept") == "application/json":
 				w.Header().Add("Content-Type", "application/json")
 				w.Write([]byte(`{"site": "example.com"}`))
-			} else {
+			case r.Header.Get("Accept") == "application/x-www-form-urlencoded":
+				w.Header().Add("Content-Type", "application/x-www-form-urlencoded")
+				w.Write([]byte("site=example.com"))
+			default:
 				w.WriteHeader(http.StatusBadRequest)
 			}
 		}),

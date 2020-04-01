@@ -91,6 +91,11 @@ func AcceptJSON() gurl.Arrow {
 	return Header("Accept", "application/json")
 }
 
+// AcceptJSON is syntax sugar of Header("Accept", "application/x-www-form-urlencoded")
+func AcceptForm() gurl.Arrow {
+	return Header("Accept", "application/x-www-form-urlencoded")
+}
+
 // Content is syntax sugar of Header("Content-Type", ...)
 func Content(mime string) gurl.Arrow {
 	return Header("Content-Type", mime)
