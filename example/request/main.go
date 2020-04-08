@@ -8,6 +8,12 @@
 
 package main
 
+/*
+
+Example shows a basic usage of HTTP I/O.
+
+*/
+
 import (
 	"fmt"
 
@@ -16,6 +22,7 @@ import (
 	ø "github.com/fogfish/gurl/http/send"
 )
 
+// data types used by HTTP payload(s)
 type headers struct {
 	UserAgent string `json:"X-User-Agent,omitempty"`
 }
@@ -26,11 +33,14 @@ type httpbin struct {
 	Headers headers `json:"headers,omitempty"`
 }
 
+// basic declarative request
 func request(val *httpbin) gurl.Arrow {
 	return gurl.HTTP(
+		// HTTP output
 		ø.GET("https://httpbin.org/get"),
 		ø.Accept("application/json"),
 		ø.Header("X-User-Agent", "gurl"),
+		// HTTP input and its validation
 		ƒ.Code(200),
 		ƒ.Served("application/json"),
 		ƒ.Recv(val),

@@ -8,6 +8,12 @@
 
 package main
 
+/*
+
+Example shows a composition of HTTP I/O.
+
+*/
+
 import (
 	"fmt"
 
@@ -16,20 +22,20 @@ import (
 	ø "github.com/fogfish/gurl/http/send"
 )
 
-// ID implements payload for https://httpbin.org/uuid
-type ID struct {
+// id implements payload for https://httpbin.org/uuid
+type id struct {
 	UUID string `json:"uuid,omitempty"`
 }
 
-// HTTPBin implements payload for https://httpbin.org/post
-type HTTPBin struct {
+// httpbin implements payload for https://httpbin.org/post
+type httpbin struct {
 	URL  string `json:"url,omitempty"`
 	Data string `json:"data,omitempty"`
 }
 
 //
 // uuid declares HTTP I/O. Its result is returned via id variable.
-func uuid(id *ID) gurl.Arrow {
+func uuid(id *id) gurl.Arrow {
 	return gurl.HTTP(
 		ø.GET("https://httpbin.org/uuid"),
 		ø.AcceptJSON(),
@@ -42,7 +48,7 @@ func uuid(id *ID) gurl.Arrow {
 //
 // post declares HTTP I/O. The HTTP request requires uuid.
 // Its result is returned via doc variable.
-func post(uuid *ID, doc *HTTPBin) gurl.Arrow {
+func post(uuid *id, doc *httpbin) gurl.Arrow {
 	return gurl.HTTP(
 		ø.POST("https://httpbin.org/post"),
 		ø.AcceptJSON(),
@@ -59,8 +65,8 @@ func post(uuid *ID, doc *HTTPBin) gurl.Arrow {
 func hof(val *string) gurl.Arrow {
 	// HoF requires internal state
 	var (
-		id  ID
-		doc HTTPBin
+		id  id
+		doc httpbin
 	)
 	//
 	// HoF combines HTTP requests to
