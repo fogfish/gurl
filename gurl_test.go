@@ -553,6 +553,29 @@ func doThat(url string, user Test, data *Test) gurl.Arrow {
 }
 
 //
+func TestFlatMap(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	var data Test
+	http := gurl.HTTP(
+		ø.GET(ts.URL),
+		ø.AcceptJSON(),
+		ƒ.Code(200),
+		ƒ.Recv(&data),
+		ƒ.Require(&data.Site, "example.com"),
+	)
+
+	io := gurl.Join(
+		http,
+		ƒ.FlatMap(func() gurl.Arrow { return http }),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.Fail).Should().Equal(nil)
+}
+
+//
 func mock() *httptest.Server {
 	return httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
