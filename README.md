@@ -75,7 +75,7 @@ See the [documentation](http://godoc.org/github.com/fogfish/gurl)
 
 ## Basics
 
-The following code snippet demonstrates a typical usage scenario.
+The following code snippet demonstrates a typical usage scenario. See runnable [example](example/request/main.go).
 
 ```go
 import (
@@ -116,6 +116,8 @@ each operation. The composition is smart enough to terminate "program" execution
 The composition of multiple HTTP I/O is an essential part of the library.
 The composition is handled in context of IO category. For example,
 RESTfull API primitives declared as arrow functions, each deals with `gurl.IOCat`.
+See runnable [high-order function example](example/hof/main.go) and [recursion](example/loop/main.go).
+
 
 ```go
 import (

@@ -153,6 +153,20 @@ func FMap(f func() error) gurl.Arrow {
 
 /*
 
+FlatMap applies closure to matched HTTP request.
+It returns an arrow, which continue evaluation.
+*/
+func FlatMap(f func() gurl.Arrow) gurl.Arrow {
+	return func(io *gurl.IOCat) *gurl.IOCat {
+		if g := f(); g != nil {
+			return g(io)
+		}
+		return io
+	}
+}
+
+/*
+
 Defined checks if the value is defined, use a pointer to the value.
 */
 func Defined(value interface{}) gurl.Arrow {
