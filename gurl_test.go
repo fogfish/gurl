@@ -56,13 +56,28 @@ func TestMethod(t *testing.T) {
 	}
 }
 
-func TestHeader(t *testing.T) {
+func TestHeaderByLit(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
-		ø.AcceptJSON(),
+		ø.Header("Accept").Is("application/json"),
+		ƒ.Code(200),
+	)(gurl.IO())
+
+	it.Ok(t).
+		If(io.Fail).Should().Equal(nil)
+}
+
+func TestHeaderByVal(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	val := "application/json"
+	io := gurl.HTTP(
+		ø.GET(ts.URL),
+		ø.Header("Accept").Val(&val),
 		ƒ.Code(200),
 	)(gurl.IO())
 

@@ -102,12 +102,12 @@ func Served() HtHeader {
 
 // ServedJSON is a syntax sugar of Header("Content-Type").Is("application/json")
 func ServedJSON() gurl.Arrow {
-	return Header("Content-Type").Is("application/json")
+	return Served().Is("application/json")
 }
 
 // ServedForm is a syntax sugar of Header("Content-Type", "application/x-www-form-urlencoded")
 func ServedForm() gurl.Arrow {
-	return Header("Content-Type").Is("application/x-www-form-urlencoded")
+	return Served().Is("application/x-www-form-urlencoded")
 }
 
 /*
