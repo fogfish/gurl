@@ -156,7 +156,7 @@ func AccessToken(token *AccessToken) gurl.Arrow {
 func UserProfile(token *AccessToken, user *User) gurl.Arrow {
   return gurl.HTTP(
     ø.POST("..."),
-    ø.Authorization(&token.Bearer),
+    ø.Authorization().Val(token.Bearer),
     // ...
     ƒ.Recv(user),
   )
@@ -165,7 +165,7 @@ func UserProfile(token *AccessToken, user *User) gurl.Arrow {
 func UserContribution(token *AccessToken, org *Org) {
   return gurl.HTTP(
     ø.POST("..."),
-    ø.Authorization(&token.Bearer),
+    ø.Authorization().Val(token.Bearer),
     // ...
     ƒ.Recv(org),
   )

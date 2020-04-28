@@ -79,11 +79,11 @@ The following code snippet demonstrates a typical usage scenario.
   var http := gurl.HTTP(
     // request specification
     ø.GET("http://httpbin.org/get"),
-    ø.Accept("application/json"),
+    ø.Accept().Is("application/json"),
 
     // match response
     ø.Code(200),
-    ø.Served("application/json"),
+    ø.Served().Is("application/json"),
     ø.Recv(&data)
   )
 
@@ -135,7 +135,7 @@ RESTfull API primitives declared as function, each deals with gurl.IOCat.
   func UserProfile(token *AccessToken, user *User) gurl.Arrow {
     return gurl.HTTP(
       ø.POST("..."),
-      ø.Authorization(token.Bearer),
+      ø.Authorization().Is(token.Bearer),
       // ...
       ø.Recv(user),
     )
@@ -144,7 +144,7 @@ RESTfull API primitives declared as function, each deals with gurl.IOCat.
   func UserContribution(token *AccessToken, org *Org) {
     return gurl.HTTP(
       ø.POST("..."),
-      ø.Authorization(token.Bearer),
+      ø.Authorization().Is(token.Bearer),
       // ...
       ø.Recv(org),
     )
