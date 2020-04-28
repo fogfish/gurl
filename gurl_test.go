@@ -62,7 +62,7 @@ func TestHeader(t *testing.T) {
 
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
-		ø.Header("Accept", "application/json"),
+		ø.AcceptJSON(),
 		ƒ.Code(200),
 	)(gurl.IO())
 
@@ -73,11 +73,11 @@ func TestHeader(t *testing.T) {
 func TestHeaderAccept(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET("https://example.com"),
-		ø.Accept("application/json"),
+		ø.Accept().Is("application/json"),
 	)(gurl.IO())
 
 	it.Ok(t).
-		If(io.HTTP.Header["Accept"]).Should().Equal("application/json")
+		If(*io.HTTP.Header["Accept"]).Should().Equal("application/json")
 }
 
 func TestHeaderAcceptJSON(t *testing.T) {
@@ -87,17 +87,17 @@ func TestHeaderAcceptJSON(t *testing.T) {
 	)(gurl.IO())
 
 	it.Ok(t).
-		If(io.HTTP.Header["Accept"]).Should().Equal("application/json")
+		If(*io.HTTP.Header["Accept"]).Should().Equal("application/json")
 }
 
 func TestHeaderContent(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET("https://example.com"),
-		ø.Content("application/json"),
+		ø.Content().Is("application/json"),
 	)(gurl.IO())
 
 	it.Ok(t).
-		If(io.HTTP.Header["Content-Type"]).Should().Equal("application/json")
+		If(*io.HTTP.Header["Content-Type"]).Should().Equal("application/json")
 }
 
 func TestHeaderContentJSON(t *testing.T) {
@@ -107,7 +107,7 @@ func TestHeaderContentJSON(t *testing.T) {
 	)(gurl.IO())
 
 	it.Ok(t).
-		If(io.HTTP.Header["Content-Type"]).Should().Equal("application/json")
+		If(*io.HTTP.Header["Content-Type"]).Should().Equal("application/json")
 }
 
 func TestHeaderKeepAlive(t *testing.T) {
@@ -117,17 +117,17 @@ func TestHeaderKeepAlive(t *testing.T) {
 	)(gurl.IO())
 
 	it.Ok(t).
-		If(io.HTTP.Header["Connection"]).Should().Equal("keep-alive")
+		If(*io.HTTP.Header["Connection"]).Should().Equal("keep-alive")
 }
 
 func TestHeaderAuthorization(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET("https://example.com"),
-		ø.Authorization("token"),
+		ø.Authorization().Is("token"),
 	)(gurl.IO())
 
 	it.Ok(t).
-		If(io.HTTP.Header["Authorization"]).Should().Equal("token")
+		If(*io.HTTP.Header["Authorization"]).Should().Equal("token")
 }
 
 func TestParams(t *testing.T) {
@@ -229,7 +229,7 @@ func TestHeaderOk(t *testing.T) {
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
 		ƒ.Code(200),
-		ƒ.Header("Content-Type", "application/json"),
+		ƒ.ServedJSON(),
 	)(gurl.IO())
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
@@ -243,7 +243,7 @@ func TestHeaderAny(t *testing.T) {
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
 		ƒ.Code(200),
-		ƒ.Header("Content-Type", "*"),
+		ƒ.Header("Content-Type").Any(),
 	)(gurl.IO())
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
@@ -258,7 +258,7 @@ func TestHeaderValue(t *testing.T) {
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
 		ƒ.Code(200),
-		ƒ.HeaderString("Content-Type", &mime),
+		ƒ.Header("Content-Type").String(&mime),
 	)(gurl.IO())
 
 	it.Ok(t).
@@ -274,7 +274,7 @@ func TestHeaderFail(t *testing.T) {
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
 		ƒ.Code(200),
-		ƒ.Served("application/x-www-form-urlencoded"),
+		ƒ.ServedForm(),
 	)(gurl.IO())
 
 	it.Ok(t).

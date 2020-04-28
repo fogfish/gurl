@@ -108,14 +108,16 @@ RESTfull API primitives declared as function, each deals with gurl.IOCat.
   )
 
   func HoF() {
-    var token AccessToken
-    var user User
-    var org Org
+    var (
+      token AccessToken
+      user User
+      org Org
+    )
 
     http := gurl.Join(
       AccessToken(&token),
-      UserProfile(token, &user),
-      UserContribution(token, &org)
+      UserProfile(&token, &user),
+      UserContribution(&token, &org)
     )
 
     if http(gurl.IO()).Fail != nil {
@@ -130,7 +132,7 @@ RESTfull API primitives declared as function, each deals with gurl.IOCat.
     )
   }
 
-  func UserProfile(token AccessToken, user *User) gurl.Arrow {
+  func UserProfile(token *AccessToken, user *User) gurl.Arrow {
     return gurl.HTTP(
       ø.POST("..."),
       ø.Authorization(token.Bearer),
@@ -139,7 +141,7 @@ RESTfull API primitives declared as function, each deals with gurl.IOCat.
     )
   }
 
-  func UserContribution(token AccessToken, org *Org) {
+  func UserContribution(token *AccessToken, org *Org) {
     return gurl.HTTP(
       ø.POST("..."),
       ø.Authorization(token.Bearer),

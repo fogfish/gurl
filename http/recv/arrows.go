@@ -50,34 +50,38 @@ func hasCode(s []int, e int) bool {
 	return false
 }
 
+// HtHeader is tagged string, represents HTTP Header
+type HtHeader struct{ string }
+
 /*
 
 Header matches presence of header in the response or match its entire content.
 The execution fails with BadMatchHead if the matched value do not meet expectations.
-Use wildcard string ("*") to match any header value
 */
-func Header(header, value string) gurl.Arrow {
+func Header(header string) HtHeader {
+	return HtHeader{header}
+}
+
+// Is matches value of HTTP header, Use wildcard string ("*") to match any header value
+func (header HtHeader) Is(value string) gurl.Arrow {
 	return func(io *gurl.IOCat) *gurl.IOCat {
-		h := io.HTTP.Ingress.Header.Get(header)
+		h := io.HTTP.Ingress.Header.Get(header.string)
 		if h == "" {
-			io.Fail = &gurl.BadMatchHead{Header: header, Expect: value}
+			io.Fail = &gurl.BadMatchHead{Header: header.string, Expect: value}
 		} else if value != "*" && !strings.HasPrefix(h, value) {
-			io.Fail = &gurl.BadMatchHead{Header: header, Expect: value, Actual: h}
+			io.Fail = &gurl.BadMatchHead{Header: header.string, Expect: value, Actual: h}
 		}
 
 		return io
 	}
 }
 
-/*
-
-HeaderString matches a header value to closed variable of string type.
-*/
-func HeaderString(header string, value *string) gurl.Arrow {
+// String matches a header value to closed variable of string type.
+func (header HtHeader) String(value *string) gurl.Arrow {
 	return func(io *gurl.IOCat) *gurl.IOCat {
-		val := io.HTTP.Ingress.Header.Get(header)
+		val := io.HTTP.Ingress.Header.Get(header.string)
 		if val == "" {
-			io.Fail = &gurl.BadMatchHead{Header: header}
+			io.Fail = &gurl.BadMatchHead{Header: header.string}
 		} else {
 			*value = val
 		}
@@ -86,19 +90,24 @@ func HeaderString(header string, value *string) gurl.Arrow {
 	}
 }
 
-// Served is a syntax sugar of Header("Content-Type", ...)
-func Served(mime string) gurl.Arrow {
-	return Header("Content-Type", mime)
+// Any matches a header value, syntax sugar of Header(...).Is("*")
+func (header HtHeader) Any() gurl.Arrow {
+	return header.Is("*")
 }
 
-// ServedJSON is a syntax sugar of Head("Content-Type", "application/json")
+// Served is a syntax sugar of Header("Content-Type")
+func Served() HtHeader {
+	return Header("Content-Type")
+}
+
+// ServedJSON is a syntax sugar of Header("Content-Type").Is("application/json")
 func ServedJSON() gurl.Arrow {
-	return Header("Content-Type", "application/json")
+	return Header("Content-Type").Is("application/json")
 }
 
-// ServedForm is a syntax sugar of Head("Content-Type", "application/x-www-form-urlencoded")
+// ServedForm is a syntax sugar of Header("Content-Type", "application/x-www-form-urlencoded")
 func ServedForm() gurl.Arrow {
-	return Header("Content-Type", "application/x-www-form-urlencoded")
+	return Header("Content-Type").Is("application/x-www-form-urlencoded")
 }
 
 /*
