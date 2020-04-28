@@ -79,11 +79,11 @@ The following code snippet demonstrates a typical usage scenario.
   var http := gurl.HTTP(
     // request specification
     ø.GET("http://httpbin.org/get"),
-    ø.Accept("application/json"),
+    ø.Accept().Is("application/json"),
 
     // match response
     ø.Code(200),
-    ø.Served("application/json"),
+    ø.Served().Is("application/json"),
     ø.Recv(&data)
   )
 
@@ -108,14 +108,16 @@ RESTfull API primitives declared as function, each deals with gurl.IOCat.
   )
 
   func HoF() {
-    var token AccessToken
-    var user User
-    var org Org
+    var (
+      token AccessToken
+      user User
+      org Org
+    )
 
     http := gurl.Join(
       AccessToken(&token),
-      UserProfile(token, &user),
-      UserContribution(token, &org)
+      UserProfile(&token, &user),
+      UserContribution(&token, &org)
     )
 
     if http(gurl.IO()).Fail != nil {
@@ -130,19 +132,19 @@ RESTfull API primitives declared as function, each deals with gurl.IOCat.
     )
   }
 
-  func UserProfile(token AccessToken, user *User) gurl.Arrow {
+  func UserProfile(token *AccessToken, user *User) gurl.Arrow {
     return gurl.HTTP(
       ø.POST("..."),
-      ø.Authorization(token.Bearer),
+      ø.Authorization().Is(token.Bearer),
       // ...
       ø.Recv(user),
     )
   }
 
-  func UserContribution(token AccessToken, org *Org) {
+  func UserContribution(token *AccessToken, org *Org) {
     return gurl.HTTP(
       ø.POST("..."),
-      ø.Authorization(token.Bearer),
+      ø.Authorization().Is(token.Bearer),
       // ...
       ø.Recv(org),
     )

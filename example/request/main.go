@@ -38,11 +38,11 @@ func request(val *httpbin) gurl.Arrow {
 	return gurl.HTTP(
 		// HTTP output
 		ø.GET("https://httpbin.org/get"),
-		ø.Accept("application/json"),
-		ø.Header("X-User-Agent", "gurl"),
+		ø.Header("Accept").Is("application/json"),
+		ø.Header("X-User-Agent").Is("gurl"),
 		// HTTP input and its validation
 		ƒ.Code(200),
-		ƒ.Served("application/json"),
+		ƒ.Header("Content-Type").Is("application/json"),
 		ƒ.Recv(val),
 		ƒ.Defined(&val.Headers.UserAgent),
 		ƒ.Require(&val.Headers.UserAgent, "gurl"),

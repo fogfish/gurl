@@ -33,7 +33,7 @@ func URL(method, uri string) gurl.Arrow {
 		case "http", "https":
 			io.HTTP = &gurl.IOSpec{
 				Method:  method,
-				Header:  make(map[string]string),
+				Header:  make(map[string]*string),
 				Payload: bytes.NewBuffer(nil),
 				Ingress: nil,
 			}
@@ -64,61 +64,77 @@ func DELETE(uri string) gurl.Arrow {
 	return URL("DELETE", uri)
 }
 
+// HtHeader is tagged string, represents HTTP Header
+type HtHeader struct{ string }
+
 /*
 
 Header defines HTTP headers to the request, use combinator
 to define multiple header values.
 
   gurl.HTTP(
-		ø.Header("Accept", ...),
-		ø.Header("Content-Type", ...),
+		ø.Header("Accept").Is(...),
+		ø.Header("Content-Type").Is(...),
 	)
 */
-func Header(header, value string) gurl.Arrow {
+func Header(header string) HtHeader {
+	return HtHeader{header}
+}
+
+// Is sets a literval value of HTTP header
+func (header HtHeader) Is(value string) gurl.Arrow {
 	return func(io *gurl.IOCat) *gurl.IOCat {
-		io.HTTP.Header[header] = value
+		io.HTTP.Header[header.string] = &value
 		return io
 	}
 }
 
-// Accept is syntax sugar of Header("Accept", ...)
-func Accept(mime string) gurl.Arrow {
-	return Header("Accept", mime)
+// Val sets a value of HTTP header from variable
+func (header HtHeader) Val(value *string) gurl.Arrow {
+	return func(io *gurl.IOCat) *gurl.IOCat {
+		io.HTTP.Header[header.string] = value
+		return io
+	}
 }
 
-// AcceptJSON is syntax sugar of Header("Accept", "application/json")
+// Accept is syntax sugar of Header("Accept")
+func Accept() HtHeader {
+	return Header("Accept")
+}
+
+// AcceptJSON is syntax sugar of Header("Accept").Is("application/json")
 func AcceptJSON() gurl.Arrow {
-	return Header("Accept", "application/json")
+	return Accept().Is("application/json")
 }
 
-// AcceptJSON is syntax sugar of Header("Accept", "application/x-www-form-urlencoded")
+// AcceptForm is syntax sugar of Header("Accept").Is("application/x-www-form-urlencoded")
 func AcceptForm() gurl.Arrow {
-	return Header("Accept", "application/x-www-form-urlencoded")
+	return Accept().Is("application/x-www-form-urlencoded")
 }
 
-// Content is syntax sugar of Header("Content-Type", ...)
-func Content(mime string) gurl.Arrow {
-	return Header("Content-Type", mime)
+// Content is syntax sugar of Header("Content-Type")
+func Content() HtHeader {
+	return Header("Content-Type")
 }
 
-// ContentJSON is syntax sugar of Header("Content-Type", "application/json")
+// ContentJSON is syntax sugar of Header("Content-Type").Is("application/json")
 func ContentJSON() gurl.Arrow {
-	return Header("Content-Type", "application/json")
+	return Content().Is("application/json")
 }
 
-// ContentForm is syntax sugar of Header("Content-Type", "application/x-www-form-urlencoded")
+// ContentForm is syntax sugar of Header("Content-Type").Is("application/x-www-form-urlencoded")
 func ContentForm() gurl.Arrow {
-	return Header("Content-Type", "application/x-www-form-urlencoded")
+	return Content().Is("application/x-www-form-urlencoded")
 }
 
-// KeepAlive is a syntax sugar of Header("Connection", "keep-alive")
+// KeepAlive is a syntax sugar of Header("Connection").Is("keep-alive")
 func KeepAlive() gurl.Arrow {
-	return Header("Connection", "keep-alive")
+	return Header("Connection").Is("keep-alive")
 }
 
-// Authorization is syntax sugar of Header("Authorization", ...)
-func Authorization(token string) gurl.Arrow {
-	return Header("Authorization", token)
+// Authorization is syntax sugar of Header("Authorization")
+func Authorization() HtHeader {
+	return Header("Authorization")
 }
 
 /*
@@ -160,7 +176,7 @@ if content type is not supported by the library.
 */
 func Send(data interface{}) gurl.Arrow {
 	return func(io *gurl.IOCat) *gurl.IOCat {
-		io.HTTP.Payload, io.Fail = encode(io.HTTP.Header["Content-Type"], data)
+		io.HTTP.Payload, io.Fail = encode(*io.HTTP.Header["Content-Type"], data)
 		return io
 	}
 }
@@ -192,13 +208,12 @@ func encodeForm(data interface{}) (*bytes.Buffer, error) {
 	var req map[string]string
 	err = json.Unmarshal(bin, &req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("gurl encode application/x-www-form-urlencoded: %w", err)
 	}
 
 	var payload url.Values = make(map[string][]string)
 	for key, val := range req {
 		payload[key] = []string{val}
 	}
-
 	return bytes.NewBuffer([]byte(payload.Encode())), nil
 }

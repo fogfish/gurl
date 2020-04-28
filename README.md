@@ -4,7 +4,7 @@ A class of High Order Component which can do http requests with few
 interesting property such as composition and laziness.
 
 [![Documentation](https://godoc.org/github.com/fogfish/gurl?status.svg)](http://godoc.org/github.com/fogfish/gurl)
-[![Build Status](https://secure.travis-ci.org/fogfish/gurl.svg?branch=master)](http://travis-ci.org/fogfish/gurl)
+[![Build Status](https://api.travis-ci.org/fogfish/gurl.svg?branch=master)](http://travis-ci.org/fogfish/gurl)
 [![Git Hub](https://img.shields.io/github/last-commit/fogfish/gurl.svg)](http://travis-ci.org/fogfish/gurl)
 [![Coverage Status](https://coveralls.io/repos/github/fogfish/gurl/badge.svg?branch=master)](https://coveralls.io/github/fogfish/gurl?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/fogfish/gurl)](https://goreportcard.com/report/github.com/fogfish/gurl)
@@ -156,7 +156,7 @@ func AccessToken(token *AccessToken) gurl.Arrow {
 func UserProfile(token *AccessToken, user *User) gurl.Arrow {
   return gurl.HTTP(
     ø.POST("..."),
-    ø.Authorization(&token.Bearer),
+    ø.Authorization().Val(token.Bearer),
     // ...
     ƒ.Recv(user),
   )
@@ -165,7 +165,7 @@ func UserProfile(token *AccessToken, user *User) gurl.Arrow {
 func UserContribution(token *AccessToken, org *Org) {
   return gurl.HTTP(
     ø.POST("..."),
-    ø.Authorization(&token.Bearer),
+    ø.Authorization().Val(token.Bearer),
     // ...
     ƒ.Recv(org),
   )

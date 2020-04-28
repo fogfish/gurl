@@ -43,7 +43,7 @@ type Arrow func(*IOCat) *IOCat
 // IOSpec defines parameters of IO transactor
 type IOSpec struct {
 	Method  string
-	Header  map[string]string
+	Header  map[string]*string
 	Payload *bytes.Buffer
 	Ingress *http.Response
 }
@@ -123,7 +123,7 @@ func (io *IOCat) Unsafe() *IOCat {
 	}
 
 	for head, value := range io.HTTP.Header {
-		eg.Header.Set(head, value)
+		eg.Header.Set(head, *value)
 	}
 
 	t := time.Now()
