@@ -14,10 +14,12 @@ import (
 	"io"
 	"io/ioutil"
 	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/ajg/form"
 	"github.com/fogfish/gurl"
+	"github.com/google/go-cmp/cmp"
 )
 
 /*
@@ -211,32 +213,42 @@ Supply the pointer to actual value
 */
 func Require(actual interface{}, expect interface{}) gurl.Arrow {
 	return func(io *gurl.IOCat) *gurl.IOCat {
-		if !isEqual(actual, expect) {
-			io.Fail = &gurl.BadMatch{Expect: expect, Actual: actual}
+		if diff := cmp.Diff(actual, expect); diff != "" {
+			io.Fail = &gurl.Mismatch{
+				Diff:    diff,
+				Payload: actual,
+			}
 		}
 		return io
 	}
 }
 
-func isEqual(a interface{}, b interface{}) bool {
-	if a == nil && b == nil {
-		return true
-	}
-	if a == nil || b == nil {
-		return false
-	}
-	va := reflect.ValueOf(a)
-	vb := reflect.ValueOf(b)
+// HtSeq is tagged type, represents Sequence of elements
+type HtSeq struct{ gurl.Ord }
 
-	if va.Kind() == reflect.Ptr {
-		va = va.Elem()
-	}
-	if vb.Kind() == reflect.Ptr {
-		vb = vb.Elem()
-	}
+/*
 
-	if !va.Type().Comparable() {
-		return false
+Seq matches presence of element in the sequence.
+*/
+func Seq(seq gurl.Ord) HtSeq {
+	return HtSeq{seq}
+}
+
+/*
+
+Has lookups element using key and matches expected value
+*/
+func (seq HtSeq) Has(key string, expect ...interface{}) gurl.Arrow {
+	return func(io *gurl.IOCat) *gurl.IOCat {
+		sort.Sort(seq)
+		i := sort.Search(seq.Len(), func(i int) bool { return seq.String(i) >= key })
+		if i < seq.Len() && seq.String(i) == key {
+			if len(expect) > 0 {
+				return Require(seq.Value(i), expect[0])(io)
+			}
+			return io
+		}
+		io.Fail = &gurl.Undefined{Type: key}
+		return io
 	}
-	return va.Interface() == vb.Interface()
 }

@@ -49,12 +49,12 @@ func (e *Undefined) Error() string {
 	return fmt.Sprintf("Value of type %v is not defined.", e.Type)
 }
 
-// BadMatch is returned by api if expectation at body value is failed
-type BadMatch struct {
-	Expect interface{}
-	Actual interface{}
+// Mismatch is returned by api if expectation at body value is failed
+type Mismatch struct {
+	Diff    string
+	Payload interface{}
 }
 
-func (e *BadMatch) Error() string {
-	return fmt.Sprintf("Mismatch of value %v, required %v.", e.Actual, e.Expect)
+func (e *Mismatch) Error() string {
+	return e.Diff
 }
