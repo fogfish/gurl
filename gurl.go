@@ -15,6 +15,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"sort"
 	"time"
 )
 
@@ -130,4 +131,13 @@ func (io *IOCat) Unsafe() *IOCat {
 	io.HTTP.Ingress, io.Fail = io.pool.Do(eg)
 	io.dur = time.Now().Sub(t)
 	return io
+}
+
+// Ord extends sort.Interface with ability to lookup element by string
+type Ord interface {
+	sort.Interface
+	// String return primary key as string type
+	String(int) string
+	// Value return value at index
+	Value(int) interface{}
 }

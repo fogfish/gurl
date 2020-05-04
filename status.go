@@ -18,8 +18,8 @@ type Status struct {
 	ID       string      `json:"id"`
 	Status   string      `json:"status"`
 	Duration int64       `json:"duration"`
-	Expect   interface{} `json:"expect,omitempty"`
-	Actual   interface{} `json:"actual,omitempty"`
+	Reason   string      `json:"reason,omitempty"`
+	Payload  interface{} `json:"payload"`
 }
 
 // Status returns the status of IOCat
@@ -30,22 +30,22 @@ func (io *IOCat) Status(id string) Status {
 			ID:       id,
 			Status:   "success",
 			Duration: io.dur.Milliseconds(),
-			Actual:   io.Body,
+			Payload:  io.Body,
 		}
-	case *BadMatch:
+	case *Mismatch:
 		return Status{
 			ID:       id,
 			Status:   "failure",
 			Duration: io.dur.Milliseconds(),
-			Actual:   v.Actual,
-			Expect:   v.Expect,
+			Reason:   v.Diff,
+			Payload:  v.Payload,
 		}
 	default:
 		return Status{
 			ID:       id,
 			Status:   "failure",
 			Duration: io.dur.Milliseconds(),
-			Actual:   fmt.Sprint(io.Fail),
+			Reason:   io.Fail.Error(),
 		}
 	}
 }

@@ -11,9 +11,9 @@ package gurl_test
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/fogfish/gurl"
@@ -26,6 +26,14 @@ type Test struct {
 	Site string `json:"site"`
 	Host string `json:"host,omitempty"`
 }
+
+type Seq []Test
+
+func (c Seq) Len() int                { return len(c) }
+func (c Seq) Swap(i, j int)           { c[i], c[j] = c[j], c[i] }
+func (c Seq) Less(i, j int) bool      { return c[i].Site < c[j].Site }
+func (c Seq) String(i int) string     { return c[i].Site }
+func (c Seq) Value(i int) interface{} { return c[i] }
 
 func TestSchemaHTTP(t *testing.T) {
 	io := ø.URL("GET", "http://example.com")(gurl.IO())
@@ -411,7 +419,7 @@ func TestRequire(t *testing.T) {
 		ø.AcceptJSON(),
 		ƒ.Code(200),
 		ƒ.Recv(&data),
-		ƒ.Require(&data.Site, "example.com"),
+		ƒ.Require(&data, &Test{Site: "example.com"}),
 	)(gurl.IO())
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
@@ -431,7 +439,28 @@ func TestRequireFail(t *testing.T) {
 	)(gurl.IO())
 
 	it.Ok(t).
-		If(io.Fail).Should().Be().Like(&gurl.BadMatch{"localhost", "example.com"})
+		If(io.Fail).Should().Be().Like(&gurl.Mismatch{})
+}
+
+func TestLookup(t *testing.T) {
+	ts := mockSeq()
+	defer ts.Close()
+
+	var data Seq
+	expectS := Test{Site: "s.example.com"}
+	expectZ := Test{Site: "z.example.com"}
+
+	io := gurl.HTTP(
+		ø.GET(ts.URL),
+		ø.AcceptJSON(),
+		ƒ.Code(200),
+		ƒ.Recv(&data),
+		ƒ.Seq(&data).Has(expectS.Site),
+		ƒ.Seq(&data).Has(expectS.Site, expectS),
+		ƒ.Seq(&data).Has(expectZ.Site, expectZ),
+	)(gurl.IO())
+
+	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
 func TestAssert(t *testing.T) {
@@ -493,7 +522,7 @@ func TestStatusSuccess(t *testing.T) {
 	it.Ok(t).
 		If(status.ID).Should().Equal("test").
 		If(status.Status).Should().Equal("success").
-		If(status.Actual).Should().Equal(&data)
+		If(status.Payload).Should().Equal(&data)
 }
 
 func TestStatusFailure(t *testing.T) {
@@ -511,10 +540,10 @@ func TestStatusFailure(t *testing.T) {
 	it.Ok(t).
 		If(status.ID).Should().Equal("test").
 		If(status.Status).Should().Equal("failure").
-		If(status.Actual).Should().Equal(fmt.Sprint(&gurl.BadMatchCode{[]int{400}, 200}))
+		If(status.Reason).Should().Equal((&gurl.BadMatchCode{[]int{400}, 200}).Error())
 }
 
-func TestStatusFailureBadMatch(t *testing.T) {
+func TestStatusFailureMismatch(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
@@ -524,14 +553,15 @@ func TestStatusFailureBadMatch(t *testing.T) {
 		ø.AcceptJSON(),
 		ƒ.Code(200),
 		ƒ.Recv(&data),
-		ƒ.Require(&data.Site, "gurl"),
+		ƒ.Require(&data, &Test{Site: "gurl"}),
 	)(gurl.IO()).Status("test")
 
 	it.Ok(t).
 		If(status.ID).Should().Equal("test").
 		If(status.Status).Should().Equal("failure").
-		If(status.Actual).Should().Equiv("example.com").
-		If(status.Expect).Should().Equal("gurl")
+		If(status.Payload).Should().Equiv(&Test{Site: "example.com"}).
+		If(strings.Contains(status.Reason, `Site: "example.com"`)).Should().Equal(true).
+		If(strings.Contains(status.Reason, `Site: "gurl"`)).Should().Equal(true)
 }
 
 func TestOnce(t *testing.T) {
@@ -545,12 +575,12 @@ func TestOnce(t *testing.T) {
 			ø.AcceptJSON(),
 			ƒ.Code(200),
 			ƒ.Recv(&data),
-			ƒ.Require(&data.Site, "example.com"),
+			ƒ.Require(&data, &Test{Site: "example.com"}),
 		)
 	}
 	it.Ok(t).
 		If(string(gurl.Once(gurl.Tagged{"test", http}))).
-		Should().Equal("[{\"id\":\"test\",\"status\":\"success\",\"duration\":0,\"actual\":{\"site\":\"example.com\"}}]")
+		Should().Equal("[{\"id\":\"test\",\"status\":\"success\",\"duration\":0,\"payload\":{\"site\":\"example.com\"}}]")
 }
 
 func TestHoF(t *testing.T) {
@@ -597,7 +627,7 @@ func TestFlatMap(t *testing.T) {
 		ø.AcceptJSON(),
 		ƒ.Code(200),
 		ƒ.Recv(&data),
-		ƒ.Require(&data.Site, "example.com"),
+		ƒ.Require(&data, &Test{Site: "example.com"}),
 	)
 
 	io := gurl.Join(
@@ -623,6 +653,25 @@ func mock() *httptest.Server {
 			default:
 				w.WriteHeader(http.StatusBadRequest)
 			}
+		}),
+	)
+}
+
+func mockSeq() *httptest.Server {
+	return httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("Content-Type", "application/json")
+			w.Write([]byte(`[
+				{"site": "q.example.com"},
+				{"site": "a.example.com"},
+				{"site": "z.example.com"},
+				{"site": "w.example.com"},
+				{"site": "s.example.com"},
+				{"site": "x.example.com"},
+				{"site": "e.example.com"},
+				{"site": "d.example.com"},
+				{"site": "c.example.com"}
+			]`))
 		}),
 	)
 }
