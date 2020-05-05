@@ -482,6 +482,27 @@ func TestLookupFailure(t *testing.T) {
 	it.Ok(t).If(io.Fail).Should().Be().Like(&gurl.Undefined{})
 }
 
+func TestLookupMismatch(t *testing.T) {
+	ts := mockSeq()
+	defer ts.Close()
+
+	var data Seq
+	expectS := Test{Site: "s.example.com"}
+	expectZ := Test{Site: "z.example.com"}
+
+	err := gurl.HTTP(
+		ø.GET(ts.URL),
+		ø.AcceptJSON(),
+		ƒ.Code(200),
+		ƒ.Recv(&data),
+		ƒ.Seq(&data).Has(expectS.Site, expectZ),
+	)(gurl.IO()).Fail
+
+	it.Ok(t).
+		If(strings.Contains(err.Error(), `Site: "s.example.com"`)).Should().Equal(true).
+		If(strings.Contains(err.Error(), `Site: "z.example.com"`)).Should().Equal(true)
+}
+
 func TestAssert(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
