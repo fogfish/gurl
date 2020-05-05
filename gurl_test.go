@@ -464,6 +464,24 @@ func TestLookup(t *testing.T) {
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
+func TestLookupFailure(t *testing.T) {
+	ts := mockSeq()
+	defer ts.Close()
+
+	var data Seq
+	expect0 := Test{Site: "0.example.com"}
+
+	io := gurl.HTTP(
+		ø.GET(ts.URL),
+		ø.AcceptJSON(),
+		ƒ.Code(200),
+		ƒ.Recv(&data),
+		ƒ.Seq(&data).Has(expect0.Site),
+	)(gurl.IO())
+
+	it.Ok(t).If(io.Fail).Should().Be().Like(&gurl.Undefined{})
+}
+
 func TestAssert(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
