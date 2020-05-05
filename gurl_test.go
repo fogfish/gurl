@@ -409,7 +409,7 @@ func TestNotDefined(t *testing.T) {
 	it.Ok(t).If(io.Fail).Should().Equal(&gurl.Undefined{"string"})
 }
 
-func TestRequire(t *testing.T) {
+func TestValue(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
@@ -419,7 +419,8 @@ func TestRequire(t *testing.T) {
 		ø.AcceptJSON(),
 		ƒ.Code(200),
 		ƒ.Recv(&data),
-		ƒ.Require(&data, &Test{Site: "example.com"}),
+		ƒ.Value(&data).Is(&Test{Site: "example.com"}),
+		ƒ.Value(&data.Site).String("example.com"),
 	)(gurl.IO())
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
@@ -435,7 +436,7 @@ func TestRequireFail(t *testing.T) {
 		ø.AcceptJSON(),
 		ƒ.Code(200),
 		ƒ.Recv(&data),
-		ƒ.Require(&data.Site, "localhost"),
+		ƒ.Value(&data.Site).String("localhost"),
 	)(gurl.IO())
 
 	it.Ok(t).
@@ -461,6 +462,45 @@ func TestLookup(t *testing.T) {
 	)(gurl.IO())
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
+}
+
+func TestLookupFailure(t *testing.T) {
+	ts := mockSeq()
+	defer ts.Close()
+
+	var data Seq
+	expect0 := Test{Site: "0.example.com"}
+
+	io := gurl.HTTP(
+		ø.GET(ts.URL),
+		ø.AcceptJSON(),
+		ƒ.Code(200),
+		ƒ.Recv(&data),
+		ƒ.Seq(&data).Has(expect0.Site),
+	)(gurl.IO())
+
+	it.Ok(t).If(io.Fail).Should().Be().Like(&gurl.Undefined{})
+}
+
+func TestLookupMismatch(t *testing.T) {
+	ts := mockSeq()
+	defer ts.Close()
+
+	var data Seq
+	expectS := Test{Site: "s.example.com"}
+	expectZ := Test{Site: "z.example.com"}
+
+	err := gurl.HTTP(
+		ø.GET(ts.URL),
+		ø.AcceptJSON(),
+		ƒ.Code(200),
+		ƒ.Recv(&data),
+		ƒ.Seq(&data).Has(expectS.Site, expectZ),
+	)(gurl.IO()).Fail
+
+	it.Ok(t).
+		If(strings.Contains(err.Error(), `Site: "s.example.com"`)).Should().Equal(true).
+		If(strings.Contains(err.Error(), `Site: "z.example.com"`)).Should().Equal(true)
 }
 
 func TestAssert(t *testing.T) {
@@ -553,7 +593,7 @@ func TestStatusFailureMismatch(t *testing.T) {
 		ø.AcceptJSON(),
 		ƒ.Code(200),
 		ƒ.Recv(&data),
-		ƒ.Require(&data, &Test{Site: "gurl"}),
+		ƒ.Value(&data).Is(Test{Site: "gurl"}),
 	)(gurl.IO()).Status("test")
 
 	it.Ok(t).
@@ -575,7 +615,7 @@ func TestOnce(t *testing.T) {
 			ø.AcceptJSON(),
 			ƒ.Code(200),
 			ƒ.Recv(&data),
-			ƒ.Require(&data, &Test{Site: "example.com"}),
+			ƒ.Value(&data).Is(&Test{Site: "example.com"}),
 		)
 	}
 	it.Ok(t).
@@ -627,7 +667,7 @@ func TestFlatMap(t *testing.T) {
 		ø.AcceptJSON(),
 		ƒ.Code(200),
 		ƒ.Recv(&data),
-		ƒ.Require(&data, &Test{Site: "example.com"}),
+		ƒ.Value(&data).Is(&Test{Site: "example.com"}),
 	)
 
 	io := gurl.Join(

@@ -45,7 +45,7 @@ func request(val *httpbin) gurl.Arrow {
 		ƒ.Header("Content-Type").Is("application/json"),
 		ƒ.Recv(val),
 		ƒ.Defined(&val.Headers.UserAgent),
-		ƒ.Require(&val.Headers.UserAgent, "gurl"),
+		ƒ.Value(&val.Headers.UserAgent).String("gurl"),
 		ƒ.FMap(validate(val)),
 	)
 }
