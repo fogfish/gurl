@@ -409,7 +409,7 @@ func TestNotDefined(t *testing.T) {
 	it.Ok(t).If(io.Fail).Should().Equal(&gurl.Undefined{"string"})
 }
 
-func TestRequire(t *testing.T) {
+func TestValue(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
@@ -419,7 +419,8 @@ func TestRequire(t *testing.T) {
 		ø.AcceptJSON(),
 		ƒ.Code(200),
 		ƒ.Recv(&data),
-		ƒ.Require(&data, &Test{Site: "example.com"}),
+		ƒ.Value(&data).Is(&Test{Site: "example.com"}),
+		ƒ.Value(&data.Site).String("example.com"),
 	)(gurl.IO())
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
@@ -435,7 +436,7 @@ func TestRequireFail(t *testing.T) {
 		ø.AcceptJSON(),
 		ƒ.Code(200),
 		ƒ.Recv(&data),
-		ƒ.Require(&data.Site, "localhost"),
+		ƒ.Value(&data.Site).String("localhost"),
 	)(gurl.IO())
 
 	it.Ok(t).
@@ -553,7 +554,7 @@ func TestStatusFailureMismatch(t *testing.T) {
 		ø.AcceptJSON(),
 		ƒ.Code(200),
 		ƒ.Recv(&data),
-		ƒ.Require(&data, &Test{Site: "gurl"}),
+		ƒ.Value(&data).Is(Test{Site: "gurl"}),
 	)(gurl.IO()).Status("test")
 
 	it.Ok(t).
@@ -575,7 +576,7 @@ func TestOnce(t *testing.T) {
 			ø.AcceptJSON(),
 			ƒ.Code(200),
 			ƒ.Recv(&data),
-			ƒ.Require(&data, &Test{Site: "example.com"}),
+			ƒ.Value(&data).Is(&Test{Site: "example.com"}),
 		)
 	}
 	it.Ok(t).
@@ -627,7 +628,7 @@ func TestFlatMap(t *testing.T) {
 		ø.AcceptJSON(),
 		ƒ.Code(200),
 		ƒ.Recv(&data),
-		ƒ.Require(&data, &Test{Site: "example.com"}),
+		ƒ.Value(&data).Is(&Test{Site: "example.com"}),
 	)
 
 	io := gurl.Join(

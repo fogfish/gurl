@@ -206,17 +206,38 @@ func Defined(value interface{}) gurl.Arrow {
 	}
 }
 
+// HtRequire is tagged type, represent matchers
+type HtValue struct{ actual interface{} }
+
 /*
 
 Require checks if the value equals to defined one.
 Supply the pointer to actual value
 */
-func Require(actual interface{}, expect interface{}) gurl.Arrow {
+func Value(val interface{}) HtValue {
+	return HtValue{val}
+}
+
+// Is matches a value
+func (val HtValue) Is(require interface{}) gurl.Arrow {
 	return func(io *gurl.IOCat) *gurl.IOCat {
-		if diff := cmp.Diff(actual, expect); diff != "" {
+		if diff := cmp.Diff(val.actual, require); diff != "" {
 			io.Fail = &gurl.Mismatch{
 				Diff:    diff,
-				Payload: actual,
+				Payload: val.actual,
+			}
+		}
+		return io
+	}
+}
+
+// Is matches a literal value
+func (val HtValue) String(require string) gurl.Arrow {
+	return func(io *gurl.IOCat) *gurl.IOCat {
+		if diff := cmp.Diff(val.actual, &require); diff != "" {
+			io.Fail = &gurl.Mismatch{
+				Diff:    diff,
+				Payload: val.actual,
 			}
 		}
 		return io
@@ -244,7 +265,12 @@ func (seq HtSeq) Has(key string, expect ...interface{}) gurl.Arrow {
 		i := sort.Search(seq.Len(), func(i int) bool { return seq.String(i) >= key })
 		if i < seq.Len() && seq.String(i) == key {
 			if len(expect) > 0 {
-				return Require(seq.Value(i), expect[0])(io)
+				if diff := cmp.Diff(seq.Value(i), expect[0]); diff != "" {
+					io.Fail = &gurl.Mismatch{
+						Diff:    diff,
+						Payload: seq.Value(i),
+					}
+				}
 			}
 			return io
 		}
