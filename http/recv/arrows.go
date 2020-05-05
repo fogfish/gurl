@@ -206,12 +206,12 @@ func Defined(value interface{}) gurl.Arrow {
 	}
 }
 
-// HtRequire is tagged type, represent matchers
+// HtValue is tagged type, represent matchers
 type HtValue struct{ actual interface{} }
 
 /*
 
-Require checks if the value equals to defined one.
+Value checks if the value equals to defined one.
 Supply the pointer to actual value
 */
 func Value(val interface{}) HtValue {
@@ -231,7 +231,7 @@ func (val HtValue) Is(require interface{}) gurl.Arrow {
 	}
 }
 
-// Is matches a literal value
+// String matches a literal value
 func (val HtValue) String(require string) gurl.Arrow {
 	return func(io *gurl.IOCat) *gurl.IOCat {
 		if diff := cmp.Diff(val.actual, &require); diff != "" {
