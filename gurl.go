@@ -76,7 +76,7 @@ func HTTP(arrows ...Arrow) Arrow {
 				return io
 			}
 		}
-		if io.HTTP.Ingress != nil {
+		if io.HTTP != nil && io.HTTP.Ingress != nil {
 			ioutil.ReadAll(io.HTTP.Ingress.Body)
 			io.Fail = io.HTTP.Ingress.Body.Close()
 			io.HTTP.Ingress = nil
