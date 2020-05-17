@@ -56,11 +56,22 @@ func TestSchemaUnsupported(t *testing.T) {
 }
 
 func TestMethod(t *testing.T) {
-	mthd := []func(string) gurl.Arrow{ø.GET, ø.POST, ø.PUT, ø.DELETE}
+	mthd := []func(string, ...interface{}) gurl.Arrow{ø.GET, ø.POST, ø.PUT, ø.DELETE}
 	for _, f := range mthd {
 		io := f("https://example.com")(gurl.IO())
 		it.Ok(t).
-			If(io.Fail).Should().Equal(nil)
+			If(io.Fail).Should().Equal(nil).
+			If(io.URL.String()).Should().Equal("https://example.com")
+	}
+}
+
+func TestURL(t *testing.T) {
+	mthd := []func(string, ...interface{}) gurl.Arrow{ø.GET, ø.POST, ø.PUT, ø.DELETE}
+	for _, f := range mthd {
+		io := f("https://example.com/%v", 1)(gurl.IO())
+		it.Ok(t).
+			If(io.Fail).Should().Equal(nil).
+			If(io.URL.String()).Should().Equal("https://example.com/1")
 	}
 }
 
