@@ -45,23 +45,23 @@ func URL(method, uri string) gurl.Arrow {
 }
 
 // GET is syntax sugar of URL("GET", ...)
-func GET(uri string) gurl.Arrow {
-	return URL("GET", uri)
+func GET(uri string, args ...interface{}) gurl.Arrow {
+	return URL("GET", fmt.Sprintf(uri, args...))
 }
 
 // POST is syntax sugar of URL("POST", ...)
-func POST(uri string) gurl.Arrow {
-	return URL("POST", uri)
+func POST(uri string, args ...interface{}) gurl.Arrow {
+	return URL("POST", fmt.Sprintf(uri, args...))
 }
 
 // PUT is syntax sugar of URL("PUT", ...)
-func PUT(uri string) gurl.Arrow {
-	return URL("PUT", uri)
+func PUT(uri string, args ...interface{}) gurl.Arrow {
+	return URL("PUT", fmt.Sprintf(uri, args...))
 }
 
 // DELETE is syntax sugar of URL("DELETE", ...)
-func DELETE(uri string) gurl.Arrow {
-	return URL("DELETE", uri)
+func DELETE(uri string, args ...interface{}) gurl.Arrow {
+	return URL("DELETE", fmt.Sprintf(uri, args...))
 }
 
 // HtHeader is tagged string, represents HTTP Header
