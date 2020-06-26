@@ -63,7 +63,7 @@ jobs:
       env:
         COVERALLS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        cd $(go env GOPATH)/src/github.com/github.com/${{ github.repository }} && roveralls
+        cd $(go env GOPATH)/src/github.com/${{ github.repository }} && roveralls
         goveralls -coverprofile=$(go env GOPATH)/src/github.com/${{ github.repository }}/roveralls.coverprofile -service=github
 
     ## overalls -project=github.com/${{ github.repository }}
