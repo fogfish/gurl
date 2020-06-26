@@ -226,6 +226,27 @@ func TestValue(t *testing.T) {
 	it.Ok(t).If(io.Fail).Should().Equal(nil)
 }
 
+func TestValueBytes(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	var data Test
+	var octet []byte
+	io := gurl.HTTP(
+		ø.GET(ts.URL),
+		ø.AcceptJSON(),
+		ƒ.Code(200),
+		ƒ.Recv(&data),
+		ƒ.FlatMap(func() gurl.Arrow {
+			octet = []byte(data.Site)
+			return nil
+		}),
+		ƒ.Value(&octet).Bytes([]byte("example.com")),
+	)(gurl.IO())
+
+	it.Ok(t).If(io.Fail).Should().Equal(nil)
+}
+
 func TestRequireFail(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
