@@ -52,7 +52,7 @@ func TestCodeNoMatch(t *testing.T) {
 
 	it.Ok(t).
 		If(io.Fail).ShouldNot().Equal(nil).
-		If(io.Fail).Should().Equal(&gurl.BadMatchCode{[]int{200}, 400})
+		If(io.Fail).Should().Equal(&gurl.BadMatchCode{Expect: []int{200}, Actual: 400})
 }
 
 func TestHeaderOk(t *testing.T) {
@@ -113,7 +113,13 @@ func TestHeaderFail(t *testing.T) {
 
 	it.Ok(t).
 		If(io.Fail).ShouldNot().Equal(nil).
-		If(io.Fail).Should().Equal(&gurl.BadMatchHead{"Content-Type", "application/x-www-form-urlencoded", "application/json"})
+		If(io.Fail).Should().Equal(
+			&gurl.BadMatchHead{
+				Header: "Content-Type",
+				Expect: "application/x-www-form-urlencoded",
+				Actual: "application/json"
+			},
+		)
 }
 
 func TestRecvJSON(t *testing.T) {
@@ -200,7 +206,7 @@ func TestNotDefined(t *testing.T) {
 		ƒ.Defined(&data.Host),
 	)(gurl.IO())
 
-	it.Ok(t).If(io.Fail).Should().Equal(&gurl.Undefined{"string"})
+	it.Ok(t).If(io.Fail).Should().Equal(&gurl.Undefined{Type: "string"})
 }
 
 func TestValue(t *testing.T) {
