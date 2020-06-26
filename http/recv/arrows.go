@@ -233,28 +233,12 @@ func (val HtValue) Is(require interface{}) gurl.Arrow {
 
 // String matches a literal value
 func (val HtValue) String(require string) gurl.Arrow {
-	return func(io *gurl.IOCat) *gurl.IOCat {
-		if diff := cmp.Diff(val.actual, &require); diff != "" {
-			io.Fail = &gurl.Mismatch{
-				Diff:    diff,
-				Payload: val.actual,
-			}
-		}
-		return io
-	}
+	return val.Is(&require)
 }
 
 // Bytes matches a literal value of bytes
 func (val HtValue) Bytes(require []byte) gurl.Arrow {
-	return func(io *gurl.IOCat) *gurl.IOCat {
-		if diff := cmp.Diff(val.actual, &require); diff != "" {
-			io.Fail = &gurl.Mismatch{
-				Diff:    diff,
-				Payload: val.actual,
-			}
-		}
-		return io
-	}
+	return val.Is(&require)
 }
 
 // HtSeq is tagged type, represents Sequence of elements
