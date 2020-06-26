@@ -114,12 +114,12 @@ func TestHeaderFail(t *testing.T) {
 	it.Ok(t).
 		If(io.Fail).ShouldNot().Equal(nil).
 		If(io.Fail).Should().Equal(
-			&gurl.BadMatchHead{
-				Header: "Content-Type",
-				Expect: "application/x-www-form-urlencoded",
-				Actual: "application/json"
-			},
-		)
+		&gurl.BadMatchHead{
+			Header: "Content-Type",
+			Expect: "application/x-www-form-urlencoded",
+			Actual: "application/json",
+		},
+	)
 }
 
 func TestRecvJSON(t *testing.T) {
