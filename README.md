@@ -4,7 +4,7 @@ A class of High Order Component which can do http requests with few
 interesting property such as composition and laziness.
 
 [![Documentation](https://godoc.org/github.com/fogfish/gurl?status.svg)](http://godoc.org/github.com/fogfish/gurl)
-[![Build Status](https://github.com/fogfish/gurl/workflows/.github/workflows/go.yml/badge.svg)](https://github.com/fogfish/gurl/actions)
+[![Build Status](https://github.com/fogfish/gurl/workflows/.github/workflows/go.yml/badge.svg)](https://github.com/fogfish/gurl/actions/)
 [![Git Hub](https://img.shields.io/github/last-commit/fogfish/gurl.svg)](http://travis-ci.org/fogfish/gurl)
 [![Coverage Status](https://coveralls.io/repos/github/fogfish/gurl/badge.svg?branch=master)](https://coveralls.io/github/fogfish/gurl?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/fogfish/gurl)](https://goreportcard.com/report/github.com/fogfish/gurl)
