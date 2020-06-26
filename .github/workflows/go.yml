@@ -38,7 +38,6 @@ jobs:
       run: |
         go get golang.org/x/lint/golint
         go get github.com/mattn/goveralls
-        go get github.com/go-playground/overalls
         go get github.com/lawrencewoodman/roveralls
 
     ##
@@ -65,8 +64,6 @@ jobs:
       run: |
         cd $(go env GOPATH)/src/github.com/${{ github.repository }} && roveralls
         goveralls -coverprofile=$(go env GOPATH)/src/github.com/${{ github.repository }}/roveralls.coverprofile -service=github
-
-    ## overalls -project=github.com/${{ github.repository }}
 
     ##
     ##
