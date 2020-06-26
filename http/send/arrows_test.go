@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/fogfish/gurl"
+	ƒ "github.com/fogfish/gurl/http/recv"
 	ø "github.com/fogfish/gurl/http/send"
 	"github.com/fogfish/it"
 )
