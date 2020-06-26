@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"reflect"
 
 	"github.com/fogfish/gurl"
 )
@@ -24,10 +25,13 @@ URL defines a mandatory parameters to the request such as
 HTTP method and destination URL, use Params arrow if you
 need to supply URL query params.
 */
-func URL(method, uri string) gurl.Arrow {
+func URL(method, uri string, args ...interface{}) gurl.Arrow {
 	return func(io *gurl.IOCat) *gurl.IOCat {
 		io.HTTP = nil
-		io.URL, io.Fail = url.Parse(uri)
+		io.URL, io.Fail = mkURL(uri, args...)
+		if io.Fail != nil {
+			return io
+		}
 
 		switch io.URL.Scheme {
 		case "http", "https":
@@ -38,30 +42,44 @@ func URL(method, uri string) gurl.Arrow {
 				Ingress: nil,
 			}
 		default:
-			io.Fail = &gurl.BadSchema{io.URL.Scheme}
+			io.Fail = &gurl.BadSchema{Schema: io.URL.Scheme}
 		}
 		return io
 	}
 }
 
+func mkURL(uri string, args ...interface{}) (*url.URL, error) {
+	opts := []interface{}{}
+	for _, x := range args {
+		val := reflect.ValueOf(x)
+		if val.Kind() == reflect.Ptr {
+			opts = append(opts, url.PathEscape(fmt.Sprintf("%v", val.Elem())))
+		} else {
+			opts = append(opts, url.PathEscape(fmt.Sprintf("%v", val)))
+		}
+	}
+
+	return url.Parse(fmt.Sprintf(uri, opts...))
+}
+
 // GET is syntax sugar of URL("GET", ...)
 func GET(uri string, args ...interface{}) gurl.Arrow {
-	return URL("GET", fmt.Sprintf(uri, args...))
+	return URL("GET", uri, args...)
 }
 
 // POST is syntax sugar of URL("POST", ...)
 func POST(uri string, args ...interface{}) gurl.Arrow {
-	return URL("POST", fmt.Sprintf(uri, args...))
+	return URL("POST", uri, args...)
 }
 
 // PUT is syntax sugar of URL("PUT", ...)
 func PUT(uri string, args ...interface{}) gurl.Arrow {
-	return URL("PUT", fmt.Sprintf(uri, args...))
+	return URL("PUT", uri, args...)
 }
 
 // DELETE is syntax sugar of URL("DELETE", ...)
 func DELETE(uri string, args ...interface{}) gurl.Arrow {
-	return URL("DELETE", fmt.Sprintf(uri, args...))
+	return URL("DELETE", uri, args...)
 }
 
 // HtHeader is tagged string, represents HTTP Header
