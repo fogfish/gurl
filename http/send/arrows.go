@@ -53,11 +53,12 @@ func mkURL(uri string, args ...interface{}) (*url.URL, error) {
 	for _, x := range args {
 		val := reflect.ValueOf(x)
 		if val.Kind() == reflect.Ptr {
-			opts = append(opts, val.Elem())
+			opts = append(opts, url.PathEscape(fmt.Sprintf("%v", val.Elem())))
 		} else {
-			opts = append(opts, val)
+			opts = append(opts, url.PathEscape(fmt.Sprintf("%v", val)))
 		}
 	}
+
 	return url.Parse(fmt.Sprintf(uri, opts...))
 }
 

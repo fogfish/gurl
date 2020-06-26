@@ -69,6 +69,18 @@ func TestURLByRef(t *testing.T) {
 	}
 }
 
+func TestURLEscape(t *testing.T) {
+	a := "a b"
+	b := 1
+	mthd := []func(string, ...interface{}) gurl.Arrow{ø.GET, ø.POST, ø.PUT, ø.DELETE}
+	for _, f := range mthd {
+		io := f("https://example.com/%s/%v", &a, &b)(gurl.IO())
+		it.Ok(t).
+			If(io.Fail).Should().Equal(nil).
+			If(io.URL.String()).Should().Equal("https://example.com/a%20b/1")
+	}
+}
+
 func TestHeaderIs(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET("http://example.com"),
