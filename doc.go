@@ -67,7 +67,8 @@ The following code snippet demonstrates a typical usage scenario.
 
   import (
     "github.com/fogfish/gurl"
-    ø "github.com/fogfish/gurl/http"
+    ƒ "github.com/fogfish/gurl/http/recv"
+    ø "github.com/fogfish/gurl/http/send"
   )
 
   type Payload struct {
@@ -81,13 +82,15 @@ The following code snippet demonstrates a typical usage scenario.
     ø.GET("http://httpbin.org/get"),
     ø.Accept().Is("application/json"),
 
-    // match response
-    ø.Code(200),
-    ø.Served().Is("application/json"),
-    ø.Recv(&data)
+    // response pattern matching and asserts
+    ƒ.Code(200),
+    ƒ.Served().Is("application/json"),
+    ƒ.Recv(&data)
   )
 
-  // Evaluate a side-effect of HTTP "computation"
+  // Note: http do not hold yet, a results of HTTP I/O
+  //       it is just a composable "promise", you have to
+  //       evaluate a side-effect of HTTP "computation"
   if http(gurl.IO()).Fail != nil {
     // error handling
   }
