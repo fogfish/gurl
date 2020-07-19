@@ -41,7 +41,7 @@ func request(val *httpbin) gurl.Arrow {
 		ø.Header("Accept").Is("application/json"),
 		ø.Header("X-User-Agent").Is("gurl"),
 		// HTTP input and its validation
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.Header("Content-Type").Is("application/json"),
 		ƒ.Recv(val),
 		ƒ.Defined(&val.Headers.UserAgent),

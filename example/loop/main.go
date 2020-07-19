@@ -46,7 +46,7 @@ func (s *seq) request(page int) gurl.Arrow {
 		ø.GET("https://api.github.com/users/fogfish/repos"),
 		ø.Params(map[string]string{"type": "all", "page": strconv.Itoa(page)}),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.Recv(s),
 	)
 }

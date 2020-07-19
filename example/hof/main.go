@@ -39,7 +39,7 @@ func uuid(id *id) gurl.Arrow {
 	return gurl.HTTP(
 		ø.GET("https://httpbin.org/uuid"),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.ServedJSON(),
 		ƒ.Recv(id),
 	)
@@ -54,7 +54,7 @@ func post(uuid *id, doc *httpbin) gurl.Arrow {
 		ø.AcceptJSON(),
 		ø.ContentJSON(),
 		ø.Send(&uuid.UUID),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.Recv(doc),
 	)
 }

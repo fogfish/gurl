@@ -11,6 +11,7 @@ package gurl
 import (
 	"bytes"
 	"crypto/tls"
+	sysio "io"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -77,7 +78,7 @@ func HTTP(arrows ...Arrow) Arrow {
 			}
 		}
 		if io.HTTP != nil && io.HTTP.Ingress != nil {
-			ioutil.ReadAll(io.HTTP.Ingress.Body)
+			sysio.Copy(ioutil.Discard, io.HTTP.Ingress.Body)
 			io.Fail = io.HTTP.Ingress.Body.Close()
 			io.HTTP.Ingress = nil
 		}
@@ -98,12 +99,15 @@ func IO(client ...*http.Client) *IOCat {
 
 func defaultClient() *http.Client {
 	return &http.Client{
+		Timeout: 60 * time.Second,
 		Transport: &http.Transport{
 			ReadBufferSize: 128 * 1024,
 			Dial: (&net.Dialer{
 				Timeout: 10 * time.Second,
 			}).Dial,
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
+			MaxIdleConns:        100,
+			MaxIdleConnsPerHost: 100,
 		},
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
@@ -130,6 +134,14 @@ func (io *IOCat) Unsafe() *IOCat {
 	t := time.Now()
 	io.HTTP.Ingress, io.Fail = io.pool.Do(eg)
 	io.dur = time.Now().Sub(t)
+
+	// leg, _ := httputil.DumpRequest(eg, true)
+	// lin, _ := httputil.DumpResponse(io.HTTP.Ingress, true)
+	// fmt.Println(">>>>>>>>>>")
+	// fmt.Println(string(leg))
+	// fmt.Println("<<<<<<<<<")
+	// fmt.Println(string(lin))
+
 	return io
 }
 

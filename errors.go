@@ -758,10 +758,10 @@ var (
 )
 
 // NewStatusCode ...
-func NewStatusCode(code int, required ...int) StatusCodeAny {
+func NewStatusCode(code int, required ...StatusCodeAny) StatusCodeAny {
 	await := 0
 	if len(required) > 0 {
-		await = required[0]
+		await = required[0].Value()
 	}
 	status := mkStatusCode(code, await)
 
@@ -787,72 +787,118 @@ func NewStatusCode(code int, required ...int) StatusCodeAny {
 		return &StatusNonAuthoritativeInfo{status}
 	case http.StatusNoContent:
 		return &StatusNoContent{status}
+	case http.StatusResetContent:
+		return &StatusResetContent{status}
+	case http.StatusPartialContent:
+		return &StatusPartialContent{status}
+	case http.StatusMultiStatus:
+		return &StatusMultiStatus{status}
+	case http.StatusAlreadyReported:
+		return &StatusAlreadyReported{status}
 
-		/*
-			StatusResetContent         = 205 // RFC 7231, 6.3.6
-			StatusPartialContent       = 206 // RFC 7233, 4.1
-			StatusMultiStatus          = 207 // RFC 4918, 11.1
-			StatusAlreadyReported      = 208 // RFC 5842, 7.1
-		*/
+	// 3xx
+	case http.StatusMultipleChoices:
+		return &StatusMultipleChoices{status}
+	case http.StatusMovedPermanently:
+		return &StatusMovedPermanently{status}
+	case http.StatusFound:
+		return &StatusFound{status}
+	case http.StatusSeeOther:
+		return &StatusSeeOther{status}
+	case http.StatusNotModified:
+		return &StatusNotModified{status}
+	case http.StatusUseProxy:
+		return &StatusUseProxy{status}
+	case http.StatusTemporaryRedirect:
+		return &StatusTemporaryRedirect{status}
+	case http.StatusPermanentRedirect:
+		return &StatusPermanentRedirect{status}
 
-		/*
-			StatusMultipleChoices   = 300 // RFC 7231, 6.4.1
-			StatusMovedPermanently  = 301 // RFC 7231, 6.4.2
-			StatusFound             = 302 // RFC 7231, 6.4.3
-			StatusSeeOther          = 303 // RFC 7231, 6.4.4
-			StatusNotModified       = 304 // RFC 7232, 4.1
-			StatusUseProxy          = 305 // RFC 7231, 6.4.5
-			_                       = 306 // RFC 7231, 6.4.6 (Unused)
-			StatusTemporaryRedirect = 307 // RFC 7231, 6.4.7
-			StatusPermanentRedirect = 308 // RFC 7538, 3
-		*/
+	// 4xx
+	case http.StatusBadRequest:
+		return &StatusBadRequest{status}
+	case http.StatusUnauthorized:
+		return &StatusUnauthorized{status}
+	case http.StatusPaymentRequired:
+		return &StatusPaymentRequired{status}
+	case http.StatusForbidden:
+		return &StatusForbidden{status}
+	case http.StatusNotFound:
+		return &StatusNotFound{status}
+	case http.StatusMethodNotAllowed:
+		return &StatusMethodNotAllowed{status}
+	case http.StatusNotAcceptable:
+		return &StatusNotAcceptable{status}
+	case http.StatusProxyAuthRequired:
+		return &StatusProxyAuthRequired{status}
+	case http.StatusRequestTimeout:
+		return &StatusRequestTimeout{status}
+	case http.StatusConflict:
+		return &StatusConflict{status}
+	case http.StatusGone:
+		return &StatusGone{status}
+	case http.StatusLengthRequired:
+		return &StatusLengthRequired{status}
+	case http.StatusPreconditionFailed:
+		return &StatusPreconditionFailed{status}
+	case http.StatusRequestEntityTooLarge:
+		return &StatusRequestEntityTooLarge{status}
+	case http.StatusRequestURITooLong:
+		return &StatusRequestURITooLong{status}
+	case http.StatusUnsupportedMediaType:
+		return &StatusUnsupportedMediaType{status}
+	case http.StatusRequestedRangeNotSatisfiable:
+		return &StatusRequestedRangeNotSatisfiable{status}
+	case http.StatusExpectationFailed:
+		return &StatusExpectationFailed{status}
+	case http.StatusTeapot:
+		return &StatusTeapot{status}
+	case http.StatusMisdirectedRequest:
+		return &StatusMisdirectedRequest{status}
+	case http.StatusUnprocessableEntity:
+		return &StatusUnprocessableEntity{status}
+	case http.StatusLocked:
+		return &StatusLocked{status}
+	case http.StatusFailedDependency:
+		return &StatusFailedDependency{status}
+	case http.StatusTooEarly:
+		return &StatusTooEarly{status}
+	case http.StatusUpgradeRequired:
+		return &StatusUpgradeRequired{status}
+	case http.StatusPreconditionRequired:
+		return &StatusPreconditionRequired{status}
+	case http.StatusTooManyRequests:
+		return &StatusTooManyRequests{status}
+	case http.StatusRequestHeaderFieldsTooLarge:
+		return &StatusRequestHeaderFieldsTooLarge{status}
+	case http.StatusUnavailableForLegalReasons:
+		return &StatusUnavailableForLegalReasons{status}
 
-		/*
-			StatusBadRequest                   = 400 // RFC 7231, 6.5.1
-			StatusUnauthorized                 = 401 // RFC 7235, 3.1
-			StatusPaymentRequired              = 402 // RFC 7231, 6.5.2
-			StatusForbidden                    = 403 // RFC 7231, 6.5.3
-			StatusNotFound                     = 404 // RFC 7231, 6.5.4
-			StatusMethodNotAllowed             = 405 // RFC 7231, 6.5.5
-			StatusNotAcceptable                = 406 // RFC 7231, 6.5.6
-			StatusProxyAuthRequired            = 407 // RFC 7235, 3.2
-			StatusRequestTimeout               = 408 // RFC 7231, 6.5.7
-			StatusConflict                     = 409 // RFC 7231, 6.5.8
-			StatusGone                         = 410 // RFC 7231, 6.5.9
-			StatusLengthRequired               = 411 // RFC 7231, 6.5.10
-			StatusPreconditionFailed           = 412 // RFC 7232, 4.2
-			StatusRequestEntityTooLarge        = 413 // RFC 7231, 6.5.11
-			StatusRequestURITooLong            = 414 // RFC 7231, 6.5.12
-			StatusUnsupportedMediaType         = 415 // RFC 7231, 6.5.13
-			StatusRequestedRangeNotSatisfiable = 416 // RFC 7233, 4.4
-			StatusExpectationFailed            = 417 // RFC 7231, 6.5.14
-			StatusTeapot                       = 418 // RFC 7168, 2.3.3
-			StatusMisdirectedRequest           = 421 // RFC 7540, 9.1.2
-			StatusUnprocessableEntity          = 422 // RFC 4918, 11.2
-			StatusLocked                       = 423 // RFC 4918, 11.3
-			StatusFailedDependency             = 424 // RFC 4918, 11.4
-			StatusTooEarly                     = 425 // RFC 8470, 5.2.
-			StatusUpgradeRequired              = 426 // RFC 7231, 6.5.15
-			StatusPreconditionRequired         = 428 // RFC 6585, 3
-			StatusTooManyRequests              = 429 // RFC 6585, 4
-			StatusRequestHeaderFieldsTooLarge  = 431 // RFC 6585, 5
-			StatusUnavailableForLegalReasons   = 451 // RFC 7725, 3
-		*/
+		// 5xx
+	case http.StatusInternalServerError:
+		return &StatusInternalServerError{status}
+	case http.StatusNotImplemented:
+		return &StatusNotImplemented{status}
+	case http.StatusBadGateway:
+		return &StatusBadGateway{status}
+	case http.StatusServiceUnavailable:
+		return &StatusServiceUnavailable{status}
+	case http.StatusGatewayTimeout:
+		return &StatusGatewayTimeout{status}
+	case http.StatusHTTPVersionNotSupported:
+		return &StatusHTTPVersionNotSupported{status}
+	case http.StatusVariantAlsoNegotiates:
+		return &StatusVariantAlsoNegotiates{status}
+	case http.StatusInsufficientStorage:
+		return &StatusInsufficientStorage{status}
+	case http.StatusLoopDetected:
+		return &StatusLoopDetected{status}
+	case http.StatusNotExtended:
+		return &StatusNotExtended{status}
+	case http.StatusNetworkAuthenticationRequired:
+		return &StatusNetworkAuthenticationRequired{status}
 
-		/*
-			StatusInternalServerError           = 500 // RFC 7231, 6.6.1
-			StatusNotImplemented                = 501 // RFC 7231, 6.6.2
-			StatusBadGateway                    = 502 // RFC 7231, 6.6.3
-			StatusServiceUnavailable            = 503 // RFC 7231, 6.6.4
-			StatusGatewayTimeout                = 504 // RFC 7231, 6.6.5
-			StatusHTTPVersionNotSupported       = 505 // RFC 7231, 6.6.6
-			StatusVariantAlsoNegotiates         = 506 // RFC 2295, 8.1
-			StatusInsufficientStorage           = 507 // RFC 4918, 11.5
-			StatusLoopDetected                  = 508 // RFC 5842, 7.2
-			StatusNotExtended                   = 510 // RFC 2774, 7
-			StatusNetworkAuthenticationRequired = 511 // RFC 6585, 6
-		*/
-
+	//
 	default:
 		return &StatusUnknown{status}
 	}

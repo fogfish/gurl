@@ -33,7 +33,7 @@ func TestJoin(t *testing.T) {
 	http := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.ServedJSON(),
 		ƒ.Recv(&data),
 	)
@@ -50,7 +50,7 @@ func TestStatusSuccess(t *testing.T) {
 	status := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.Recv(&data),
 	)(gurl.IO()).Status("test")
 
@@ -68,14 +68,14 @@ func TestStatusFailure(t *testing.T) {
 	status := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ƒ.Code(400),
+		ƒ.Code(gurl.StatusCodeBadRequest),
 		ƒ.Recv(&data),
 	)(gurl.IO()).Status("test")
 
 	it.Ok(t).
 		If(status.ID).Should().Equal("test").
 		If(status.Status).Should().Equal("failure").
-		If(status.Reason).Should().Equal((&gurl.BadMatchCode{[]int{400}, 200}).Error())
+		If(status.Reason).Should().Equal(gurl.NewStatusCode(200, gurl.StatusCodeBadRequest).Error())
 }
 
 func TestStatusFailureMismatch(t *testing.T) {
@@ -86,7 +86,7 @@ func TestStatusFailureMismatch(t *testing.T) {
 	status := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.Recv(&data),
 		ƒ.Value(&data).Is(Test{Site: "gurl"}),
 	)(gurl.IO()).Status("test")
@@ -108,7 +108,7 @@ func TestOnce(t *testing.T) {
 		return gurl.HTTP(
 			ø.GET(ts.URL),
 			ø.AcceptJSON(),
-			ƒ.Code(200),
+			ƒ.Code(gurl.StatusCodeOK),
 			ƒ.Recv(&data),
 			ƒ.Value(&data).Is(&Test{Site: "example.com"}),
 		)
@@ -135,7 +135,7 @@ func doThis(url string, data *Test) gurl.Arrow {
 	return gurl.HTTP(
 		ø.GET(url),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.Recv(&data),
 	)
 }
@@ -146,7 +146,7 @@ func doThat(url string, user Test, data *Test) gurl.Arrow {
 		ø.AcceptJSON(),
 		ø.ContentJSON(),
 		ø.Send(user),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.Recv(&data),
 	)
 }
