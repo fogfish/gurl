@@ -622,91 +622,139 @@ var (
 	//
 	//
 	// StatusCodeContinue ⤳ https://httpstatuses.com/100
-	StatusCodeContinue *StatusContinue = &StatusContinue{StatusCode(http.StatusContinue)}
+	StatusCodeContinue *StatusContinue = NewStatusContinue()
 	// StatusCodeSwitchingProtocols ⤳ https://httpstatuses.com/101
-	StatusCodeSwitchingProtocols *StatusSwitchingProtocols = &StatusSwitchingProtocols{StatusCode(http.StatusSwitchingProtocols)}
+	StatusCodeSwitchingProtocols *StatusSwitchingProtocols = NewStatusSwitchingProtocols()
 	// StatusCodeProcessing ⤳ https://httpstatuses.com/102
-	StatusCodeProcessing *StatusProcessing = &StatusProcessing{StatusCode(http.StatusProcessing)}
+	StatusCodeProcessing *StatusProcessing = NewStatusProcessing()
 	// StatusCodeEarlyHints ⤳ https://httpstatuses.com/103
-	StatusCodeEarlyHints *StatusEarlyHints = &StatusEarlyHints{StatusCode(http.StatusEarlyHints)}
+	StatusCodeEarlyHints *StatusEarlyHints = NewStatusEarlyHints()
 
 	//
 	//
 	// StatusCodeOK ⤳ https://httpstatuses.com/200
 	StatusCodeOK *StatusOK = NewStatusOK()
 	// StatusCodeCreated ⤳ https://httpstatuses.com/201
-	StatusCodeCreated *StatusCreated = &StatusCreated{StatusCode(http.StatusCreated)}
+	StatusCodeCreated *StatusCreated = NewStatusCreated()
 	// StatusCodeAccepted ⤳ https://httpstatuses.com/202
-	StatusCodeAccepted *StatusAccepted = &StatusAccepted{StatusCode(http.StatusCreated)}
+	StatusCodeAccepted *StatusAccepted = NewStatusAccepted()
 	// StatusCodeNonAuthoritativeInfo ⤳ https://httpstatuses.com/203
-	StatusCodeNonAuthoritativeInfo *StatusNonAuthoritativeInfo = &StatusNonAuthoritativeInfo{StatusCode(http.StatusNonAuthoritativeInfo)}
+	StatusCodeNonAuthoritativeInfo *StatusNonAuthoritativeInfo = NewStatusNonAuthoritativeInfo()
 	// StatusCodeNoContent ⤳ https://httpstatuses.com/204
-	StatusCodeNoContent *StatusNoContent = &StatusNoContent{StatusCode(http.StatusNoContent)}
+	StatusCodeNoContent *StatusNoContent = NewStatusNoContent()
+	// StatusCodeResetContent ⤳ https://httpstatuses.com/205
+	StatusCodeResetContent *StatusResetContent = NewStatusResetContent()
+	// StatusCodePartialContent ⤳ https://httpstatuses.com/206
+	StatusCodePartialContent *StatusPartialContent = NewStatusPartialContent()
+	// StatusCodeMultiStatus ⤳ https://httpstatuses.com/207
+	StatusCodeMultiStatus *StatusMultiStatus = NewStatusMultiStatus()
+	// StatusCodeAlreadyReported ⤳ https://httpstatuses.com/208
+	StatusCodeAlreadyReported *StatusAlreadyReported = NewStatusAlreadyReported()
 
-/*
-	StatusResetContent         = 205 // RFC 7231, 6.3.6
-	StatusPartialContent       = 206 // RFC 7233, 4.1
-	StatusMultiStatus          = 207 // RFC 4918, 11.1
-	StatusAlreadyReported      = 208 // RFC 5842, 7.1
-*/
+	//
+	//
+	// StatusCodeMultipleChoices ⤳ https://httpstatuses.com/300
+	StatusCodeMultipleChoices *StatusMultipleChoices = NewStatusMultipleChoices()
+	// StatusCodeMovedPermanently ⤳ https://httpstatuses.com/301
+	StatusCodeMovedPermanently *StatusMovedPermanently = NewStatusMovedPermanently()
+	// StatusCodeFound ⤳ https://httpstatuses.com/302
+	StatusCodeFound *StatusFound = NewStatusFound()
+	// StatusCodeSeeOther ⤳ https://httpstatuses.com/303
+	StatusCodeSeeOther *StatusSeeOther = NewStatusSeeOther()
+	// StatusCodeNotModified ⤳ https://httpstatuses.com/304
+	StatusCodeNotModified *StatusNotModified = NewStatusNotModified()
+	// StatusCodeUseProxy ⤳ https://httpstatuses.com/305
+	StatusCodeUseProxy *StatusUseProxy = NewStatusUseProxy()
+	// StatusCodeTemporaryRedirect ⤳ https://httpstatuses.com/307
+	StatusCodeTemporaryRedirect *StatusTemporaryRedirect = NewStatusTemporaryRedirect()
+	// StatusCodePermanentRedirect ⤳ https://httpstatuses.com/308
+	StatusCodePermanentRedirect *StatusPermanentRedirect = NewStatusPermanentRedirect()
 
-/*
-	StatusMultipleChoices   = 300 // RFC 7231, 6.4.1
-	StatusMovedPermanently  = 301 // RFC 7231, 6.4.2
-	StatusFound             = 302 // RFC 7231, 6.4.3
-	StatusSeeOther          = 303 // RFC 7231, 6.4.4
-	StatusNotModified       = 304 // RFC 7232, 4.1
-	StatusUseProxy          = 305 // RFC 7231, 6.4.5
-	_                       = 306 // RFC 7231, 6.4.6 (Unused)
-	StatusTemporaryRedirect = 307 // RFC 7231, 6.4.7
-	StatusPermanentRedirect = 308 // RFC 7538, 3
-*/
+	//
+	//
+	// StatusCodeBadRequest ⤳ https://httpstatuses.com/400
+	StatusCodeBadRequest *StatusBadRequest = NewStatusBadRequest()
+	// StatusCodeUnauthorized ⤳ https://httpstatuses.com/401
+	StatusCodeUnauthorized *StatusUnauthorized = NewStatusUnauthorized()
+	// StatusCodePaymentRequired ⤳ https://httpstatuses.com/402
+	StatusCodePaymentRequired *StatusPaymentRequired = NewStatusPaymentRequired()
+	// StatusCodeForbidden ⤳ https://httpstatuses.com/403
+	StatusCodeForbidden *StatusForbidden = NewStatusForbidden()
+	// StatusCodeNotFound ⤳ https://httpstatuses.com/404
+	StatusCodeNotFound *StatusNotFound = NewStatusNotFound()
+	// StatusCodeMethodNotAllowed ⤳ https://httpstatuses.com/405
+	StatusCodeMethodNotAllowed *StatusMethodNotAllowed = NewStatusMethodNotAllowed()
+	// StatusCodeNotAcceptable ⤳ https://httpstatuses.com/406
+	StatusCodeNotAcceptable *StatusNotAcceptable = NewStatusNotAcceptable()
+	// StatusCodeProxyAuthRequired ⤳ https://httpstatuses.com/407
+	StatusCodeProxyAuthRequired *StatusProxyAuthRequired = NewStatusProxyAuthRequired()
+	// StatusCodeRequestTimeout ⤳ https://httpstatuses.com/408
+	StatusCodeRequestTimeout *StatusRequestTimeout = NewStatusRequestTimeout()
+	// StatusCodeConflict ⤳ https://httpstatuses.com/409
+	StatusCodeConflict *StatusConflict = NewStatusConflict()
+	// StatusCodeGone ⤳ https://httpstatuses.com/410
+	StatusCodeGone *StatusGone = NewStatusGone()
+	// StatusCodeLengthRequired ⤳ https://httpstatuses.com/411
+	StatusCodeLengthRequired *StatusLengthRequired = NewStatusLengthRequired()
+	// StatusCodePreconditionFailed ⤳ https://httpstatuses.com/412
+	StatusCodePreconditionFailed *StatusPreconditionFailed = NewStatusPreconditionFailed()
+	// StatusCodeRequestEntityTooLarge ⤳ https://httpstatuses.com/413
+	StatusCodeRequestEntityTooLarge *StatusRequestEntityTooLarge = NewStatusRequestEntityTooLarge()
+	// StatusCodeRequestURITooLong ⤳ https://httpstatuses.com/414
+	StatusCodeRequestURITooLong *StatusRequestURITooLong = NewStatusRequestURITooLong()
+	// StatusCodeUnsupportedMediaType ⤳ https://httpstatuses.com/415
+	StatusCodeUnsupportedMediaType *StatusUnsupportedMediaType = NewStatusUnsupportedMediaType()
+	// StatusCodeRequestedRangeNotSatisfiable ⤳ https://httpstatuses.com/416
+	StatusCodeRequestedRangeNotSatisfiable *StatusRequestedRangeNotSatisfiable = NewStatusRequestedRangeNotSatisfiable()
+	// StatusCodeExpectationFailed ⤳ https://httpstatuses.com/417
+	StatusCodeExpectationFailed *StatusExpectationFailed = NewStatusExpectationFailed()
+	// StatusCodeTeapot ⤳ https://httpstatuses.com/418
+	StatusCodeTeapot *StatusTeapot = NewStatusTeapot()
+	// StatusCodeMisdirectedRequest  ⤳ https://httpstatuses.com/421
+	StatusCodeMisdirectedRequest *StatusMisdirectedRequest = NewStatusMisdirectedRequest()
+	// StatusCodeUnprocessableEntity  ⤳ https://httpstatuses.com/422
+	StatusCodeUnprocessableEntity *StatusUnprocessableEntity = NewStatusUnprocessableEntity()
+	// StatusCodeLocked  ⤳ https://httpstatuses.com/423
+	StatusCodeLocked *StatusLocked = NewStatusLocked()
+	// StatusCodeFailedDependency  ⤳ https://httpstatuses.com/424
+	StatusCodeFailedDependency *StatusFailedDependency = NewStatusFailedDependency()
+	// StatusCodeTooEarly  ⤳ https://httpstatuses.com/425
+	StatusCodeTooEarly *StatusTooEarly = NewStatusTooEarly()
+	// StatusCodeUpgradeRequired  ⤳ https://httpstatuses.com/426
+	StatusCodeUpgradeRequired *StatusUpgradeRequired = NewStatusUpgradeRequired()
+	// StatusCodePreconditionRequired  ⤳ https://httpstatuses.com/428
+	StatusCodePreconditionRequired *StatusPreconditionRequired = NewStatusPreconditionRequired()
+	// StatusCodeTooManyRequests  ⤳ https://httpstatuses.com/429
+	StatusCodeTooManyRequests *StatusTooManyRequests = NewStatusTooManyRequests()
+	// StatusCodeRequestHeaderFieldsTooLarge  ⤳ https://httpstatuses.com/431
+	StatusCodeRequestHeaderFieldsTooLarge *StatusRequestHeaderFieldsTooLarge = NewStatusRequestHeaderFieldsTooLarge()
+	// StatusCodeUnavailableForLegalReasons  ⤳ https://httpstatuses.com/451
+	StatusCodeUnavailableForLegalReasons *StatusUnavailableForLegalReasons = NewStatusUnavailableForLegalReasons()
 
-/*
-	StatusBadRequest                   = 400 // RFC 7231, 6.5.1
-	StatusUnauthorized                 = 401 // RFC 7235, 3.1
-	StatusPaymentRequired              = 402 // RFC 7231, 6.5.2
-	StatusForbidden                    = 403 // RFC 7231, 6.5.3
-	StatusNotFound                     = 404 // RFC 7231, 6.5.4
-	StatusMethodNotAllowed             = 405 // RFC 7231, 6.5.5
-	StatusNotAcceptable                = 406 // RFC 7231, 6.5.6
-	StatusProxyAuthRequired            = 407 // RFC 7235, 3.2
-	StatusRequestTimeout               = 408 // RFC 7231, 6.5.7
-	StatusConflict                     = 409 // RFC 7231, 6.5.8
-	StatusGone                         = 410 // RFC 7231, 6.5.9
-	StatusLengthRequired               = 411 // RFC 7231, 6.5.10
-	StatusPreconditionFailed           = 412 // RFC 7232, 4.2
-	StatusRequestEntityTooLarge        = 413 // RFC 7231, 6.5.11
-	StatusRequestURITooLong            = 414 // RFC 7231, 6.5.12
-	StatusUnsupportedMediaType         = 415 // RFC 7231, 6.5.13
-	StatusRequestedRangeNotSatisfiable = 416 // RFC 7233, 4.4
-	StatusExpectationFailed            = 417 // RFC 7231, 6.5.14
-	StatusTeapot                       = 418 // RFC 7168, 2.3.3
-	StatusMisdirectedRequest           = 421 // RFC 7540, 9.1.2
-	StatusUnprocessableEntity          = 422 // RFC 4918, 11.2
-	StatusLocked                       = 423 // RFC 4918, 11.3
-	StatusFailedDependency             = 424 // RFC 4918, 11.4
-	StatusTooEarly                     = 425 // RFC 8470, 5.2.
-	StatusUpgradeRequired              = 426 // RFC 7231, 6.5.15
-	StatusPreconditionRequired         = 428 // RFC 6585, 3
-	StatusTooManyRequests              = 429 // RFC 6585, 4
-	StatusRequestHeaderFieldsTooLarge  = 431 // RFC 6585, 5
-	StatusUnavailableForLegalReasons   = 451 // RFC 7725, 3
-*/
-
-/*
-	StatusInternalServerError           = 500 // RFC 7231, 6.6.1
-	StatusNotImplemented                = 501 // RFC 7231, 6.6.2
-	StatusBadGateway                    = 502 // RFC 7231, 6.6.3
-	StatusServiceUnavailable            = 503 // RFC 7231, 6.6.4
-	StatusGatewayTimeout                = 504 // RFC 7231, 6.6.5
-	StatusHTTPVersionNotSupported       = 505 // RFC 7231, 6.6.6
-	StatusVariantAlsoNegotiates         = 506 // RFC 2295, 8.1
-	StatusInsufficientStorage           = 507 // RFC 4918, 11.5
-	StatusLoopDetected                  = 508 // RFC 5842, 7.2
-	StatusNotExtended                   = 510 // RFC 2774, 7
-	StatusNetworkAuthenticationRequired = 511 // RFC 6585, 6
-*/
+	//
+	//
+	// StatusCodeInternalServerError ⤳ https://httpstatuses.com/500
+	StatusCodeInternalServerError *StatusInternalServerError = NewStatusInternalServerError()
+	// StatusCodeNotImplemented ⤳ https://httpstatuses.com/501
+	StatusCodeNotImplemented *StatusNotImplemented = NewStatusNotImplemented()
+	// StatusCodeBadGateway ⤳ https://httpstatuses.com/502
+	StatusCodeBadGateway *StatusBadGateway = NewStatusBadGateway()
+	// StatusCodeServiceUnavailable ⤳ https://httpstatuses.com/503
+	StatusCodeServiceUnavailable *StatusServiceUnavailable = NewStatusServiceUnavailable()
+	// StatusCodeGatewayTimeout ⤳ https://httpstatuses.com/504
+	StatusCodeGatewayTimeout *StatusGatewayTimeout = NewStatusGatewayTimeout()
+	// StatusCodeHTTPVersionNotSupported ⤳ https://httpstatuses.com/505
+	StatusCodeHTTPVersionNotSupported *StatusHTTPVersionNotSupported = NewStatusHTTPVersionNotSupported()
+	// StatusCodeVariantAlsoNegotiates ⤳ https://httpstatuses.com/506
+	StatusCodeVariantAlsoNegotiates *StatusVariantAlsoNegotiates = NewStatusVariantAlsoNegotiates()
+	// StatusCodeInsufficientStorage ⤳ https://httpstatuses.com/507
+	StatusCodeInsufficientStorage *StatusInsufficientStorage = NewStatusInsufficientStorage()
+	// StatusCodeLoopDetected ⤳ https://httpstatuses.com/508
+	StatusCodeLoopDetected *StatusLoopDetected = NewStatusLoopDetected()
+	// StatusCodeNotExtended ⤳ https://httpstatuses.com/510
+	StatusCodeNotExtended *StatusNotExtended = NewStatusNotExtended()
+	// StatusCodeNetworkAuthenticationRequired ⤳ https://httpstatuses.com/511
+	StatusCodeNetworkAuthenticationRequired *StatusNetworkAuthenticationRequired = NewStatusNetworkAuthenticationRequired()
 )
 
 // NewStatusCode ...
