@@ -623,7 +623,7 @@ func NewStatusNetworkAuthenticationRequired() *StatusNetworkAuthenticationRequir
 	return &StatusNetworkAuthenticationRequired{StatusCode(http.StatusNetworkAuthenticationRequired)}
 }
 
-// NewStatusCode ...
+// NewStatusCode transforms integer codes to types
 func NewStatusCode(code int, required ...StatusCodeAny) StatusCodeAny {
 	await := 0
 	if len(required) > 0 {
@@ -631,179 +631,85 @@ func NewStatusCode(code int, required ...StatusCodeAny) StatusCodeAny {
 	}
 	status := mkStatusCode(code, await)
 
-	switch {
-	case code < 200:
-		return decodeStatusCode1xx(code, status)
-	case code < 300:
-		return decodeStatusCode2xx(code, status)
-	case code < 400:
-		return decodeStatusCode3xx(code, status)
-	case code < 500:
-		return decodeStatusCode4xx(code, status)
-	case code < 600:
-		return decodeStatusCode5xx(code, status)
-	default:
-		return &StatusUnknown{status}
+	if codec, ok := decoder[code]; ok {
+		return codec(status)
 	}
+
+	return &StatusUnknown{status}
 }
 
-func decodeStatusCode1xx(code int, status StatusCode) StatusCodeAny {
-	switch code {
-	// case http.StatusContinue:
-	// 	return &StatusContinue{status}
-	case http.StatusSwitchingProtocols:
-		return &StatusSwitchingProtocols{status}
-	case http.StatusProcessing:
-		return &StatusProcessing{status}
-	case http.StatusEarlyHints:
-		return &StatusEarlyHints{status}
-	default:
-		return &StatusContinue{status}
-	}
-}
+var decoder = map[int]func(StatusCode) StatusCodeAny{
+	// 1xx
+	http.StatusContinue:           func(status StatusCode) StatusCodeAny { return &StatusContinue{status} },
+	http.StatusSwitchingProtocols: func(status StatusCode) StatusCodeAny { return &StatusSwitchingProtocols{status} },
+	http.StatusProcessing:         func(status StatusCode) StatusCodeAny { return &StatusProcessing{status} },
+	http.StatusEarlyHints:         func(status StatusCode) StatusCodeAny { return &StatusEarlyHints{status} },
 
-func decodeStatusCode2xx(code int, status StatusCode) StatusCodeAny {
-	switch code {
-	// case http.StatusOK:
-	// 	return &StatusOK{status}
-	case http.StatusCreated:
-		return &StatusCreated{status}
-	case http.StatusAccepted:
-		return &StatusAccepted{status}
-	case http.StatusNonAuthoritativeInfo:
-		return &StatusNonAuthoritativeInfo{status}
-	case http.StatusNoContent:
-		return &StatusNoContent{status}
-	case http.StatusResetContent:
-		return &StatusResetContent{status}
-	case http.StatusPartialContent:
-		return &StatusPartialContent{status}
-	case http.StatusMultiStatus:
-		return &StatusMultiStatus{status}
-	case http.StatusAlreadyReported:
-		return &StatusAlreadyReported{status}
-	case http.StatusIMUsed:
-		return &StatusIMUsed{status}
-	default:
-		return &StatusOK{status}
-	}
-}
+	// 2xx
+	http.StatusOK:                   func(status StatusCode) StatusCodeAny { return &StatusOK{status} },
+	http.StatusCreated:              func(status StatusCode) StatusCodeAny { return &StatusCreated{status} },
+	http.StatusAccepted:             func(status StatusCode) StatusCodeAny { return &StatusAccepted{status} },
+	http.StatusNonAuthoritativeInfo: func(status StatusCode) StatusCodeAny { return &StatusNonAuthoritativeInfo{status} },
+	http.StatusNoContent:            func(status StatusCode) StatusCodeAny { return &StatusNoContent{status} },
+	http.StatusResetContent:         func(status StatusCode) StatusCodeAny { return &StatusResetContent{status} },
+	http.StatusPartialContent:       func(status StatusCode) StatusCodeAny { return &StatusPartialContent{status} },
+	http.StatusMultiStatus:          func(status StatusCode) StatusCodeAny { return &StatusMultiStatus{status} },
+	http.StatusAlreadyReported:      func(status StatusCode) StatusCodeAny { return &StatusAlreadyReported{status} },
+	http.StatusIMUsed:               func(status StatusCode) StatusCodeAny { return &StatusIMUsed{status} },
 
-func decodeStatusCode3xx(code int, status StatusCode) StatusCodeAny {
-	switch code {
-	// case http.StatusMultipleChoices:
-	// 	return &StatusMultipleChoices{status}
-	case http.StatusMovedPermanently:
-		return &StatusMovedPermanently{status}
-	case http.StatusFound:
-		return &StatusFound{status}
-	case http.StatusSeeOther:
-		return &StatusSeeOther{status}
-	case http.StatusNotModified:
-		return &StatusNotModified{status}
-	case http.StatusUseProxy:
-		return &StatusUseProxy{status}
-	case http.StatusTemporaryRedirect:
-		return &StatusTemporaryRedirect{status}
-	case http.StatusPermanentRedirect:
-		return &StatusPermanentRedirect{status}
-	default:
-		return &StatusMultipleChoices{status}
-	}
-}
+	// 3xx
+	http.StatusMultipleChoices:   func(status StatusCode) StatusCodeAny { return &StatusMultipleChoices{status} },
+	http.StatusMovedPermanently:  func(status StatusCode) StatusCodeAny { return &StatusMovedPermanently{status} },
+	http.StatusFound:             func(status StatusCode) StatusCodeAny { return &StatusFound{status} },
+	http.StatusSeeOther:          func(status StatusCode) StatusCodeAny { return &StatusSeeOther{status} },
+	http.StatusNotModified:       func(status StatusCode) StatusCodeAny { return &StatusNotModified{status} },
+	http.StatusUseProxy:          func(status StatusCode) StatusCodeAny { return &StatusUseProxy{status} },
+	http.StatusTemporaryRedirect: func(status StatusCode) StatusCodeAny { return &StatusTemporaryRedirect{status} },
+	http.StatusPermanentRedirect: func(status StatusCode) StatusCodeAny { return &StatusPermanentRedirect{status} },
 
-func decodeStatusCode4xx(code int, status StatusCode) StatusCodeAny {
-	switch code {
-	// case http.StatusBadRequest:
-	// 	return &StatusBadRequest{status}
-	case http.StatusUnauthorized:
-		return &StatusUnauthorized{status}
-	case http.StatusPaymentRequired:
-		return &StatusPaymentRequired{status}
-	case http.StatusForbidden:
-		return &StatusForbidden{status}
-	case http.StatusNotFound:
-		return &StatusNotFound{status}
-	case http.StatusMethodNotAllowed:
-		return &StatusMethodNotAllowed{status}
-	case http.StatusNotAcceptable:
-		return &StatusNotAcceptable{status}
-	case http.StatusProxyAuthRequired:
-		return &StatusProxyAuthRequired{status}
-	case http.StatusRequestTimeout:
-		return &StatusRequestTimeout{status}
-	case http.StatusConflict:
-		return &StatusConflict{status}
-	case http.StatusGone:
-		return &StatusGone{status}
-	case http.StatusLengthRequired:
-		return &StatusLengthRequired{status}
-	case http.StatusPreconditionFailed:
-		return &StatusPreconditionFailed{status}
-	case http.StatusRequestEntityTooLarge:
-		return &StatusRequestEntityTooLarge{status}
-	case http.StatusRequestURITooLong:
-		return &StatusRequestURITooLong{status}
-	case http.StatusUnsupportedMediaType:
-		return &StatusUnsupportedMediaType{status}
-	case http.StatusRequestedRangeNotSatisfiable:
-		return &StatusRequestedRangeNotSatisfiable{status}
-	case http.StatusExpectationFailed:
-		return &StatusExpectationFailed{status}
-	case http.StatusTeapot:
-		return &StatusTeapot{status}
-	case http.StatusMisdirectedRequest:
-		return &StatusMisdirectedRequest{status}
-	case http.StatusUnprocessableEntity:
-		return &StatusUnprocessableEntity{status}
-	case http.StatusLocked:
-		return &StatusLocked{status}
-	case http.StatusFailedDependency:
-		return &StatusFailedDependency{status}
-	case http.StatusTooEarly:
-		return &StatusTooEarly{status}
-	case http.StatusUpgradeRequired:
-		return &StatusUpgradeRequired{status}
-	case http.StatusPreconditionRequired:
-		return &StatusPreconditionRequired{status}
-	case http.StatusTooManyRequests:
-		return &StatusTooManyRequests{status}
-	case http.StatusRequestHeaderFieldsTooLarge:
-		return &StatusRequestHeaderFieldsTooLarge{status}
-	case http.StatusUnavailableForLegalReasons:
-		return &StatusUnavailableForLegalReasons{status}
-	default:
-		return &StatusBadRequest{status}
-	}
-}
+	// 4xx
+	http.StatusBadRequest:                   func(status StatusCode) StatusCodeAny { return &StatusBadRequest{status} },
+	http.StatusUnauthorized:                 func(status StatusCode) StatusCodeAny { return &StatusUnauthorized{status} },
+	http.StatusPaymentRequired:              func(status StatusCode) StatusCodeAny { return &StatusPaymentRequired{status} },
+	http.StatusForbidden:                    func(status StatusCode) StatusCodeAny { return &StatusForbidden{status} },
+	http.StatusNotFound:                     func(status StatusCode) StatusCodeAny { return &StatusNotFound{status} },
+	http.StatusMethodNotAllowed:             func(status StatusCode) StatusCodeAny { return &StatusMethodNotAllowed{status} },
+	http.StatusNotAcceptable:                func(status StatusCode) StatusCodeAny { return &StatusNotAcceptable{status} },
+	http.StatusProxyAuthRequired:            func(status StatusCode) StatusCodeAny { return &StatusProxyAuthRequired{status} },
+	http.StatusRequestTimeout:               func(status StatusCode) StatusCodeAny { return &StatusRequestTimeout{status} },
+	http.StatusConflict:                     func(status StatusCode) StatusCodeAny { return &StatusConflict{status} },
+	http.StatusGone:                         func(status StatusCode) StatusCodeAny { return &StatusGone{status} },
+	http.StatusLengthRequired:               func(status StatusCode) StatusCodeAny { return &StatusLengthRequired{status} },
+	http.StatusPreconditionFailed:           func(status StatusCode) StatusCodeAny { return &StatusPreconditionFailed{status} },
+	http.StatusRequestEntityTooLarge:        func(status StatusCode) StatusCodeAny { return &StatusRequestEntityTooLarge{status} },
+	http.StatusRequestURITooLong:            func(status StatusCode) StatusCodeAny { return &StatusRequestURITooLong{status} },
+	http.StatusUnsupportedMediaType:         func(status StatusCode) StatusCodeAny { return &StatusUnsupportedMediaType{status} },
+	http.StatusRequestedRangeNotSatisfiable: func(status StatusCode) StatusCodeAny { return &StatusRequestedRangeNotSatisfiable{status} },
+	http.StatusExpectationFailed:            func(status StatusCode) StatusCodeAny { return &StatusExpectationFailed{status} },
+	http.StatusTeapot:                       func(status StatusCode) StatusCodeAny { return &StatusTeapot{status} },
+	http.StatusMisdirectedRequest:           func(status StatusCode) StatusCodeAny { return &StatusMisdirectedRequest{status} },
+	http.StatusUnprocessableEntity:          func(status StatusCode) StatusCodeAny { return &StatusUnprocessableEntity{status} },
+	http.StatusLocked:                       func(status StatusCode) StatusCodeAny { return &StatusLocked{status} },
+	http.StatusFailedDependency:             func(status StatusCode) StatusCodeAny { return &StatusFailedDependency{status} },
+	http.StatusTooEarly:                     func(status StatusCode) StatusCodeAny { return &StatusTooEarly{status} },
+	http.StatusUpgradeRequired:              func(status StatusCode) StatusCodeAny { return &StatusUpgradeRequired{status} },
+	http.StatusPreconditionRequired:         func(status StatusCode) StatusCodeAny { return &StatusPreconditionRequired{status} },
+	http.StatusTooManyRequests:              func(status StatusCode) StatusCodeAny { return &StatusTooManyRequests{status} },
+	http.StatusRequestHeaderFieldsTooLarge:  func(status StatusCode) StatusCodeAny { return &StatusRequestHeaderFieldsTooLarge{status} },
+	http.StatusUnavailableForLegalReasons:   func(status StatusCode) StatusCodeAny { return &StatusUnavailableForLegalReasons{status} },
 
-func decodeStatusCode5xx(code int, status StatusCode) StatusCodeAny {
-	switch code {
-	// case http.StatusInternalServerError:
-	// 	return &StatusInternalServerError{status}
-	case http.StatusNotImplemented:
-		return &StatusNotImplemented{status}
-	case http.StatusBadGateway:
-		return &StatusBadGateway{status}
-	case http.StatusServiceUnavailable:
-		return &StatusServiceUnavailable{status}
-	case http.StatusGatewayTimeout:
-		return &StatusGatewayTimeout{status}
-	case http.StatusHTTPVersionNotSupported:
-		return &StatusHTTPVersionNotSupported{status}
-	case http.StatusVariantAlsoNegotiates:
-		return &StatusVariantAlsoNegotiates{status}
-	case http.StatusInsufficientStorage:
-		return &StatusInsufficientStorage{status}
-	case http.StatusLoopDetected:
-		return &StatusLoopDetected{status}
-	case http.StatusNotExtended:
-		return &StatusNotExtended{status}
-	case http.StatusNetworkAuthenticationRequired:
-		return &StatusNetworkAuthenticationRequired{status}
-	default:
-		return &StatusInternalServerError{status}
-	}
+	// 5xx
+	http.StatusInternalServerError:           func(status StatusCode) StatusCodeAny { return &StatusInternalServerError{status} },
+	http.StatusNotImplemented:                func(status StatusCode) StatusCodeAny { return &StatusNotImplemented{status} },
+	http.StatusBadGateway:                    func(status StatusCode) StatusCodeAny { return &StatusBadGateway{status} },
+	http.StatusServiceUnavailable:            func(status StatusCode) StatusCodeAny { return &StatusServiceUnavailable{status} },
+	http.StatusGatewayTimeout:                func(status StatusCode) StatusCodeAny { return &StatusGatewayTimeout{status} },
+	http.StatusHTTPVersionNotSupported:       func(status StatusCode) StatusCodeAny { return &StatusHTTPVersionNotSupported{status} },
+	http.StatusVariantAlsoNegotiates:         func(status StatusCode) StatusCodeAny { return &StatusVariantAlsoNegotiates{status} },
+	http.StatusInsufficientStorage:           func(status StatusCode) StatusCodeAny { return &StatusInsufficientStorage{status} },
+	http.StatusLoopDetected:                  func(status StatusCode) StatusCodeAny { return &StatusLoopDetected{status} },
+	http.StatusNotExtended:                   func(status StatusCode) StatusCodeAny { return &StatusNotExtended{status} },
+	http.StatusNetworkAuthenticationRequired: func(status StatusCode) StatusCodeAny { return &StatusNetworkAuthenticationRequired{status} },
 }
 
 // BadMatchHead is returned by api if HTTP header expectation is failed

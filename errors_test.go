@@ -10,6 +10,7 @@ package gurl_test
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -91,10 +92,11 @@ func TestStatusCodeCodec(t *testing.T) {
 	for code, val := range httpStatusCode {
 		status := gurl.NewStatusCode(code, gurl.StatusCodeOK)
 		it.Ok(t).
+			If(code).Should().Equal(val.Value()).
 			If(status.Value()).Should().Equal(code).
 			If(status.Value()).Should().Equal(val.Value()).
 			If(errors.Is(status, val)).Should().Equal(true).
-			If(status.Await()).Should().Equal(http.StatusOK).
-			If(code).Should().Equal(val.Value())
+			If(fmt.Sprintf("%T", status)).Should().Equal(fmt.Sprintf("%T", val)).
+			If(status.Await()).Should().Equal(http.StatusOK)
 	}
 }
