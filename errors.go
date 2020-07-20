@@ -640,15 +640,17 @@ func NewStatusCode(code int, required ...StatusCodeAny) StatusCodeAny {
 		return decodeStatusCode3xx(code, status)
 	case code < 500:
 		return decodeStatusCode4xx(code, status)
-	default:
+	case code < 600:
 		return decodeStatusCode5xx(code, status)
+	default:
+		return &StatusUnknown{status}
 	}
 }
 
 func decodeStatusCode1xx(code int, status StatusCode) StatusCodeAny {
 	switch code {
-	case http.StatusContinue:
-		return &StatusContinue{status}
+	// case http.StatusContinue:
+	// 	return &StatusContinue{status}
 	case http.StatusSwitchingProtocols:
 		return &StatusSwitchingProtocols{status}
 	case http.StatusProcessing:
@@ -656,14 +658,14 @@ func decodeStatusCode1xx(code int, status StatusCode) StatusCodeAny {
 	case http.StatusEarlyHints:
 		return &StatusEarlyHints{status}
 	default:
-		return &StatusUnknown{status}
+		return &StatusContinue{status}
 	}
 }
 
 func decodeStatusCode2xx(code int, status StatusCode) StatusCodeAny {
 	switch code {
-	case http.StatusOK:
-		return &StatusOK{status}
+	// case http.StatusOK:
+	// 	return &StatusOK{status}
 	case http.StatusCreated:
 		return &StatusCreated{status}
 	case http.StatusAccepted:
@@ -683,14 +685,14 @@ func decodeStatusCode2xx(code int, status StatusCode) StatusCodeAny {
 	case http.StatusIMUsed:
 		return &StatusIMUsed{status}
 	default:
-		return &StatusUnknown{status}
+		return &StatusOK{status}
 	}
 }
 
 func decodeStatusCode3xx(code int, status StatusCode) StatusCodeAny {
 	switch code {
-	case http.StatusMultipleChoices:
-		return &StatusMultipleChoices{status}
+	// case http.StatusMultipleChoices:
+	// 	return &StatusMultipleChoices{status}
 	case http.StatusMovedPermanently:
 		return &StatusMovedPermanently{status}
 	case http.StatusFound:
@@ -706,14 +708,14 @@ func decodeStatusCode3xx(code int, status StatusCode) StatusCodeAny {
 	case http.StatusPermanentRedirect:
 		return &StatusPermanentRedirect{status}
 	default:
-		return &StatusUnknown{status}
+		return &StatusMultipleChoices{status}
 	}
 }
 
 func decodeStatusCode4xx(code int, status StatusCode) StatusCodeAny {
 	switch code {
-	case http.StatusBadRequest:
-		return &StatusBadRequest{status}
+	// case http.StatusBadRequest:
+	// 	return &StatusBadRequest{status}
 	case http.StatusUnauthorized:
 		return &StatusUnauthorized{status}
 	case http.StatusPaymentRequired:
@@ -771,14 +773,14 @@ func decodeStatusCode4xx(code int, status StatusCode) StatusCodeAny {
 	case http.StatusUnavailableForLegalReasons:
 		return &StatusUnavailableForLegalReasons{status}
 	default:
-		return &StatusUnknown{status}
+		return &StatusBadRequest{status}
 	}
 }
 
 func decodeStatusCode5xx(code int, status StatusCode) StatusCodeAny {
 	switch code {
-	case http.StatusInternalServerError:
-		return &StatusInternalServerError{status}
+	// case http.StatusInternalServerError:
+	// 	return &StatusInternalServerError{status}
 	case http.StatusNotImplemented:
 		return &StatusNotImplemented{status}
 	case http.StatusBadGateway:
@@ -800,18 +802,8 @@ func decodeStatusCode5xx(code int, status StatusCode) StatusCodeAny {
 	case http.StatusNetworkAuthenticationRequired:
 		return &StatusNetworkAuthenticationRequired{status}
 	default:
-		return &StatusUnknown{status}
+		return &StatusInternalServerError{status}
 	}
-}
-
-// BadMatchCode is returned by api if HTTP status code expectation is failed
-type BadMatchCode struct {
-	Expect []int
-	Actual int
-}
-
-func (e *BadMatchCode) Error() string {
-	return fmt.Sprintf("Mismatch of http status code %v, required %v.", e.Actual, e.Expect)
 }
 
 // BadMatchHead is returned by api if HTTP header expectation is failed
