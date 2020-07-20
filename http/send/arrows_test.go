@@ -34,7 +34,7 @@ func TestSchemaUnsupported(t *testing.T) {
 
 	it.Ok(t).
 		If(io.Fail).ShouldNot().Equal(nil).
-		If(io.Fail).Should().Equal(&gurl.BadSchema{Schema: "other"})
+		If(io.Fail).Should().Equal(gurl.ProtocolNotSupported("other://example.com"))
 }
 
 func TestMethod(t *testing.T) {

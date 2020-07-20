@@ -13,17 +13,14 @@ import (
 	"net/http"
 )
 
-// 1. Type Match via switch
-// 2. Contains human details about error (RFC problem status)
-//
+/*
 
-// BadSchema is returned by api if protocol is not supported.
-type BadSchema struct {
-	Schema string
-}
+ProtocolNotSupported is returned if handling of URL schema is not supported by the library
+*/
+type ProtocolNotSupported string
 
-func (e *BadSchema) Error() string {
-	return fmt.Sprintf("Bad protocol argument %v", e.Schema)
+func (e ProtocolNotSupported) Error() string {
+	return fmt.Sprintf("Not supported protocol: %s", string(e))
 }
 
 /*

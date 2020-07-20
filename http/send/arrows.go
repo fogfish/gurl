@@ -42,7 +42,7 @@ func URL(method, uri string, args ...interface{}) gurl.Arrow {
 				Ingress: nil,
 			}
 		default:
-			io.Fail = &gurl.BadSchema{Schema: io.URL.Scheme}
+			io.Fail = gurl.ProtocolNotSupported(io.URL.String())
 		}
 		return io
 	}
