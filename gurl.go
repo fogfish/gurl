@@ -136,7 +136,7 @@ func (io *IOCat) Unsafe() *IOCat {
 	io.dur = time.Now().Sub(t)
 
 	// leg, _ := httputil.DumpRequest(eg, true)
-	// lin, _ := httputil.DumpResponse(io.HTTP.Ingress, true)
+	// lin, _ := httputil.DumpResponse(io.HTTP.Ingress, true /*false*/)
 	// fmt.Println(">>>>>>>>>>")
 	// fmt.Println(string(leg))
 	// fmt.Println("<<<<<<<<<")

@@ -15,6 +15,7 @@ The library implements rough and naive Haskell's equivalent of
 do-notation, so called monadic binding form. This construction decorates
 http i/o pipeline(s) with "programmable commas".
 
+
 ## Inspiration
 
 Microservices have become a design style to evolve system architecture
@@ -46,6 +47,7 @@ This semantic provides an intuitive approach to specify HTTP requests/responses.
 Adoption of this syntax as Go native code provides a rich capability to network
 programming.
 
+
 ## Key features
 
 * cause-and-effect abstraction of HTTP request/response, naive do-notation
@@ -66,15 +68,158 @@ Import the library in your code
 
 ```go
 import (
+  // core types
   "github.com/fogfish/gurl"
+
+  // module ø (gurl/http/send) - writer morphism is used to declare HTTP method,
+  // destination URL, request headers and payload.
   ø "github.com/fogfish/gurl/http/send"
+
+// module ƒ (gurl/http/recv) - reader morphism is a pattern matcher, is used
+  // to match HTTP response code, headers and response payload.
   ƒ "github.com/fogfish/gurl/http/recv"
 )
 ```
 
 See the [documentation](http://godoc.org/github.com/fogfish/gurl)
 
-## Basics
+
+### IO Category
+
+Standard Golang packages implements low-level HTTP interface, which
+requires knowledge about protocol itself, aspects of Golang implementation,
+a bit of boilerplate coding and lack of standardized chaining (composition)
+of individual requests.
+
+gurl library inherits an ability of pure functional languages to express
+communication behavior by hiding the networking complexity using category pattern
+(aka "do"-notation). This pattern helps us to compose a chain of network operations
+and represent them as pure computation, build a new things from small reusable
+elements. This library uses the "do"-notation, so called monadic binding form.
+It is well know in functional programming languages such as Haskell and
+Scala. The networking becomes a collection of composed "do"-notation in context
+of a state monad.
+
+A composition of HTTP primitives within the category are written with the following
+syntax.
+
+```go
+  gurl.HTTP(arrows ...Arrow) Arrow
+```
+
+Here, each arrow is a morphism applied to HTTP protocol. The implementation defines
+an abstraction of the protocol environments and lenses to focus inside it. In other
+words, the category represents the environment as an "invisible" side-effect of
+the composition.
+
+The example definition of HTTP I/O within "do"-notation becomes
+
+```go
+  gurl.HTTP(
+    ø...,
+    ø...,
+
+    ƒ...,
+    ƒ...,
+  )
+```
+
+Symbol `ø` (option + o) is an convenient alias to module gurl/http/send, which
+defines writer morphism that focuses inside and reshapes HTTP protocol request.
+The writer morphism is used to declare HTTP method, destination URL, request headers
+and payload.
+
+Symbol `ƒ` (option + f) is an convenient alias to module gurl/http/recv, which
+defines reader morphism that focuses into side-effect, HTTP protocol response.
+The reader morphism is a pattern matcher, is used to match HTTP response code,
+headers and response payload. It helps us to declare our expectations on the response.
+The evaluation of "program" fails if expectations do not match actual response.
+
+`gurl.HTTP(arrows ...Arrow) Arrow` and its composition returns IO category, which
+implements on-demand lazy I/O. The "program" have to be evaluated: 
+
+```go
+  io := gurl.IO()
+  fn := gurl.HTTP( ... )
+  fn(io)
+```
+
+Let's look on step-by-step usage of the category.
+
+**Method and URL** are mandatory. It has to be a first element in the construction.
+
+```go
+  gurl.HTTP(
+    ø.GET("http://example.com"),
+    ...
+  )
+```
+
+Definition of **request headers** is an optional. You can list as many headers as needed. Either using string literals or variables. Some frequently used headers
+implements aliases (e.g. `ø.ContentJSON()`, ...)
+
+```go
+  gurl.HTTP(
+    ...
+    ø.Header("Accept").Is("application/json"),
+    ø.Header("Authorization").Val(&token),
+    ...
+  )
+```
+
+The **request payload** is also an optional. You can also use native Golang data types
+as egress payload. The library implicitly encodes input structures to binary
+using Content-Type as a hint.
+
+```go
+  gurl.HTTP(
+    ...
+    ø.Send(MyType{Hello: "World"}),
+    ...
+  )
+```
+
+The declaration of expected response is always starts with mandatory HTTP **status
+code**. The execution fails if peer responds with other than specified value.
+
+```go
+  gurl.HTTP(
+    ...
+    ƒ.Code(gurl.StatusCodeOK),
+    ...
+  )
+```
+
+It is possible to match presence of header in the response, match its entire
+content or lift the header value to a variable. The execution fails if HTTP
+response do not match the expectation.
+
+```go
+  gurl.HTTP(
+    ...
+    ƒ.Header("Content-Type").Is("application/json"),
+    ...
+  )
+```
+
+The library is able to **decode payload** into Golang native data structure
+using Content-Type header as a hint.
+
+```go
+  var data MyType
+  gurl.HTTP(
+    ...
+    ƒ.Recv(&data)
+    ...
+  )
+```
+
+Please note, the library implements lenses to inline assert of decoded content.
+See the documentation of gurl/http/recv module.
+
+
+
+### Basics
 
 The following code snippet demonstrates a typical usage scenario. See runnable [example](example/request/main.go).
 
@@ -85,24 +230,31 @@ import (
   ƒ "github.com/fogfish/gurl/http/recv"
 )
 
+// You can declare any types and use them as part of networking I/O.
 type Payload struct {
   Origin string `json:"origin"`
   Url    string `json:"url"`
 }
 
+// the variable holds results of network I/O
 var data Payload
 var http := gurl.HTTP(
-  // request specification
+  // declares HTTP method and destination URL
   ø.GET("http://httpbin.org/get"),
+  // HTTP content negotiation, declares acceptable types
   ø.Accept("application/json"),
 
-  // match response
-  ƒ.Code(200),
+  // requires HTTP Status Code to be 200 OK
+  ƒ.Code(gurl.StatusCodeOK),
+  // requites HTTP Header to be Content-Type: application/json
   ƒ.Served("application/json"),
-  ƒ.Recv(&data)
+  // unmarshal JSON to the variable
+  ƒ.Recv(&data),
 )
 
-// Evaluate a side-effect of HTTP "computation"
+// Note: http do not hold yet, a results of HTTP I/O
+//       it is just a composable "promise", you have to
+//       evaluate a side-effect of HTTP "computation"
 if http(gurl.IO()).Fail != nil {
   // error handling
 }
