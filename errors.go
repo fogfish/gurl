@@ -228,6 +228,14 @@ func NewStatusAlreadyReported() *StatusAlreadyReported {
 	return &StatusAlreadyReported{StatusCode(http.StatusAlreadyReported)}
 }
 
+// StatusIMUsed ⤳ https://httpstatuses.com/226
+type StatusIMUsed struct{ StatusCode }
+
+// NewStatusIMUsed ⤳ https://httpstatuses.com/226
+func NewStatusIMUsed() *StatusIMUsed {
+	return &StatusIMUsed{StatusCode(http.StatusIMUsed)}
+}
+
 //
 //
 // StatusMultipleChoices ⤳ https://httpstatuses.com/300
@@ -650,6 +658,8 @@ var (
 	StatusCodeMultiStatus *StatusMultiStatus = NewStatusMultiStatus()
 	// StatusCodeAlreadyReported ⤳ https://httpstatuses.com/208
 	StatusCodeAlreadyReported *StatusAlreadyReported = NewStatusAlreadyReported()
+	// StatusCodeIMUsed ⤳ https://httpstatuses.com/226
+	StatusCodeIMUsed *StatusIMUsed = NewStatusIMUsed()
 
 	//
 	//
@@ -795,6 +805,8 @@ func NewStatusCode(code int, required ...StatusCodeAny) StatusCodeAny {
 		return &StatusMultiStatus{status}
 	case http.StatusAlreadyReported:
 		return &StatusAlreadyReported{status}
+	case http.StatusIMUsed:
+		return &StatusIMUsed{status}
 
 	// 3xx
 	case http.StatusMultipleChoices:
