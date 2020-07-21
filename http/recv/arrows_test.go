@@ -118,12 +118,6 @@ func TestHeaderFail(t *testing.T) {
 			Diff:    "+ Content-Type: application/json\n- Content-Type: application/x-www-form-urlencoded",
 			Payload: map[string]string{"Content-Type": "application/json"},
 		},
-
-		// &gurl.BadMatchHead{
-		// 	Header: "Content-Type",
-		// 	Expect: "application/x-www-form-urlencoded",
-		// 	Actual: "application/json",
-		// },
 	)
 }
 

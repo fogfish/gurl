@@ -108,8 +108,8 @@ The reader morphism is a pattern matcher, is used to match HTTP response code,
 headers and response payload. It helps us to declare our expectations on the response.
 The evaluation of "program" fails if expectations do not match actual response.
 
-`gurl.HTTP(arrows ...Arrow) Arrow` and its composition returns IO category, which
-implements on-demand lazy I/O. The "program" have to be evaluated:
+`gurl.HTTP(arrows ...Arrow) Arrow` and its composition implements lazy I/O. It only
+returns a "promise", you have to evaluate it in the context of IO instance.
 
   io := gurl.IO()
   fn := gurl.HTTP( ... )

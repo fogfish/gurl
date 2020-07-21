@@ -22,16 +22,10 @@ import (
 	"time"
 )
 
-// IOCat defines the category or type for HTTP I/O. A composition of
-// HTTP primitives within the category are written with the following syntax:
-//
-//   gurl.HTTP(Arrow1, ..., ArrowN)
-//
-// Here, each Arrow is a morphism applied to HTTP protocol, they composition
-// is defined using "programmable comma". Effectively the implementation resembles the
-// state monad. It defines an abstraction of environments and lenses to focus
-// inside it. In other words, the category represents the environment as an
-// "invisible" side-effect of the composition.
+/*
+
+IOCat defines the category or type for HTTP I/O.
+*/
 type IOCat struct {
 	URL     *url.URL
 	HTTP    *IOSpec
@@ -42,10 +36,21 @@ type IOCat struct {
 	verbose int
 }
 
-// Arrow is a morphism applied to IO category
+/*
+
+Arrow is a morphism applied to IO category. The library implements:
+
+↣ gurl/http/send, which defines writer morphism that focuses inside and
+reshapes HTTP protocol request. The writer morphism is used to declare HTTP
+method, destination URL, request headers and payload.
+
+↣ gurl/http/recv, which defines reader morphism that focuses into side-effect,
+HTTP protocol response. The reader morphism is a pattern matcher, is used to
+match HTTP response code, headers and response payload.
+*/
 type Arrow func(*IOCat) *IOCat
 
-// IOSpec defines parameters of IO transactor
+// IOSpec defines parameters of IO transactor.
 type IOSpec struct {
 	Method  string
 	Header  map[string]*string
@@ -53,8 +58,47 @@ type IOSpec struct {
 	Ingress *http.Response
 }
 
-// Join composes arrows to high-order function
-// (a ⟼ b, b ⟼ c, c ⟼ d) ⤇ a ⟼ d
+/*
+
+HTTP builds high-order protocol closure in the context of IOCat.
+A composition of HTTP primitives within the category are written
+with the following syntax:
+
+  gurl.HTTP(Arrow1, ..., ArrowN)
+
+Here, each Arrow is a morphism applied to HTTP protocol, they composition
+is defined using "programmable comma". Effectively the implementation resembles the
+state monad. It defines an abstraction of environments and lenses to focus
+inside it. In other words, the category represents the environment as an
+"invisible" side-effect of the composition.
+*/
+func HTTP(arrows ...Arrow) Arrow {
+	return func(io *IOCat) *IOCat {
+		if io.Fail != nil {
+			return io
+		}
+		for _, f := range arrows {
+			if io = f(io); io.Fail != nil {
+				return io
+			}
+		}
+		if io.HTTP != nil && io.HTTP.Ingress != nil {
+			// Note: due to Golang HTTP pool implementation we need to consume and
+			//       discard body. Otherwise, HTTP connection is not returned to
+			//       to the pool.
+			sysio.Copy(ioutil.Discard, io.HTTP.Ingress.Body)
+			io.Fail = io.HTTP.Ingress.Body.Close()
+			io.HTTP.Ingress = nil
+		}
+		return io
+	}
+}
+
+/*
+
+Join composes arrows to high-order function
+(a ⟼ b, b ⟼ c, c ⟼ d) ⤇ a ⟼ d
+*/
 func Join(arrows ...Arrow) Arrow {
 	return func(io *IOCat) *IOCat {
 		if io.Fail != nil {
@@ -69,27 +113,10 @@ func Join(arrows ...Arrow) Arrow {
 	}
 }
 
-// HTTP builds high-order protocol closure
-func HTTP(arrows ...Arrow) Arrow {
-	return func(io *IOCat) *IOCat {
-		if io.Fail != nil {
-			return io
-		}
-		for _, f := range arrows {
-			if io = f(io); io.Fail != nil {
-				return io
-			}
-		}
-		if io.HTTP != nil && io.HTTP.Ingress != nil {
-			sysio.Copy(ioutil.Discard, io.HTTP.Ingress.Body)
-			io.Fail = io.HTTP.Ingress.Body.Close()
-			io.HTTP.Ingress = nil
-		}
-		return io
-	}
-}
+/*
 
-// Config defines configuration for the IO category
+Config defines configuration for the IO category
+*/
 type Config func(*IOCat) *IOCat
 
 /*
@@ -107,7 +134,10 @@ func Verbose(level int) Config {
 	}
 }
 
-// Protocol defines a protocol infrastructure for
+/*
+
+Protocol defines a custom protocol infrastructure for the category.
+*/
 func Protocol(client *http.Client) Config {
 	return func(io *IOCat) *IOCat {
 		io.pool = client
@@ -115,9 +145,19 @@ func Protocol(client *http.Client) Config {
 	}
 }
 
-// IO creates the instance of HTTP I/O category with default HTTP client.
-// Please note that default client disables TLS verification.
-// Use this only for testing.
+/*
+
+IO creates the instance of HTTP I/O category use Config type to parametrize
+the behavior. Note, the default client disables TLS verification.
+
+Use returned instance of IO Category to evaluate IO "promise" returned by `gurl.HTTP`,
+`gurl.Join`, etc.
+
+  io := gurl.IO()
+  fn := gurl.HTTP( ... )
+  fn(io)
+
+*/
 func IO(opts ...Config) *IOCat {
 	io := &IOCat{}
 	for _, opt := range opts {
@@ -148,7 +188,10 @@ func defaultClient() *http.Client {
 	}
 }
 
-// Unsafe performs networking side-effect
+/*
+
+Unsafe performs networking side-effect
+*/
 func (io *IOCat) Unsafe() *IOCat {
 	if io.Fail != nil {
 		return io
@@ -183,7 +226,31 @@ func (io *IOCat) Unsafe() *IOCat {
 	return io
 }
 
-// Ord extends sort.Interface with ability to lookup element by string
+/*
+
+Ord extends sort.Interface with ability to lookup element by string.
+This interface is a helper abstraction to evaluate presence of element in the sequence.
+
+  gurl.HTTP(
+    ...
+    ƒ.Recv(&seq),
+    ƒ.Seq(&seq).Has("example"),
+    ...
+  )
+
+The example above shows a typical usage of Ord interface. The remote peer returns sequence
+of elements. The lens Seq and Has focuses on the required element. A reference
+implementation of the interface is
+
+  type Seq []MyType
+
+  func (c Seq) Len() int                { return len(c) }
+  func (c Seq) Swap(i, j int)           { c[i], c[j] = c[j], c[i] }
+  func (c Seq) Less(i, j int) bool      { return c[i].MyKey < c[j].MyKey }
+  func (c Seq) String(i int) string     { return c[i].MyKey }
+  func (c Seq) Value(i int) interface{} { return c[i] }
+
+*/
 type Ord interface {
 	sort.Interface
 	// String return primary key as string type
