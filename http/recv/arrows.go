@@ -11,6 +11,7 @@ package recv
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"reflect"
@@ -69,9 +70,17 @@ func (header HtHeader) Is(value string) gurl.Arrow {
 	return func(io *gurl.IOCat) *gurl.IOCat {
 		h := io.HTTP.Ingress.Header.Get(header.string)
 		if h == "" {
-			io.Fail = &gurl.BadMatchHead{Header: header.string, Expect: value}
+			io.Fail = &gurl.Mismatch{
+				Diff:    fmt.Sprintf("- %s: %s", header.string, value),
+				Payload: nil,
+			}
+			// io.Fail = &gurl.BadMatchHead{Header: header.string, Expect: value}
 		} else if value != "*" && !strings.HasPrefix(h, value) {
-			io.Fail = &gurl.BadMatchHead{Header: header.string, Expect: value, Actual: h}
+			io.Fail = &gurl.Mismatch{
+				Diff:    fmt.Sprintf("+ %s: %s\n- %s: %s", header.string, h, header.string, value),
+				Payload: map[string]string{header.string: h},
+			}
+			// io.Fail = &gurl.BadMatchHead{Header: header.string, Expect: value, Actual: h}
 		}
 
 		return io
@@ -83,7 +92,11 @@ func (header HtHeader) String(value *string) gurl.Arrow {
 	return func(io *gurl.IOCat) *gurl.IOCat {
 		val := io.HTTP.Ingress.Header.Get(header.string)
 		if val == "" {
-			io.Fail = &gurl.BadMatchHead{Header: header.string}
+			io.Fail = &gurl.Mismatch{
+				Diff:    fmt.Sprintf("- %s: *", header.string),
+				Payload: nil,
+			}
+			// io.Fail = &gurl.BadMatchHead{Header: header.string}
 		} else {
 			*value = val
 		}
@@ -139,9 +152,9 @@ func decode(content string, stream io.ReadCloser, data interface{}) error {
 	case strings.HasPrefix(content, "application/x-www-form-urlencoded"):
 		return form.NewDecoder(stream).Decode(&data)
 	default:
-		return &gurl.BadMatchHead{
-			Header: "Content-Type",
-			Actual: content,
+		return &gurl.Mismatch{
+			Diff:    fmt.Sprintf("- Content-Type: application/*\n+ Content-Type: %s", content),
+			Payload: map[string]string{"Content-Type": content},
 		}
 	}
 }

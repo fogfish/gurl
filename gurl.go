@@ -13,8 +13,10 @@ import (
 	"crypto/tls"
 	sysio "io"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"sort"
 	"time"
@@ -31,12 +33,13 @@ import (
 // inside it. In other words, the category represents the environment as an
 // "invisible" side-effect of the composition.
 type IOCat struct {
-	URL  *url.URL
-	HTTP *IOSpec
-	Body interface{}
-	Fail error
-	pool *http.Client
-	dur  time.Duration
+	URL     *url.URL
+	HTTP    *IOSpec
+	Body    interface{}
+	Fail    error
+	pool    *http.Client
+	dur     time.Duration
+	verbose int
 }
 
 // Arrow is a morphism applied to IO category
@@ -86,15 +89,45 @@ func HTTP(arrows ...Arrow) Arrow {
 	}
 }
 
+// Config defines configuration for the IO category
+type Config func(*IOCat) *IOCat
+
+/*
+
+Verbose enables debug logging of IO traffic
+ - Level 0: disable debug logging (default)
+ - Level 1: log only egress traffic
+ - Level 2: log only ingress traffic
+ - Level 3: log full content of packets
+*/
+func Verbose(level int) Config {
+	return func(io *IOCat) *IOCat {
+		io.verbose = level
+		return io
+	}
+}
+
+// Protocol defines a protocol infrastructure for
+func Protocol(client *http.Client) Config {
+	return func(io *IOCat) *IOCat {
+		io.pool = client
+		return io
+	}
+}
+
 // IO creates the instance of HTTP I/O category with default HTTP client.
 // Please note that default client disables TLS verification.
 // Use this only for testing.
-func IO(client ...*http.Client) *IOCat {
-	if len(client) < 1 {
-		return &IOCat{pool: defaultClient()}
+func IO(opts ...Config) *IOCat {
+	io := &IOCat{}
+	for _, opt := range opts {
+		io = opt(io)
 	}
 
-	return &IOCat{pool: client[0]}
+	if io.pool == nil {
+		io.pool = defaultClient()
+	}
+	return io
 }
 
 func defaultClient() *http.Client {
@@ -135,12 +168,17 @@ func (io *IOCat) Unsafe() *IOCat {
 	io.HTTP.Ingress, io.Fail = io.pool.Do(eg)
 	io.dur = time.Now().Sub(t)
 
-	// leg, _ := httputil.DumpRequest(eg, true)
-	// lin, _ := httputil.DumpResponse(io.HTTP.Ingress, true /*false*/)
-	// fmt.Println(">>>>>>>>>>")
-	// fmt.Println(string(leg))
-	// fmt.Println("<<<<<<<<<")
-	// fmt.Println(string(lin))
+	logbody := io.verbose > 2
+	if io.verbose > 0 {
+		if msg, err := httputil.DumpRequest(eg, logbody); err == nil {
+			log.Printf(">>>>\n%s\n", msg)
+		}
+	}
+	if io.verbose > 1 {
+		if msg, err := httputil.DumpResponse(io.HTTP.Ingress, logbody); err == nil {
+			log.Printf("<<<<\n%s\n", msg)
+		}
+	}
 
 	return io
 }

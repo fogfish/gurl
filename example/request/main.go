@@ -60,7 +60,7 @@ func main() {
 	var val httpbin
 	http := request(&val)
 
-	if err := http(gurl.IO()).Fail; err != nil {
+	if err := http(gurl.IO(gurl.Verbose(3))).Fail; err != nil {
 		fmt.Printf("fail %v\n", err)
 	}
 	fmt.Printf("==> %v\n", val)

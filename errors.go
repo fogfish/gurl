@@ -712,17 +712,6 @@ var decoder = map[int]func(StatusCode) StatusCodeAny{
 	http.StatusNetworkAuthenticationRequired: func(status StatusCode) StatusCodeAny { return &StatusNetworkAuthenticationRequired{status} },
 }
 
-// BadMatchHead is returned by api if HTTP header expectation is failed
-type BadMatchHead struct {
-	Header string
-	Expect string
-	Actual string
-}
-
-func (e *BadMatchHead) Error() string {
-	return fmt.Sprintf("Mismatch of http header %v value %v, required %v.", e.Header, e.Actual, e.Expect)
-}
-
 // Undefined is returned by api if expectation at body value is failed
 type Undefined struct {
 	Type string
