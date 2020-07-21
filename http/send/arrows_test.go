@@ -34,7 +34,7 @@ func TestSchemaUnsupported(t *testing.T) {
 
 	it.Ok(t).
 		If(io.Fail).ShouldNot().Equal(nil).
-		If(io.Fail).Should().Equal(&gurl.BadSchema{Schema: "other"})
+		If(io.Fail).Should().Equal(gurl.ProtocolNotSupported("other://example.com"))
 }
 
 func TestMethod(t *testing.T) {
@@ -236,7 +236,7 @@ func TestSend(t *testing.T) {
 		ø.POST(ts.URL),
 		ø.ContentJSON(),
 		ø.Send(Test{"example.com", ""}),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 	)(gurl.IO())
 
 	it.Ok(t).If(io.Fail).Should().Equal(nil)

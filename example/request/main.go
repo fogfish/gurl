@@ -41,7 +41,7 @@ func request(val *httpbin) gurl.Arrow {
 		ø.Header("Accept").Is("application/json"),
 		ø.Header("X-User-Agent").Is("gurl"),
 		// HTTP input and its validation
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.Header("Content-Type").Is("application/json"),
 		ƒ.Recv(val),
 		ƒ.Defined(&val.Headers.UserAgent),
@@ -60,7 +60,7 @@ func main() {
 	var val httpbin
 	http := request(&val)
 
-	if err := http(gurl.IO()).Fail; err != nil {
+	if err := http(gurl.IO(gurl.Verbose(3))).Fail; err != nil {
 		fmt.Printf("fail %v\n", err)
 	}
 	fmt.Printf("==> %v\n", val)

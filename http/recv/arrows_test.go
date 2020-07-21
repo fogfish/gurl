@@ -33,7 +33,7 @@ func TestCodeOk(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 	)(gurl.IO())
 
 	it.Ok(t).
@@ -47,12 +47,12 @@ func TestCodeNoMatch(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.Accept().Is("text/plain"),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 	)(gurl.IO())
 
 	it.Ok(t).
 		If(io.Fail).ShouldNot().Equal(nil).
-		If(io.Fail).Should().Equal(&gurl.BadMatchCode{Expect: []int{200}, Actual: 400})
+		If(io.Fail).Should().Equal(gurl.NewStatusCode(400, gurl.StatusCodeOK))
 }
 
 func TestHeaderOk(t *testing.T) {
@@ -62,7 +62,7 @@ func TestHeaderOk(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.ServedJSON(),
 	)(gurl.IO())
 
@@ -76,7 +76,7 @@ func TestHeaderAny(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.Header("Content-Type").Any(),
 	)(gurl.IO())
 
@@ -91,7 +91,7 @@ func TestHeaderValue(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.Header("Content-Type").String(&mime),
 	)(gurl.IO())
 
@@ -107,17 +107,16 @@ func TestHeaderFail(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.ServedForm(),
 	)(gurl.IO())
 
 	it.Ok(t).
 		If(io.Fail).ShouldNot().Equal(nil).
 		If(io.Fail).Should().Equal(
-		&gurl.BadMatchHead{
-			Header: "Content-Type",
-			Expect: "application/x-www-form-urlencoded",
-			Actual: "application/json",
+		&gurl.Mismatch{
+			Diff:    "+ Content-Type: application/json\n- Content-Type: application/x-www-form-urlencoded",
+			Payload: map[string]string{"Content-Type": "application/json"},
 		},
 	)
 }
@@ -130,7 +129,7 @@ func TestRecvJSON(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.ServedJSON(),
 		ƒ.Recv(&data),
 	)(gurl.IO())
@@ -148,7 +147,7 @@ func TestRecvForm(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptForm(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.ServedForm(),
 		ƒ.Recv(&data),
 	)(gurl.IO())
@@ -167,7 +166,7 @@ func TestBytes(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.ServedJSON(),
 		ƒ.Bytes(&data),
 	)(gurl.IO())
@@ -185,7 +184,7 @@ func TestDefined(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.Recv(&data),
 		ƒ.Defined(&data.Site),
 	)(gurl.IO())
@@ -201,7 +200,7 @@ func TestNotDefined(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.Recv(&data),
 		ƒ.Defined(&data.Host),
 	)(gurl.IO())
@@ -217,7 +216,7 @@ func TestValue(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.Recv(&data),
 		ƒ.Value(&data).Is(&Test{Site: "example.com"}),
 		ƒ.Value(&data.Site).String("example.com"),
@@ -235,7 +234,7 @@ func TestValueBytes(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.Recv(&data),
 		ƒ.FlatMap(func() gurl.Arrow {
 			octet = []byte(data.Site)
@@ -255,7 +254,7 @@ func TestRequireFail(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.Recv(&data),
 		ƒ.Value(&data.Site).String("localhost"),
 	)(gurl.IO())
@@ -275,7 +274,7 @@ func TestSeqHas(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.Recv(&data),
 		ƒ.Seq(&data).Has(expectS.Site),
 		ƒ.Seq(&data).Has(expectS.Site, expectS),
@@ -295,7 +294,7 @@ func TestSeqHasFailure(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.Recv(&data),
 		ƒ.Seq(&data).Has(expect0.Site),
 	)(gurl.IO())
@@ -314,7 +313,7 @@ func TestSeqHasNoMatch(t *testing.T) {
 	err := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.Recv(&data),
 		ƒ.Seq(&data).Has(expectS.Site, expectZ),
 	)(gurl.IO()).Fail
@@ -332,7 +331,7 @@ func TestFMap(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.Recv(&data),
 		ƒ.FMap(func() (err error) {
 			if data.Site != "example.com" {
@@ -353,7 +352,7 @@ func TestFMapFailure(t *testing.T) {
 	io := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.Recv(&data),
 		ƒ.FMap(func() (err error) {
 			if data.Site == "example.com" {
@@ -376,7 +375,7 @@ func TestFlatMap(t *testing.T) {
 	http := gurl.HTTP(
 		ø.GET(ts.URL),
 		ø.AcceptJSON(),
-		ƒ.Code(200),
+		ƒ.Code(gurl.StatusCodeOK),
 		ƒ.Recv(&data),
 		ƒ.Value(&data).Is(&Test{Site: "example.com"}),
 	)

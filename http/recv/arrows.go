@@ -11,6 +11,7 @@ package recv
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"reflect"
@@ -28,7 +29,7 @@ Code is a mandatory statement to match expected HTTP Status Code against
 received one. The execution fails with BadMatchCode if service responds
 with other value then specified one.
 */
-func Code(code ...int) gurl.Arrow {
+func Code(code ...gurl.StatusCodeAny) gurl.Arrow {
 	return func(io *gurl.IOCat) *gurl.IOCat {
 		io.Unsafe()
 		if io.Fail != nil {
@@ -37,15 +38,15 @@ func Code(code ...int) gurl.Arrow {
 
 		status := io.HTTP.Ingress.StatusCode
 		if !hasCode(code, status) {
-			io.Fail = &gurl.BadMatchCode{Expect: code, Actual: status}
+			io.Fail = gurl.NewStatusCode(status, code[0])
 		}
 		return io
 	}
 }
 
-func hasCode(s []int, e int) bool {
+func hasCode(s []gurl.StatusCodeAny, e int) bool {
 	for _, a := range s {
-		if a == e {
+		if a.Value() == e {
 			return true
 		}
 	}
@@ -69,9 +70,15 @@ func (header HtHeader) Is(value string) gurl.Arrow {
 	return func(io *gurl.IOCat) *gurl.IOCat {
 		h := io.HTTP.Ingress.Header.Get(header.string)
 		if h == "" {
-			io.Fail = &gurl.BadMatchHead{Header: header.string, Expect: value}
+			io.Fail = &gurl.Mismatch{
+				Diff:    fmt.Sprintf("- %s: %s", header.string, value),
+				Payload: nil,
+			}
 		} else if value != "*" && !strings.HasPrefix(h, value) {
-			io.Fail = &gurl.BadMatchHead{Header: header.string, Expect: value, Actual: h}
+			io.Fail = &gurl.Mismatch{
+				Diff:    fmt.Sprintf("+ %s: %s\n- %s: %s", header.string, h, header.string, value),
+				Payload: map[string]string{header.string: h},
+			}
 		}
 
 		return io
@@ -83,7 +90,10 @@ func (header HtHeader) String(value *string) gurl.Arrow {
 	return func(io *gurl.IOCat) *gurl.IOCat {
 		val := io.HTTP.Ingress.Header.Get(header.string)
 		if val == "" {
-			io.Fail = &gurl.BadMatchHead{Header: header.string}
+			io.Fail = &gurl.Mismatch{
+				Diff:    fmt.Sprintf("- %s: *", header.string),
+				Payload: nil,
+			}
 		} else {
 			*value = val
 		}
@@ -139,9 +149,9 @@ func decode(content string, stream io.ReadCloser, data interface{}) error {
 	case strings.HasPrefix(content, "application/x-www-form-urlencoded"):
 		return form.NewDecoder(stream).Decode(&data)
 	default:
-		return &gurl.BadMatchHead{
-			Header: "Content-Type",
-			Actual: content,
+		return &gurl.Mismatch{
+			Diff:    fmt.Sprintf("- Content-Type: application/*\n+ Content-Type: %s", content),
+			Payload: map[string]string{"Content-Type": content},
 		}
 	}
 }
