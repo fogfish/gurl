@@ -75,7 +75,7 @@ import (
   // destination URL, request headers and payload.
   ø "github.com/fogfish/gurl/http/send"
 
-// module ƒ (gurl/http/recv) - reader morphism is a pattern matcher, is used
+  // module ƒ (gurl/http/recv) - reader morphism is a pattern matcher, is used
   // to match HTTP response code, headers and response payload.
   ƒ "github.com/fogfish/gurl/http/recv"
 )
@@ -87,11 +87,11 @@ See the [documentation](http://godoc.org/github.com/fogfish/gurl)
 ### IO Category
 
 Standard Golang packages implements low-level HTTP interface, which
-requires knowledge about protocol itself, aspects of Golang implementation,
-a bit of boilerplate coding and lack of standardized chaining (composition)
+requires knowledge about protocol itself, understanding of Golang implementation aspects,
+a bit of boilerplate coding. It also missing standardized chaining (composition)
 of individual requests.
 
-gurl library inherits an ability of pure functional languages to express
+`gurl` library inherits an ability of pure functional languages to express
 communication behavior by hiding the networking complexity using category pattern
 (aka "do"-notation). This pattern helps us to compose a chain of network operations
 and represent them as pure computation, build a new things from small reusable
