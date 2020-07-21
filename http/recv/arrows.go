@@ -74,13 +74,11 @@ func (header HtHeader) Is(value string) gurl.Arrow {
 				Diff:    fmt.Sprintf("- %s: %s", header.string, value),
 				Payload: nil,
 			}
-			// io.Fail = &gurl.BadMatchHead{Header: header.string, Expect: value}
 		} else if value != "*" && !strings.HasPrefix(h, value) {
 			io.Fail = &gurl.Mismatch{
 				Diff:    fmt.Sprintf("+ %s: %s\n- %s: %s", header.string, h, header.string, value),
 				Payload: map[string]string{header.string: h},
 			}
-			// io.Fail = &gurl.BadMatchHead{Header: header.string, Expect: value, Actual: h}
 		}
 
 		return io
@@ -96,7 +94,6 @@ func (header HtHeader) String(value *string) gurl.Arrow {
 				Diff:    fmt.Sprintf("- %s: *", header.string),
 				Payload: nil,
 			}
-			// io.Fail = &gurl.BadMatchHead{Header: header.string}
 		} else {
 			*value = val
 		}
