@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/fogfish/gurl"
@@ -78,6 +79,19 @@ func TestURLEscape(t *testing.T) {
 		it.Ok(t).
 			If(io.Fail).Should().Equal(nil).
 			If(io.URL.String()).Should().Equal("https://example.com/a%20b/1")
+	}
+}
+
+func TestURLPrefix(t *testing.T) {
+	a := "a b"
+	b := 1
+	p, _ := url.Parse("https://example.com/api/")
+	mthd := []func(string, ...interface{}) gurl.Arrow{ø.GET, ø.POST, ø.PUT, ø.DELETE}
+	for _, f := range mthd {
+		io := f("%s/%s/%v", p, &a, &b)(gurl.IO())
+		it.Ok(t).
+			If(io.Fail).Should().Equal(nil).
+			If(io.URL.String()).Should().Equal("https://example.com/api/a%20b/1")
 	}
 }
 

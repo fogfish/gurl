@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"net/url"
 	"reflect"
+	"strings"
 
 	"github.com/fogfish/gurl"
 )
@@ -51,11 +52,17 @@ func URL(method, uri string, args ...interface{}) gurl.Arrow {
 func mkURL(uri string, args ...interface{}) (*url.URL, error) {
 	opts := []interface{}{}
 	for _, x := range args {
-		val := reflect.ValueOf(x)
-		if val.Kind() == reflect.Ptr {
-			opts = append(opts, url.PathEscape(fmt.Sprintf("%v", val.Elem())))
-		} else {
-			opts = append(opts, url.PathEscape(fmt.Sprintf("%v", val)))
+		switch v := x.(type) {
+		case *url.URL:
+			v.Path = strings.TrimSuffix(v.Path, "/")
+			opts = append(opts, v.String())
+		default:
+			val := reflect.ValueOf(x)
+			if val.Kind() == reflect.Ptr {
+				opts = append(opts, url.PathEscape(fmt.Sprintf("%v", val.Elem())))
+			} else {
+				opts = append(opts, url.PathEscape(fmt.Sprintf("%v", val)))
+			}
 		}
 	}
 
