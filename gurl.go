@@ -17,38 +17,9 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
-	"net/url"
 	"sort"
 	"time"
 )
-
-/*
-
-IOCat defines the category or type for HTTP I/O.
-*/
-type IOCat struct {
-	URL     *url.URL
-	HTTP    *IOSpec
-	Body    interface{}
-	Fail    error
-	pool    *http.Client
-	dur     time.Duration
-	verbose int
-}
-
-/*
-
-Arrow is a morphism applied to IO category. The library implements:
-
-↣ gurl/http/send, which defines writer morphism that focuses inside and
-reshapes HTTP protocol request. The writer morphism is used to declare HTTP
-method, destination URL, request headers and payload.
-
-↣ gurl/http/recv, which defines reader morphism that focuses into side-effect,
-HTTP protocol response. The reader morphism is a pattern matcher, is used to
-match HTTP response code, headers and response payload.
-*/
-type Arrow func(*IOCat) *IOCat
 
 // IOSpec defines parameters of IO transactor.
 type IOSpec struct {
@@ -112,12 +83,6 @@ func Join(arrows ...Arrow) Arrow {
 		return io
 	}
 }
-
-/*
-
-Config defines configuration for the IO category
-*/
-type Config func(*IOCat) *IOCat
 
 /*
 
