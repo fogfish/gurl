@@ -30,7 +30,11 @@ type IOCat struct {
 Unsafe applies a side effect on the category
 */
 func (cat *IOCat) Unsafe() *IOCat {
-	return cat.sideEffect(cat)
+	if cat.sideEffect != nil {
+		return cat.sideEffect(cat)
+	}
+	cat.Fail = fmt.Errorf("Undefined side effect")
+	return cat
 }
 
 /*
