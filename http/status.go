@@ -1,27 +1,9 @@
-//
-// Copyright (C) 2019 Dmitry Kolesnikov
-//
-// This file may be modified and distributed under the terms
-// of the MIT license.  See the LICENSE file for details.
-// https://github.com/fogfish/gurl
-//
-
-package gurl
+package http
 
 import (
 	"fmt"
 	"net/http"
 )
-
-/*
-
-ProtocolNotSupported is returned if handling of URL schema is not supported by the library
-*/
-type ProtocolNotSupported string
-
-func (e ProtocolNotSupported) Error() string {
-	return fmt.Sprintf("Not supported protocol: %s", string(e))
-}
 
 /*
 
@@ -35,12 +17,12 @@ within IO category. Use final type instances in the error handling routines.
 
 Use type switch for error handling "branches"
 
-  switch e := io.Fail.(type) {
+  switch e := cat.Fail.(type) {
   case nil:
     // Nothing
-  case *gurl.StatusOK:
+  case *http.StatusOK:
     // HTTP 200 OK
-  case *gurl.StatusNotFound:
+  case *http.StatusNotFound:
     // HTTP 404 NotFound
   default:
     // any other errors
@@ -48,12 +30,12 @@ Use type switch for error handling "branches"
 
 Conditional error handling on expected HTTP Status
 
-  if errors.Is(io.Fail, gurl.NewStatusNotFound()) {
+  if errors.Is(cat.Fail, http.NewStatusNotFound()) {
   }
 
 Conditional error handling on any HTTP Status
 
-  if _, ok := io.Fail.(gurl.StatusCodeAny); ok {
+  if _, ok := cat.Fail.(gurl.StatusCodeAny); ok {
   }
 
 */
@@ -95,13 +77,13 @@ func (e StatusCode) Await() int {
 StatusCodeAny is a type that matches only HTTP status errors.
 Use it to conditional handle only HTTP errors.
 
-  if _, ok := io.Fail.(gurl.StatusCodeAny); ok {
+  if _, ok := io.Fail.(http.StatusCodeAny); ok {
   }
 
   switch e := io.Fail.(type) {
   case nil:
     // Nothing
-  case gurl.StatusCodeAny:
+  case http.StatusCodeAny:
     // any HTTP Status
   default:
     // any other errors
@@ -710,23 +692,4 @@ var decoder = map[int]func(StatusCode) StatusCodeAny{
 	http.StatusLoopDetected:                  func(status StatusCode) StatusCodeAny { return &StatusLoopDetected{status} },
 	http.StatusNotExtended:                   func(status StatusCode) StatusCodeAny { return &StatusNotExtended{status} },
 	http.StatusNetworkAuthenticationRequired: func(status StatusCode) StatusCodeAny { return &StatusNetworkAuthenticationRequired{status} },
-}
-
-// Undefined is returned by api if expectation at body value is failed
-type Undefined struct {
-	Type string
-}
-
-func (e *Undefined) Error() string {
-	return fmt.Sprintf("Value of type %v is not defined.", e.Type)
-}
-
-// Mismatch is returned by api if expectation at body value is failed
-type Mismatch struct {
-	Diff    string
-	Payload interface{}
-}
-
-func (e *Mismatch) Error() string {
-	return e.Diff
 }

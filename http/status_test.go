@@ -3,10 +3,10 @@
 //
 // This file may be modified and distributed under the terms
 // of the MIT license.  See the LICENSE file for details.
-// https: gurl.StatusCode,
+// https://github.com/fogfish/gurl
 //
 
-package gurl_test
+package http_test
 
 import (
 	"errors"
@@ -14,7 +14,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/fogfish/gurl"
+	gurl "github.com/fogfish/gurl/http"
 	"github.com/fogfish/it"
 )
 

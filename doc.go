@@ -80,102 +80,19 @@ of a state monad.
 A composition of HTTP primitives within the category are written with the following
 syntax.
 
-  gurl.HTTP(arrows ...Arrow) Arrow
+  gurl.Join(arrows ...Arrow) Arrow
 
 Here, each arrow is a morphism applied to HTTP protocol. The implementation defines
 an abstraction of the protocol environments and lenses to focus inside it. In other
 words, the category represents the environment as an "invisible" side-effect of
 the composition.
 
-The example definition of HTTP I/O within "do"-notation becomes
-
-  gurl.HTTP(
-    ø...,
-    ø...,
-
-    ƒ...,
-    ƒ...,
-  )
-
-Symbol `ø` (option + o) is an convenient alias to module gurl/http/send, which
-defines writer morphism that focuses inside and reshapes HTTP protocol request.
-The writer morphism is used to declare HTTP method, destination URL, request headers
-and payload.
-
-Symbol `ƒ` (option + f) is an convenient alias to module gurl/http/recv, which
-defines reader morphism that focuses into side-effect, HTTP protocol response.
-The reader morphism is a pattern matcher, is used to match HTTP response code,
-headers and response payload. It helps us to declare our expectations on the response.
-The evaluation of "program" fails if expectations do not match actual response.
-
-`gurl.HTTP(arrows ...Arrow) Arrow` and its composition implements lazy I/O. It only
+`gurl.Join(arrows ...Arrow) Arrow` and its composition implements lazy I/O. It only
 returns a "promise", you have to evaluate it in the context of IO instance.
 
   io := gurl.IO()
-  fn := gurl.HTTP( ... )
+  fn := gurl.Join( ... )
   fn(io)
-
-Let's look on step-by-step usage of the category.
-
-**Method and URL** are mandatory. It has to be a first element in the construction.
-
-  gurl.HTTP(
-    ø.GET("http://example.com"),
-    ...
-  )
-
-Definition of **request headers** is an optional. You can list as many headers as
-needed. Either using string literals or variables. Some frequently used headers
-implements aliases (e.g. ø.ContentJSON(), ...)
-
-  gurl.HTTP(
-    ...
-    ø.Header("Accept").Is("application/json"),
-    ø.Header("Authorization").Val(&token),
-    ...
-  )
-
-The **request payload** is also an optional. You can also use native Golang data types
-as egress payload. The library implicitly encodes input structures to binary
-using Content-Type as a hint.
-
-  gurl.HTTP(
-    ...
-    ø.Send(MyType{Hello: "World"}),
-    ...
-  )
-
-The declaration of expected response is always starts with mandatory HTTP **status
-code**. The execution fails if peer responds with other than specified value.
-
-  gurl.HTTP(
-    ...
-    ƒ.Code(gurl.StatusCodeOK),
-    ...
-  )
-
-It is possible to match presence of header in the response, match its entire
-content or lift the header value to a variable. The execution fails if HTTP
-response do not match the expectation.
-
-  gurl.HTTP(
-    ...
-    ƒ.Header("Content-Type").Is("application/json"),
-    ...
-  )
-
-The library is able to **decode payload** into Golang native data structure
-using Content-Type header as a hint.
-
-  var data MyType
-  gurl.HTTP(
-    ...
-    ƒ.Recv(&data)
-    ...
-  )
-
-Please note, the library implements lenses to inline assert of decoded content.
-See the documentation of gurl/http/recv module.
 
 
 Basics
@@ -184,6 +101,7 @@ The following code snippet demonstrates a typical usage scenario.
 
   import (
     "github.com/fogfish/gurl"
+    "github.com/fogfish/gurl/http"
     ƒ "github.com/fogfish/gurl/http/recv"
     ø "github.com/fogfish/gurl/http/send"
   )
@@ -195,7 +113,7 @@ The following code snippet demonstrates a typical usage scenario.
   }
 
   var data Payload
-  var http := gurl.HTTP(
+  var reqf := http.Join(
     // declares HTTP method and destination URL
     ø.GET("http://httpbin.org/get"),
     // HTTP content negotiation, declares acceptable types
@@ -212,7 +130,7 @@ The following code snippet demonstrates a typical usage scenario.
   // Note: http do not hold yet, a results of HTTP I/O
   //       it is just a composable "promise", you have to
   //       evaluate a side-effect of HTTP "computation"
-  if http(gurl.IO()).Fail != nil {
+  if reqf(gurl.IO( ... )).Fail != nil {
     // error handling
   }
 
@@ -228,6 +146,7 @@ RESTfull API primitives declared as function, each deals with gurl.IOCat.
 
   import (
     "github.com/fogfish/gurl"
+    "github.com/fogfish/gurl/http"
     ƒ "github.com/fogfish/gurl/http/recv"
     ø "github.com/fogfish/gurl/http/send"
   )
@@ -239,26 +158,26 @@ RESTfull API primitives declared as function, each deals with gurl.IOCat.
       org Org
     )
 
-    http := gurl.Join(
+    reqf := gurl.Join(
       AccessToken(&token),
       UserProfile(&token, &user),
       UserContribution(&token, &org)
     )
 
-    if http(gurl.IO()).Fail != nil {
+    if reqf(gurl.IO( ... )).Fail != nil {
       // error handling
     }
   }
 
   func AccessToken(token *AccessToken) gurl.Arrow {
-    return gurl.HTTP(
+    return http.Join(
       // ...
       ƒ.Recv(token),
     )
   }
 
   func UserProfile(token *AccessToken, user *User) gurl.Arrow {
-    return gurl.HTTP(
+    return http.Join(
       ø.POST("..."),
       ø.Authorization().Is(token.Bearer),
       // ...
@@ -267,7 +186,7 @@ RESTfull API primitives declared as function, each deals with gurl.IOCat.
   }
 
   func UserContribution(token *AccessToken, org *Org) {
-    return gurl.HTTP(
+    return http.Join(
       ø.POST("..."),
       ø.Authorization().Is(token.Bearer),
       // ...

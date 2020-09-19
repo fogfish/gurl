@@ -6,7 +6,7 @@
 // https://github.com/fogfish/gurl
 //
 
-package gurl
+package http
 
 var (
 	//

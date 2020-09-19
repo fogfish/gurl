@@ -1,257 +1,261 @@
+//
+// Copyright (C) 2019 Dmitry Kolesnikov
+//
+// This file may be modified and distributed under the terms
+// of the MIT license.  See the LICENSE file for details.
+// https://github.com/fogfish/gurl
+//
+
 package send_test
 
 import (
-	"encoding/json"
-	"net/http"
-	"net/http/httptest"
 	"net/url"
 	"testing"
 
 	"github.com/fogfish/gurl"
-	ƒ "github.com/fogfish/gurl/http/recv"
+	"github.com/fogfish/gurl/http"
 	ø "github.com/fogfish/gurl/http/send"
 	"github.com/fogfish/it"
 )
 
-type Test struct {
-	Site string `json:"site"`
-	Host string `json:"host,omitempty"`
-}
-
 func TestSchemaHTTP(t *testing.T) {
-	io := ø.URL("GET", "http://example.com")(gurl.IO())
+	req := ø.URL("GET", "http://example.com")
+	cat := gurl.IO(http.Default())
 
-	it.Ok(t).If(io.Fail).Should().Equal(nil)
+	it.Ok(t).
+		If(req(cat).Fail).Should().Equal(nil)
 }
 
 func TestSchemaHTTPS(t *testing.T) {
-	io := ø.URL("GET", "https://example.com")(gurl.IO())
+	req := ø.URL("GET", "https://example.com")
+	cat := gurl.IO(http.Default())
 
-	it.Ok(t).If(io.Fail).Should().Equal(nil)
+	it.Ok(t).
+		If(req(cat).Fail).Should().Equal(nil)
 }
 
 func TestSchemaUnsupported(t *testing.T) {
-	io := ø.URL("GET", "other://example.com")(gurl.IO())
+	req := ø.URL("GET", "other://example.com")
+	cat := gurl.IO(http.Default())
 
 	it.Ok(t).
-		If(io.Fail).ShouldNot().Equal(nil).
-		If(io.Fail).Should().Equal(gurl.ProtocolNotSupported("other://example.com"))
-}
-
-func TestMethod(t *testing.T) {
-	mthd := []func(string, ...interface{}) gurl.Arrow{ø.GET, ø.POST, ø.PUT, ø.DELETE}
-	for _, f := range mthd {
-		io := f("https://example.com")(gurl.IO())
-		it.Ok(t).
-			If(io.Fail).Should().Equal(nil).
-			If(io.URL.String()).Should().Equal("https://example.com")
-	}
+		If(req(cat).Fail).ShouldNot().Equal(nil)
 }
 
 func TestURL(t *testing.T) {
-	mthd := []func(string, ...interface{}) gurl.Arrow{ø.GET, ø.POST, ø.PUT, ø.DELETE}
-	for _, f := range mthd {
-		io := f("https://example.com/%s/%v", "a", 1)(gurl.IO())
-		it.Ok(t).
-			If(io.Fail).Should().Equal(nil).
-			If(io.URL.String()).Should().Equal("https://example.com/a/1")
-	}
+	req := ø.URL("GET", "https://example.com/%s/%v", "a", 1)
+	cat := gurl.IO(http.Default())
+
+	it.Ok(t).
+		If(req(cat).Fail).Should().Equal(nil).
+		If(cat.HTTP.Send.URL.String()).Should().Equal("https://example.com/a/1")
 }
 
 func TestURLByRef(t *testing.T) {
 	a := "a"
 	b := 1
-	mthd := []func(string, ...interface{}) gurl.Arrow{ø.GET, ø.POST, ø.PUT, ø.DELETE}
-	for _, f := range mthd {
-		io := f("https://example.com/%s/%v", &a, &b)(gurl.IO())
-		it.Ok(t).
-			If(io.Fail).Should().Equal(nil).
-			If(io.URL.String()).Should().Equal("https://example.com/a/1")
-	}
+	req := ø.URL("GET", "https://example.com/%s/%v", &a, &b)
+	cat := gurl.IO(http.Default())
+
+	it.Ok(t).
+		If(req(cat).Fail).Should().Equal(nil).
+		If(cat.HTTP.Send.URL.String()).Should().Equal("https://example.com/a/1")
 }
 
 func TestURLEscape(t *testing.T) {
 	a := "a b"
 	b := 1
-	mthd := []func(string, ...interface{}) gurl.Arrow{ø.GET, ø.POST, ø.PUT, ø.DELETE}
-	for _, f := range mthd {
-		io := f("https://example.com/%s/%v", &a, &b)(gurl.IO())
-		it.Ok(t).
-			If(io.Fail).Should().Equal(nil).
-			If(io.URL.String()).Should().Equal("https://example.com/a%20b/1")
-	}
+	req := ø.URL("GET", "https://example.com/%s/%v", &a, &b)
+	cat := gurl.IO(http.Default())
+
+	it.Ok(t).
+		If(req(cat).Fail).Should().Equal(nil).
+		If(cat.HTTP.Send.URL.String()).Should().Equal("https://example.com/a%20b/1")
 }
 
-func TestURLPrefix(t *testing.T) {
+func TestURLType(t *testing.T) {
 	a := "a b"
 	b := 1
-	p, _ := url.Parse("https://example.com/api/")
-	mthd := []func(string, ...interface{}) gurl.Arrow{ø.GET, ø.POST, ø.PUT, ø.DELETE}
-	for _, f := range mthd {
-		io := f("%s/%s/%v", p, &a, &b)(gurl.IO())
-		it.Ok(t).
-			If(io.Fail).Should().Equal(nil).
-			If(io.URL.String()).Should().Equal("https://example.com/api/a%20b/1")
-	}
-}
-
-func TestHeaderIs(t *testing.T) {
-	io := gurl.HTTP(
-		ø.GET("http://example.com"),
-		ø.Header("Accept").Is("text/plain"),
-	)(gurl.IO())
+	p, _ := url.Parse("https://example.com")
+	req := ø.URL("GET", "%s/%s/%v", p, &a, &b)
+	cat := gurl.IO(http.Default())
 
 	it.Ok(t).
-		If(*io.HTTP.Header["Accept"]).Should().Equal("text/plain")
+		If(req(cat).Fail).Should().Equal(nil).
+		If(cat.HTTP.Send.URL.String()).Should().Equal("https://example.com/a%20b/1")
 }
 
-func TestHeaderVal(t *testing.T) {
+func TestHeaderByLit(t *testing.T) {
+	req := http.Join(
+		ø.URL("GET", "http://example.com"),
+		ø.Header("Accept").Is("text/plain"),
+	)
+	cat := gurl.IO(http.Default())
+
+	it.Ok(t).
+		If(req(cat).Fail).Should().Equal(nil).
+		If(*cat.HTTP.Send.Header["accept"]).Should().Equal("text/plain")
+
+}
+
+func TestHeaderByVal(t *testing.T) {
 	val := "text/plain"
 
-	io := gurl.HTTP(
-		ø.GET("http://example.com"),
+	req := http.Join(
+		ø.URL("GET", "http://example.com"),
 		ø.Header("Accept").Val(&val),
-	)(gurl.IO())
+	)
+	cat := gurl.IO(http.Default())
 
 	it.Ok(t).
-		If(*io.HTTP.Header["Accept"]).Should().Equal("text/plain")
-}
-
-func TestHeaderAccept(t *testing.T) {
-	io := gurl.HTTP(
-		ø.GET("http://example.com"),
-		ø.Accept().Is("text/plain"),
-	)(gurl.IO())
-
-	it.Ok(t).
-		If(*io.HTTP.Header["Accept"]).Should().Equal("text/plain")
-}
-
-func TestHeaderAcceptJSON(t *testing.T) {
-	io := gurl.HTTP(
-		ø.GET("http://example.com"),
-		ø.AcceptJSON(),
-	)(gurl.IO())
-
-	it.Ok(t).
-		If(*io.HTTP.Header["Accept"]).Should().Equal("application/json")
-}
-func TestHeaderAcceptForm(t *testing.T) {
-	io := gurl.HTTP(
-		ø.GET("http://example.com"),
-		ø.AcceptForm(),
-	)(gurl.IO())
-
-	it.Ok(t).
-		If(*io.HTTP.Header["Accept"]).Should().Equal("application/x-www-form-urlencoded")
-}
-
-func TestHeaderContent(t *testing.T) {
-	io := gurl.HTTP(
-		ø.GET("http://example.com"),
-		ø.Content().Is("text/plain"),
-	)(gurl.IO())
-
-	it.Ok(t).
-		If(*io.HTTP.Header["Content-Type"]).Should().Equal("text/plain")
-}
-
-func TestHeaderContentJSON(t *testing.T) {
-	io := gurl.HTTP(
-		ø.GET("http://example.com"),
-		ø.ContentJSON(),
-	)(gurl.IO())
-
-	it.Ok(t).
-		If(*io.HTTP.Header["Content-Type"]).Should().Equal("application/json")
-}
-
-func TestHeaderContentForm(t *testing.T) {
-	io := gurl.HTTP(
-		ø.GET("http://example.com"),
-		ø.ContentForm(),
-	)(gurl.IO())
-
-	it.Ok(t).
-		If(*io.HTTP.Header["Content-Type"]).Should().Equal("application/x-www-form-urlencoded")
-}
-
-func TestHeaderKeepAlive(t *testing.T) {
-	io := gurl.HTTP(
-		ø.GET("https://example.com"),
-		ø.KeepAlive(),
-	)(gurl.IO())
-
-	it.Ok(t).
-		If(*io.HTTP.Header["Connection"]).Should().Equal("keep-alive")
-}
-
-func TestHeaderAuthorization(t *testing.T) {
-	io := gurl.HTTP(
-		ø.GET("https://example.com"),
-		ø.Authorization().Is("token"),
-	)(gurl.IO())
-
-	it.Ok(t).
-		If(*io.HTTP.Header["Authorization"]).Should().Equal("token")
+		If(req(cat).Fail).Should().Equal(nil).
+		If(*cat.HTTP.Send.Header["accept"]).Should().Equal("text/plain")
 }
 
 func TestParams(t *testing.T) {
-	io := gurl.HTTP(
-		ø.GET("https://example.com"),
-		ø.Params(Test{"host", "site"}),
-	)(gurl.IO())
+	type Site struct {
+		Site string `json:"site"`
+		Host string `json:"host,omitempty"`
+	}
+
+	req := http.Join(
+		ø.URL("GET", "https://example.com"),
+		ø.Params(Site{"host", "site"}),
+	)
+	cat := gurl.IO(http.Default())
 
 	it.Ok(t).
-		If(io.URL.String()).Should().
-		Equal("https://example.com?host=site&site=host")
+		If(req(cat).Fail).Should().Equal(nil).
+		If(cat.HTTP.Send.URL.String()).Should().Equal("https://example.com?host=site&site=host")
+}
+
+func TestParamsInvalidFormat(t *testing.T) {
+	type Site struct {
+		Site string `json:"site"`
+		Host int    `json:"host,omitempty"`
+	}
+
+	req := http.Join(
+		ø.URL("GET", "https://example.com"),
+		ø.Params(Site{"host", 100}),
+	)
+	cat := gurl.IO(http.Default())
+
+	it.Ok(t).
+		If(req(cat).Fail).ShouldNot().Equal(nil)
 }
 
 func TestSendJSON(t *testing.T) {
-	io := gurl.HTTP(
-		ø.GET("https://example.com"),
-		ø.ContentJSON(),
-		ø.Send(Test{"host", "site"}),
-	)(gurl.IO())
+	type Site struct {
+		Site string `json:"site"`
+		Host string `json:"host,omitempty"`
+	}
+
+	req := http.Join(
+		ø.URL("GET", "https://example.com"),
+		ø.Header("Content-Type").Is("application/json"),
+		ø.Send(Site{"host", "site"}),
+	)
+	cat := gurl.IO(http.Default())
 
 	it.Ok(t).
-		If(io.HTTP.Payload.String()).Should().
-		Equal("{\"site\":\"host\",\"host\":\"site\"}")
+		If(req(cat).Fail).Should().Equal(nil).
+		If(cat.HTTP.Send.Payload.String()).Should().Equal("{\"site\":\"host\",\"host\":\"site\"}")
 }
 
 func TestSendForm(t *testing.T) {
-	io := gurl.HTTP(
-		ø.GET("https://example.com"),
-		ø.ContentForm(),
-		ø.Send(Test{"host", "site"}),
-	)(gurl.IO())
+	type Site struct {
+		Site string `json:"site"`
+		Host string `json:"host,omitempty"`
+	}
+
+	req := http.Join(
+		ø.URL("GET", "https://example.com"),
+		ø.Header("Content-Type").Is("application/x-www-form-urlencoded"),
+		ø.Send(Site{"host", "site"}),
+	)
+	cat := gurl.IO(http.Default())
 
 	it.Ok(t).
-		If(io.HTTP.Payload.String()).Should().
-		Equal("host=site&site=host")
+		If(req(cat).Fail).Should().Equal(nil).
+		If(cat.HTTP.Send.Payload.String()).Should().Equal("host=site&site=host")
 }
 
-func TestSend(t *testing.T) {
-	ts := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var in Test
-			defer r.Body.Close()
-			err := json.NewDecoder(r.Body).Decode(&in)
-			if err == nil {
-				w.WriteHeader(http.StatusOK)
-			} else {
-				w.WriteHeader(http.StatusBadRequest)
-			}
-		}),
+func TestSendUnknown(t *testing.T) {
+	type Site struct {
+		Site string `json:"site"`
+		Host string `json:"host,omitempty"`
+	}
+
+	req := http.Join(
+		ø.URL("GET", "https://example.com"),
+		ø.Send(Site{"host", "site"}),
 	)
-	defer ts.Close()
+	cat := gurl.IO(http.Default())
 
-	io := gurl.HTTP(
-		ø.POST(ts.URL),
-		ø.ContentJSON(),
-		ø.Send(Test{"example.com", ""}),
-		ƒ.Code(gurl.StatusCodeOK),
-	)(gurl.IO())
+	it.Ok(t).
+		If(req(cat).Fail).ShouldNot().Equal(nil)
+}
 
-	it.Ok(t).If(io.Fail).Should().Equal(nil)
+func TestSendNotSupported(t *testing.T) {
+	type Site struct {
+		Site string `json:"site"`
+		Host string `json:"host,omitempty"`
+	}
+
+	req := http.Join(
+		ø.URL("GET", "https://example.com"),
+		ø.Header("Content-Type").Is("foo/bar"),
+		ø.Send(Site{"host", "site"}),
+	)
+	cat := gurl.IO(http.Default())
+
+	it.Ok(t).
+		If(req(cat).Fail).ShouldNot().Equal(nil)
+}
+
+func TestAliasesURL(t *testing.T) {
+	for mthd, f := range map[string]func(string, ...interface{}) http.Arrow{
+		"GET":    ø.GET,
+		"PUT":    ø.PUT,
+		"POST":   ø.POST,
+		"DELETE": ø.DELETE,
+	} {
+		req := f("https://example.com/%s/%v", "a", 1)
+		cat := gurl.IO(http.Default())
+
+		it.Ok(t).
+			If(req(cat).Fail).Should().Equal(nil).
+			If(cat.HTTP.Send.URL.String()).Should().Equal("https://example.com/a/1").
+			If(cat.HTTP.Send.Method).Should().Equal(mthd)
+	}
+}
+
+func TestAliasesHeader(t *testing.T) {
+	type Unit struct {
+		header string
+		value  string
+		arrow  http.Arrow
+	}
+
+	for _, unit := range []Unit{
+		{"accept", "foo/bar", ø.Accept().Is("foo/bar")},
+		{"accept", "application/json", ø.AcceptJSON()},
+		{"accept", "application/x-www-form-urlencoded", ø.AcceptForm()},
+		{"content-type", "foo/bar", ø.Content().Is("foo/bar")},
+		{"content-type", "application/json", ø.ContentJSON()},
+		{"content-type", "application/x-www-form-urlencoded", ø.ContentForm()},
+		{"connection", "keep-alive", ø.KeepAlive()},
+		{"authorization", "foo bar", ø.Authorization().Is("foo bar")},
+	} {
+		req := http.Join(
+			ø.URL("GET", "http://example.com"),
+			unit.arrow,
+		)
+		cat := gurl.IO(http.Default())
+
+		it.Ok(t).
+			If(req(cat).Fail).Should().Equal(nil).
+			If(*cat.HTTP.Send.Header[unit.header]).Should().Equal(unit.value)
+	}
 }
