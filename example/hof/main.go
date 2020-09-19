@@ -18,6 +18,8 @@ import (
 	"fmt"
 
 	"github.com/fogfish/gurl"
+	c "github.com/fogfish/gurl/cats"
+	"github.com/fogfish/gurl/http"
 	ƒ "github.com/fogfish/gurl/http/recv"
 	ø "github.com/fogfish/gurl/http/send"
 )
@@ -36,10 +38,10 @@ type httpbin struct {
 //
 // uuid declares HTTP I/O. Its result is returned via id variable.
 func uuid(id *id) gurl.Arrow {
-	return gurl.HTTP(
+	return http.Join(
 		ø.GET("https://httpbin.org/uuid"),
 		ø.AcceptJSON(),
-		ƒ.Code(gurl.StatusCodeOK),
+		ƒ.Code(http.StatusCodeOK),
 		ƒ.ServedJSON(),
 		ƒ.Recv(id),
 	)
@@ -49,12 +51,12 @@ func uuid(id *id) gurl.Arrow {
 // post declares HTTP I/O. The HTTP request requires uuid.
 // Its result is returned via doc variable.
 func post(uuid *id, doc *httpbin) gurl.Arrow {
-	return gurl.HTTP(
+	return http.Join(
 		ø.POST("https://httpbin.org/post"),
 		ø.AcceptJSON(),
 		ø.ContentJSON(),
 		ø.Send(&uuid.UUID),
-		ƒ.Code(gurl.StatusCodeOK),
+		ƒ.Code(http.StatusCodeOK),
 		ƒ.Recv(doc),
 	)
 }
@@ -78,7 +80,7 @@ func hof(val *string) gurl.Arrow {
 		uuid(&id),
 		post(&id, &doc),
 		// results of HTTP chain is mapped to return value
-		ƒ.FMap(func() error {
+		c.FMap(func() error {
 			*val = doc.Data
 			return nil
 		}),
@@ -87,9 +89,13 @@ func hof(val *string) gurl.Arrow {
 
 func eval() {
 	var val string
-	http := hof(&val)
+	req := hof(&val)
+	cat := gurl.IO(
+		gurl.Logging(3),
+		http.Default(),
+	)
 
-	if err := http(gurl.IO()).Fail; err != nil {
+	if err := req(cat).Fail; err != nil {
 		fmt.Printf("fail %v\n", err)
 	}
 	fmt.Printf("==> %v\n", val)

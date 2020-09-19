@@ -14,37 +14,40 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"reflect"
-	"sort"
 	"strings"
 
 	"github.com/ajg/form"
 	"github.com/fogfish/gurl"
-	"github.com/google/go-cmp/cmp"
+	"github.com/fogfish/gurl/http"
 )
+
+//-------------------------------------------------------------------
+//
+// core arrows
+//
+//-------------------------------------------------------------------
 
 /*
 
 Code is a mandatory statement to match expected HTTP Status Code against
-received one. The execution fails with BadMatchCode if service responds
+received one. The execution fails StatusCode error if service responds
 with other value then specified one.
 */
-func Code(code ...gurl.StatusCodeAny) gurl.Arrow {
-	return func(io *gurl.IOCat) *gurl.IOCat {
-		io.Unsafe()
-		if io.Fail != nil {
-			return io
+func Code(code ...http.StatusCodeAny) http.Arrow {
+	return func(cat *gurl.IOCat) *gurl.IOCat {
+		if cat = cat.Unsafe(); cat.Fail != nil {
+			return cat
 		}
 
-		status := io.HTTP.Ingress.StatusCode
+		status := cat.HTTP.Recv.StatusCode
 		if !hasCode(code, status) {
-			io.Fail = gurl.NewStatusCode(status, code[0])
+			cat.Fail = http.NewStatusCode(status, code[0])
 		}
-		return io
+		return cat
 	}
 }
 
-func hasCode(s []gurl.StatusCodeAny, e int) bool {
+func hasCode(s []http.StatusCodeAny, e int) bool {
 	for _, a := range s {
 		if a.Value() == e {
 			return true
@@ -53,44 +56,48 @@ func hasCode(s []gurl.StatusCodeAny, e int) bool {
 	return false
 }
 
-// HtHeader is tagged string, represents HTTP Header
-type HtHeader struct{ string }
+// THeader is tagged string, represents HTTP Header
+type THeader struct{ string }
 
 /*
 
 Header matches presence of header in the response or match its entire content.
 The execution fails with BadMatchHead if the matched value do not meet expectations.
 */
-func Header(header string) HtHeader {
-	return HtHeader{header}
+func Header(header string) THeader {
+	return THeader{header}
 }
 
 // Is matches value of HTTP header, Use wildcard string ("*") to match any header value
-func (header HtHeader) Is(value string) gurl.Arrow {
-	return func(io *gurl.IOCat) *gurl.IOCat {
-		h := io.HTTP.Ingress.Header.Get(header.string)
+func (header THeader) Is(value string) http.Arrow {
+	return func(cat *gurl.IOCat) *gurl.IOCat {
+		h := cat.HTTP.Recv.Header.Get(header.string)
 		if h == "" {
-			io.Fail = &gurl.Mismatch{
+			cat.Fail = &gurl.Mismatch{
 				Diff:    fmt.Sprintf("- %s: %s", header.string, value),
 				Payload: nil,
 			}
-		} else if value != "*" && !strings.HasPrefix(h, value) {
-			io.Fail = &gurl.Mismatch{
+			return cat
+		}
+
+		if value != "*" && !strings.HasPrefix(h, value) {
+			cat.Fail = &gurl.Mismatch{
 				Diff:    fmt.Sprintf("+ %s: %s\n- %s: %s", header.string, h, header.string, value),
 				Payload: map[string]string{header.string: h},
 			}
+			return cat
 		}
 
-		return io
+		return cat
 	}
 }
 
 // String matches a header value to closed variable of string type.
-func (header HtHeader) String(value *string) gurl.Arrow {
-	return func(io *gurl.IOCat) *gurl.IOCat {
-		val := io.HTTP.Ingress.Header.Get(header.string)
+func (header THeader) String(value *string) http.Arrow {
+	return func(cat *gurl.IOCat) *gurl.IOCat {
+		val := cat.HTTP.Recv.Header.Get(header.string)
 		if val == "" {
-			io.Fail = &gurl.Mismatch{
+			cat.Fail = &gurl.Mismatch{
 				Diff:    fmt.Sprintf("- %s: *", header.string),
 				Payload: nil,
 			}
@@ -98,28 +105,13 @@ func (header HtHeader) String(value *string) gurl.Arrow {
 			*value = val
 		}
 
-		return io
+		return cat
 	}
 }
 
 // Any matches a header value, syntax sugar of Header(...).Is("*")
-func (header HtHeader) Any() gurl.Arrow {
+func (header THeader) Any() http.Arrow {
 	return header.Is("*")
-}
-
-// Served is a syntax sugar of Header("Content-Type")
-func Served() HtHeader {
-	return Header("Content-Type")
-}
-
-// ServedJSON is a syntax sugar of Header("Content-Type").Is("application/json")
-func ServedJSON() gurl.Arrow {
-	return Served().Is("application/json")
-}
-
-// ServedForm is a syntax sugar of Header("Content-Type", "application/x-www-form-urlencoded")
-func ServedForm() gurl.Arrow {
-	return Served().Is("application/x-www-form-urlencoded")
 }
 
 /*
@@ -128,25 +120,25 @@ Recv applies auto decoders for response and returns either binary or
 native Go data structure. The Content-Type header give a hint to decoder.
 Supply the pointer to data target data structure.
 */
-func Recv(out interface{}) gurl.Arrow {
-	return func(io *gurl.IOCat) *gurl.IOCat {
-		io.Fail = decode(
-			io.HTTP.Ingress.Header.Get("Content-Type"),
-			io.HTTP.Ingress.Body,
+func Recv(out interface{}) http.Arrow {
+	return func(cat *gurl.IOCat) *gurl.IOCat {
+		cat.Fail = decode(
+			cat.HTTP.Recv.Header.Get("Content-Type"),
+			cat.HTTP.Recv.Body,
 			&out,
 		)
-		io.HTTP.Ingress.Body.Close()
-		io.Body = out
-		io.HTTP.Ingress = nil
-		return io
+		cat.HTTP.Recv.Body.Close()
+		cat.HTTP.Recv.Payload = out
+		cat.HTTP.Recv.Response = nil
+		return cat
 	}
 }
 
 func decode(content string, stream io.ReadCloser, data interface{}) error {
 	switch {
-	case strings.HasPrefix(content, "application/json"):
+	case strings.Contains(content, "json"):
 		return json.NewDecoder(stream).Decode(&data)
-	case strings.HasPrefix(content, "application/x-www-form-urlencoded"):
+	case strings.Contains(content, "www-form"):
 		return form.NewDecoder(stream).Decode(&data)
 	default:
 		return &gurl.Mismatch{
@@ -160,128 +152,33 @@ func decode(content string, stream io.ReadCloser, data interface{}) error {
 
 Bytes receive raw binary from HTTP response
 */
-func Bytes(val *[]byte) gurl.Arrow {
-	return func(io *gurl.IOCat) *gurl.IOCat {
-		*val, io.Fail = ioutil.ReadAll(io.HTTP.Ingress.Body)
-		io.Fail = io.HTTP.Ingress.Body.Close()
-		io.HTTP.Ingress = nil
-		return io
+func Bytes(val *[]byte) http.Arrow {
+	return func(cat *gurl.IOCat) *gurl.IOCat {
+		*val, cat.Fail = ioutil.ReadAll(cat.HTTP.Recv.Body)
+		cat.Fail = cat.HTTP.Recv.Body.Close()
+		cat.HTTP.Recv.Response = nil
+		cat.HTTP.Recv.Payload = string(*val)
+		return cat
 	}
 }
 
-/*
+//-------------------------------------------------------------------
+//
+// alias arrows
+//
+//-------------------------------------------------------------------
 
-FMap applies clojure to matched HTTP request.
-*/
-func FMap(f func() error) gurl.Arrow {
-	return func(io *gurl.IOCat) *gurl.IOCat {
-		io.Fail = f()
-		return io
-	}
+// Served is a syntax sugar of Header("Content-Type")
+func Served() THeader {
+	return Header("Content-Type")
 }
 
-/*
-
-FlatMap applies closure to matched HTTP request.
-It returns an arrow, which continue evaluation.
-*/
-func FlatMap(f func() gurl.Arrow) gurl.Arrow {
-	return func(io *gurl.IOCat) *gurl.IOCat {
-		if g := f(); g != nil {
-			return g(io)
-		}
-		return io
-	}
+// ServedJSON is a syntax sugar of Header("Content-Type").Is("application/json")
+func ServedJSON() http.Arrow {
+	return Served().Is("application/json")
 }
 
-/*
-
-Defined checks if the value is defined, use a pointer to the value.
-*/
-func Defined(value interface{}) gurl.Arrow {
-	return func(io *gurl.IOCat) *gurl.IOCat {
-		va := reflect.ValueOf(value)
-		if va.Kind() == reflect.Ptr {
-			va = va.Elem()
-		}
-
-		if !va.IsValid() {
-			io.Fail = &gurl.Undefined{Type: va.Type().Name()}
-		}
-
-		if va.IsValid() && va.IsZero() {
-			io.Fail = &gurl.Undefined{Type: va.Type().Name()}
-		}
-		return io
-	}
-}
-
-// HtValue is tagged type, represent matchers
-type HtValue struct{ actual interface{} }
-
-/*
-
-Value checks if the value equals to defined one.
-Supply the pointer to actual value
-*/
-func Value(val interface{}) HtValue {
-	return HtValue{val}
-}
-
-// Is matches a value
-func (val HtValue) Is(require interface{}) gurl.Arrow {
-	return func(io *gurl.IOCat) *gurl.IOCat {
-		if diff := cmp.Diff(val.actual, require); diff != "" {
-			io.Fail = &gurl.Mismatch{
-				Diff:    diff,
-				Payload: val.actual,
-			}
-		}
-		return io
-	}
-}
-
-// String matches a literal value
-func (val HtValue) String(require string) gurl.Arrow {
-	return val.Is(&require)
-}
-
-// Bytes matches a literal value of bytes
-func (val HtValue) Bytes(require []byte) gurl.Arrow {
-	return val.Is(&require)
-}
-
-// HtSeq is tagged type, represents Sequence of elements
-type HtSeq struct{ gurl.Ord }
-
-/*
-
-Seq matches presence of element in the sequence.
-*/
-func Seq(seq gurl.Ord) HtSeq {
-	return HtSeq{seq}
-}
-
-/*
-
-Has lookups element using key and matches expected value
-*/
-func (seq HtSeq) Has(key string, expect ...interface{}) gurl.Arrow {
-	return func(io *gurl.IOCat) *gurl.IOCat {
-		sort.Sort(seq)
-		i := sort.Search(seq.Len(), func(i int) bool { return seq.String(i) >= key })
-		if i < seq.Len() && seq.String(i) == key {
-			if len(expect) > 0 {
-				if diff := cmp.Diff(seq.Value(i), expect[0]); diff != "" {
-					io.Fail = &gurl.Mismatch{
-						Diff:    diff,
-						Payload: seq.Value(i),
-					}
-				}
-			}
-			return io
-		}
-		io.Fail = &gurl.Undefined{Type: key}
-		return io
-	}
+// ServedForm is a syntax sugar of Header("Content-Type", "application/x-www-form-urlencoded")
+func ServedForm() http.Arrow {
+	return Served().Is("application/x-www-form-urlencoded")
 }

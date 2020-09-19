@@ -1,7 +1,6 @@
 # HTTP High Order Component
 
-A class of High Order Component which can do http requests with few
-interesting property such as composition and laziness.
+A class of High Order Component which can do http requests with few interesting property such as composition and laziness.
 
 [![Documentation](https://godoc.org/github.com/fogfish/gurl?status.svg)](http://godoc.org/github.com/fogfish/gurl)
 [![Build Status](https://github.com/fogfish/gurl/workflows/Go/badge.svg)](https://github.com/fogfish/gurl/actions/)
@@ -11,25 +10,14 @@ interesting property such as composition and laziness.
 [![Maintainability](https://api.codeclimate.com/v1/badges/b9ff76a1f641ce98cd26/maintainability)](https://codeclimate.com/github/fogfish/gurl/maintainability)
 
 
-The library implements rough and naive Haskell's equivalent of 
-do-notation, so called monadic binding form. This construction decorates
-http i/o pipeline(s) with "programmable commas".
+The library implements rough and naive Haskell's equivalent of do-notation, so called monadic binding form. This construction decorates http i/o pipeline(s) with "programmable commas".
 
 
 ## Inspiration
 
-Microservices have become a design style to evolve system architecture
-in parallel, implement stable and consistent interfaces. An expressive
-language is required to design the variety of network communication use-cases.
-A pure functional languages fits very well to express communication behavior.
-The language gives a rich techniques to hide the networking complexity using
-monads as abstraction. The IO-monads helps us to compose a chain of network
-operations and represent them as pure computation, build a new things from
-small reusable elements. The library is implemented after Erlang's [m_http](https://github.com/fogfish/m_http)
+Microservices have become a design style to evolve system architecture in parallel, implement stable and consistent interfaces. An expressive language is required to design the variety of network communication use-cases. A pure functional languages fits very well to express communication behavior. The language gives a rich techniques to hide the networking complexity using monads as abstraction. The IO-monads helps us to compose a chain of network operations and represent them as pure computation, build a new things from small reusable elements. The library is implemented after Erlang's [m_http](https://github.com/fogfish/m_http)
 
-The library attempts to adapts a human-friendly syntax of HTTP request/response
-logging/definition used by curl with Behavior as a Code paradigm. It tries to
-connect cause-and-effect (Given/When/Then) with the networking (Input/Process/Output).
+The library attempts to adapts a human-friendly syntax of HTTP request/response logging/definition used by curl with Behavior as a Code paradigm. It tries to connect cause-and-effect (Given/When/Then) with the networking (Input/Process/Output).
 
 ```
 > GET / HTTP/1.1
@@ -43,9 +31,7 @@ connect cause-and-effect (Given/When/Then) with the networking (Input/Process/Ou
 < ...
 ```
 
-This semantic provides an intuitive approach to specify HTTP requests/responses.
-Adoption of this syntax as Go native code provides a rich capability to network
-programming.
+This semantic provides an intuitive approach to specify HTTP requests/responses. Adoption of this syntax as Go native code provides a rich capability to network programming.
 
 
 ## Key features
@@ -71,6 +57,9 @@ import (
   // core types
   "github.com/fogfish/gurl"
 
+  // support for http protocol
+  "github.com/fogfish/gurl/http"
+
   // module ø (gurl/http/send) - writer morphism is used to declare HTTP method,
   // destination URL, request headers and payload.
   ø "github.com/fogfish/gurl/http/send"
@@ -86,62 +75,42 @@ See the [documentation](http://godoc.org/github.com/fogfish/gurl)
 
 ### IO Category
 
-Standard Golang packages implements low-level HTTP interface, which
-requires knowledge about protocol itself, understanding of Golang implementation aspects,
-a bit of boilerplate coding. It also missing standardized chaining (composition)
-of individual requests.
+Standard Golang packages implements low-level HTTP interface, which requires knowledge about protocol itself, understanding of Golang implementation aspects, a bit of boilerplate coding. It also missing standardized chaining (composition) of individual requests.
 
-`gurl` library inherits an ability of pure functional languages to express
-communication behavior by hiding the networking complexity using category pattern
-(aka "do"-notation). This pattern helps us to compose a chain of network operations
-and represent them as pure computation, build a new things from small reusable
-elements. This library uses the "do"-notation, so called monadic binding form.
-It is well know in functional programming languages such as Haskell and
-Scala. The networking becomes a collection of composed "do"-notation in context
-of a state monad.
+`gurl` library inherits an ability of pure functional languages to express communication behavior by hiding the networking complexity using category pattern (aka "do"-notation). This pattern helps us to compose a chain of network operations and represent them as pure computation, build a new things from small reusable elements. This library uses the "do"-notation, so called monadic binding form. It is well know in functional programming languages such as Haskell and Scala. The networking becomes a collection of composed "do"-notation in context of a state monad.
 
-A composition of HTTP primitives within the category are written with the following
-syntax.
+A composition of HTTP primitives within the category are written with the following syntax.
 
 ```go
-  gurl.HTTP(arrows ...Arrow) Arrow
+  gurl.Join(arrows ...Arrow) Arrow
 ```
 
-Here, each arrow is a morphism applied to HTTP protocol. The implementation defines
-an abstraction of the protocol environments and lenses to focus inside it. In other
-words, the category represents the environment as an "invisible" side-effect of
-the composition.
+Here, each arrow is a morphism applied to HTTP protocol. The implementation defines an abstraction of the protocol environments and lenses to focus inside it. In other words, the category represents the environment as an "invisible" side-effect of the composition.
 
 The example definition of HTTP I/O within "do"-notation becomes
 
 ```go
-  gurl.HTTP(
-    ø...,
-    ø...,
+  gurl.Join(
+    http.Join(
+      ø...,
+      ø...,
 
-    ƒ...,
-    ƒ...,
+      ƒ...,
+      ƒ...,
+    ),
   )
 ```
 
-Symbol `ø` (option + o) is an convenient alias to module gurl/http/send, which
-defines writer morphism that focuses inside and reshapes HTTP protocol request.
-The writer morphism is used to declare HTTP method, destination URL, request headers
-and payload.
+Symbol `ø` (option + o) is an convenient alias to module gurl/http/send, which defines writer morphism that focuses inside and reshapes HTTP protocol request. The writer morphism is used to declare HTTP method, destination URL, request headers and payload.
 
-Symbol `ƒ` (option + f) is an convenient alias to module gurl/http/recv, which
-defines reader morphism that focuses into side-effect, HTTP protocol response.
-The reader morphism is a pattern matcher, is used to match HTTP response code,
-headers and response payload. It helps us to declare our expectations on the response.
-The evaluation of "program" fails if expectations do not match actual response.
+Symbol `ƒ` (option + f) is an convenient alias to module gurl/http/recv, which defines reader morphism that focuses into side-effect, HTTP protocol response. The reader morphism is a pattern matcher, is used to match HTTP response code, headers and response payload. It helps us to declare our expectations on the response. The evaluation of "program" fails if expectations do not match actual response.
 
-`gurl.HTTP(arrows ...Arrow) Arrow` and its composition implements lazy I/O. It only
-returns a "promise", you have to evaluate it in the context of IO instance.
+`gurl.Join(arrows ...Arrow) Arrow` and its composition implements lazy I/O. It only returns a "promise", you have to evaluate it in the context of IO instance.
 
 ```go
-  io := gurl.IO()
-  fn := gurl.HTTP( ... )
-  fn(io)
+  cat := gurl.IO()
+  req := gurl.Join( ... )
+  req(cat)
 ```
 
 Let's look on step-by-step usage of the category.
@@ -149,17 +118,16 @@ Let's look on step-by-step usage of the category.
 **Method and URL** are mandatory. It has to be a first element in the construction.
 
 ```go
-  gurl.HTTP(
+  http.Join(
     ø.GET("http://example.com"),
     ...
   )
 ```
 
-Definition of **request headers** is an optional. You can list as many headers as needed. Either using string literals or variables. Some frequently used headers
-implements aliases (e.g. `ø.ContentJSON()`, ...)
+Definition of **request headers** is an optional. You can list as many headers as needed. Either using string literals or variables. Some frequently used headers implements aliases (e.g. `ø.ContentJSON()`, ...)
 
 ```go
-  gurl.HTTP(
+  http.Join(
     ...
     ø.Header("Accept").Is("application/json"),
     ø.Header("Authorization").Val(&token),
@@ -167,55 +135,48 @@ implements aliases (e.g. `ø.ContentJSON()`, ...)
   )
 ```
 
-The **request payload** is also an optional. You can also use native Golang data types
-as egress payload. The library implicitly encodes input structures to binary
-using Content-Type as a hint.
+The **request payload** is also an optional. You can also use native Golang data types as egress payload. The library implicitly encodes input structures to binary using Content-Type as a hint.
 
 ```go
-  gurl.HTTP(
+  http.Join(
     ...
     ø.Send(MyType{Hello: "World"}),
     ...
   )
 ```
 
-The declaration of expected response is always starts with mandatory HTTP **status
-code**. The execution fails if peer responds with other than specified value.
+The declaration of expected response is always starts with mandatory HTTP **status code**. The execution fails if peer responds with other than specified value.
 
 ```go
-  gurl.HTTP(
+  http.Join(
     ...
-    ƒ.Code(gurl.StatusCodeOK),
+    ƒ.Code(http.StatusCodeOK),
     ...
   )
 ```
 
-It is possible to match presence of header in the response, match its entire
-content or lift the header value to a variable. The execution fails if HTTP
-response do not match the expectation.
+It is possible to match presence of header in the response, match its entire content or lift the header value to a variable. The execution fails if HTTP response do not match the expectation.
 
 ```go
-  gurl.HTTP(
+  http.Join(
     ...
     ƒ.Header("Content-Type").Is("application/json"),
     ...
   )
 ```
 
-The library is able to **decode payload** into Golang native data structure
-using Content-Type header as a hint.
+The library is able to **decode payload** into Golang native data structure using Content-Type header as a hint.
 
 ```go
   var data MyType
-  gurl.HTTP(
+  http.Join(
     ...
     ƒ.Recv(&data)
     ...
   )
 ```
 
-Please note, the library implements lenses to inline assert of decoded content.
-See the documentation of gurl/http/recv module.
+Please note, the library implements lenses to inline assert of decoded content. See the documentation of gurl/cat module.
 
 
 
@@ -226,6 +187,7 @@ The following code snippet demonstrates a typical usage scenario. See runnable [
 ```go
 import (
   "github.com/fogfish/gurl"
+  "github.com/fogfish/gurl/http"
   ø "github.com/fogfish/gurl/http/send"
   ƒ "github.com/fogfish/gurl/http/recv"
 )
@@ -238,7 +200,7 @@ type Payload struct {
 
 // the variable holds results of network I/O
 var data Payload
-var http := gurl.HTTP(
+var reqf := http.Join(
   // declares HTTP method and destination URL
   ø.GET("http://httpbin.org/get"),
   // HTTP content negotiation, declares acceptable types
@@ -255,26 +217,22 @@ var http := gurl.HTTP(
 // Note: http do not hold yet, a results of HTTP I/O
 //       it is just a composable "promise", you have to
 //       evaluate a side-effect of HTTP "computation"
-if http(gurl.IO()).Fail != nil {
+if reqf(gurl.IO(http.Default())).Fail != nil {
   // error handling
 }
 ```
 
-The evaluation of "program" fails if either networking fails or expectations
-do not match actual response. There are no needs to check error code after
-each operation. The composition is smart enough to terminate "program" execution.
+The evaluation of "program" fails if either networking fails or expectations do not match actual response. There are no needs to check error code after each operation. The composition is smart enough to terminate "program" execution.
 
 ## Composition
 
-The composition of multiple HTTP I/O is an essential part of the library.
-The composition is handled in context of IO category. For example,
-RESTfull API primitives declared as arrow functions, each deals with `gurl.IOCat`.
-See runnable [high-order function example](example/hof/main.go) and [recursion](example/loop/main.go).
+The composition of multiple HTTP I/O is an essential part of the library. The composition is handled in context of IO category. For example, RESTfull API primitives declared as arrow functions, each deals with `gurl.IOCat`. See runnable [high-order function example](example/hof/main.go) and [recursion](example/loop/main.go).
 
 
 ```go
 import (
   "github.com/fogfish/gurl"
+  "github.com/fogfish/gurl/http"
   ø "github.com/fogfish/gurl/http/send"
   ƒ "github.com/fogfish/gurl/http/recv"
 )
@@ -288,27 +246,27 @@ func HoF() {
   )
 
   // HoF combines multiple HTTP I/O to chain of execution 
-  http := gurl.Join(
+  reqf := gurl.Join(
     AccessToken(&token),
     UserProfile(&token, &user),
     UserContribution(&token, &org)
   )
 
-  if http(gurl.IO()).Fail != nil {
+  if reqf(gurl.IO(http.Default())).Fail != nil {
     // error handling
   }
 }
 
 func AccessToken(token *AccessToken) gurl.Arrow {
-  return gurl.HTTP(
+  return http.Join(
     // ...
     ƒ.Recv(token),
   )
 }
 
 func UserProfile(token *AccessToken, user *User) gurl.Arrow {
-  return gurl.HTTP(
-    ø.POST("..."),
+  return http.Join(
+    ø.POST(/* ... */),
     ø.Authorization().Val(token.Bearer),
     // ...
     ƒ.Recv(user),
@@ -316,8 +274,8 @@ func UserProfile(token *AccessToken, user *User) gurl.Arrow {
 }
 
 func UserContribution(token *AccessToken, org *Org) {
-  return gurl.HTTP(
-    ø.POST("..."),
+  return http.Join(
+    ø.POST(/* ... */),
     ø.Authorization().Val(token.Bearer),
     // ...
     ƒ.Recv(org),
