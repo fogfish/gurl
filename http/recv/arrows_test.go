@@ -116,6 +116,39 @@ func TestHeaderMismatch(t *testing.T) {
 		If(req(cat).Fail).ShouldNot().Equal(nil)
 }
 
+func TestHeaderUndefinedWithLit(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	req := µ.Join(
+		ø.GET(ts.URL+"/json"),
+		ø.AcceptJSON(),
+		ƒ.Code(µ.StatusCodeOK),
+		ƒ.Header("x-content-type").Is("foo/bar"),
+	)
+	cat := gurl.IO(µ.Default())
+
+	it.Ok(t).
+		If(req(cat).Fail).ShouldNot().Equal(nil)
+}
+
+func TestHeaderUndefinedWithVal(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	var val string
+	req := µ.Join(
+		ø.GET(ts.URL+"/json"),
+		ø.AcceptJSON(),
+		ƒ.Code(µ.StatusCodeOK),
+		ƒ.Header("x-content-type").String(&val),
+	)
+	cat := gurl.IO(µ.Default())
+
+	it.Ok(t).
+		If(req(cat).Fail).ShouldNot().Equal(nil)
+}
+
 func TestRecvJSON(t *testing.T) {
 	type Site struct {
 		Site string `json:"site"`
