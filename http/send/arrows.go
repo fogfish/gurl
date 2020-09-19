@@ -48,7 +48,6 @@ func URL(method, uri string, args ...interface{}) http.Arrow {
 			}
 		default:
 			cat.Fail = &gurl.NotSupported{URL: addr}
-			// io.Fail = xxxx.ProtocolNotSupported(io.URL.String())
 		}
 		return cat
 	}

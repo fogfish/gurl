@@ -130,7 +130,7 @@ The following code snippet demonstrates a typical usage scenario.
   // Note: http do not hold yet, a results of HTTP I/O
   //       it is just a composable "promise", you have to
   //       evaluate a side-effect of HTTP "computation"
-  if reqf(gurl.IO()).Fail != nil {
+  if reqf(gurl.IO( ... )).Fail != nil {
     // error handling
   }
 
@@ -164,7 +164,7 @@ RESTfull API primitives declared as function, each deals with gurl.IOCat.
       UserContribution(&token, &org)
     )
 
-    if reqf(gurl.IO()).Fail != nil {
+    if reqf(gurl.IO( ... )).Fail != nil {
       // error handling
     }
   }

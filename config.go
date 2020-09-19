@@ -11,8 +11,8 @@ package gurl
 /*
 
 Log Level constants, use with Logging config
-	- Level 0: disable debug logging (default)
-	- Level 1: log only egress traffic
+  - Level 0: disable debug logging (default)
+  - Level 1: log only egress traffic
   - Level 2: log only ingress traffic
   - Level 3: log full content of packets
 */
