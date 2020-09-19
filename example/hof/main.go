@@ -90,10 +90,7 @@ func hof(val *string) gurl.Arrow {
 func eval() {
 	var val string
 	req := hof(&val)
-	cat := gurl.IO(
-		gurl.Logging(3),
-		http.Default(),
-	)
+	cat := http.DefaultIO(gurl.Logging(3))
 
 	if err := req(cat).Fail; err != nil {
 		fmt.Printf("fail %v\n", err)

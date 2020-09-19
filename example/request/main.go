@@ -62,10 +62,7 @@ func validate(val *httpbin) func() error {
 func main() {
 	var val httpbin
 	req := request(&val)
-	cat := gurl.IO(
-		gurl.Logging(3),
-		http.Default(),
-	)
+	cat := http.DefaultIO(gurl.Logging(3))
 
 	if err := req(cat).Fail; err != nil {
 		fmt.Printf("fail %v\n", err)

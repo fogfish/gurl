@@ -93,6 +93,15 @@ func defaultClient() *http.Client {
 	}
 }
 
+// DefaultIO creates default HTTP IO category
+// use for development only
+func DefaultIO(opts ...gurl.Config) *gurl.IOCat {
+	args := append(opts, Default())
+	return gurl.IO(args...)
+}
+
+//
+//
 type pool struct{ *http.Client }
 
 func (p pool) Unsafe(cat *gurl.IOCat) *gurl.IOCat {

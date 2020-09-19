@@ -81,10 +81,7 @@ func (s *seq) lookup(page int) gurl.Arrow {
 func main() {
 	var val seq
 	req := val.lookup(1)
-	cat := gurl.IO(
-		gurl.Logging(3),
-		http.Default(),
-	)
+	cat := http.DefaultIO(gurl.Logging(3))
 
 	if err := req(cat).Fail; err != nil {
 		fmt.Printf("fail %v\n", err)

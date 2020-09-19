@@ -217,7 +217,7 @@ var reqf := http.Join(
 // Note: http do not hold yet, a results of HTTP I/O
 //       it is just a composable "promise", you have to
 //       evaluate a side-effect of HTTP "computation"
-if reqf(gurl.IO(http.Default())).Fail != nil {
+if reqf(http.DefaultIO()).Fail != nil {
   // error handling
 }
 ```
@@ -252,7 +252,7 @@ func HoF() {
     UserContribution(&token, &org)
   )
 
-  if reqf(gurl.IO(http.Default())).Fail != nil {
+  if reqf(http.DefaultIO()).Fail != nil {
     // error handling
   }
 }
