@@ -39,6 +39,16 @@ func (cat *IOCat) Unsafe() *IOCat {
 
 /*
 
+Recover any fail state of I/O category
+*/
+func (cat *IOCat) Recover() (err error) {
+	err = cat.Fail
+	cat.Fail = nil
+	return
+}
+
+/*
+
 Config defines configuration for the IO category
 */
 type Config func(*IOCat) *IOCat
