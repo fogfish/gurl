@@ -52,3 +52,22 @@ func TestJoinFail(t *testing.T) {
 			).ShouldNot().Equal(nil)
 	}
 }
+
+func TestRecover(t *testing.T) {
+	c := gurl.IO()
+
+	c = identity()(c)
+	it.Ok(t).
+		If(c.Fail).Should().Equal(nil).
+		If(c.Recover()).Should().Equal(nil)
+
+	c = fail()(c)
+	it.Ok(t).
+		If(c.Fail).ShouldNot().Equal(nil).
+		If(c.Recover()).ShouldNot().Equal(nil)
+
+	c = identity()(c)
+	it.Ok(t).
+		If(c.Fail).Should().Equal(nil).
+		If(c.Recover()).Should().Equal(nil)
+}
