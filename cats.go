@@ -32,7 +32,6 @@ type UpStreamHTTP struct {
 	URL     *url.URL
 	Header  map[string]*string
 	Payload io.Reader
-	//*bytes.Buffer
 }
 
 /*
