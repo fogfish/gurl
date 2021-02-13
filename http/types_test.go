@@ -26,7 +26,7 @@ func TestJoin(t *testing.T) {
 
 	req := µ.Join(
 		ø.URL("GET", ts.URL+"/ok"),
-		ƒ.Code(µ.StatusCodeOK),
+		ƒ.Code(µ.StatusOK),
 	)
 	cat := gurl.IO(µ.Default())
 
@@ -41,11 +41,11 @@ func TestJoinCats(t *testing.T) {
 	req := gurl.Join(
 		µ.Join(
 			ø.URL("GET", ts.URL+"/ok"),
-			ƒ.Code(µ.StatusCodeOK),
+			ƒ.Code(µ.StatusOK),
 		),
 		µ.Join(
 			ø.URL("GET", ts.URL),
-			ƒ.Code(µ.StatusCodeBadRequest),
+			ƒ.Code(µ.StatusBadRequest),
 		),
 	)
 	cat := gurl.IO(µ.Default())
