@@ -120,7 +120,7 @@ The following code snippet demonstrates a typical usage scenario.
     ø.Accept().Is("application/json"),
 
     // requires HTTP Status Code to be 200 OK
-    ƒ.Code(gurl.StatusCodeOK),
+    ƒ.Code(gurl.StatusOK),
     // requites HTTP Header to be Content-Type: application/json
     ƒ.Served().Is("application/json"),
     // unmarshal JSON to the variable

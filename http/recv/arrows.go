@@ -33,7 +33,7 @@ Code is a mandatory statement to match expected HTTP Status Code against
 received one. The execution fails StatusCode error if service responds
 with other value then specified one.
 */
-func Code(code ...http.StatusCodeAny) http.Arrow {
+func Code(code ...http.StatusCode) http.Arrow {
 	return func(cat *gurl.IOCat) *gurl.IOCat {
 		if cat = cat.Unsafe(); cat.Fail != nil {
 			return cat
@@ -47,7 +47,7 @@ func Code(code ...http.StatusCodeAny) http.Arrow {
 	}
 }
 
-func hasCode(s []http.StatusCodeAny, e int) bool {
+func hasCode(s []http.StatusCode, e int) bool {
 	for _, a := range s {
 		if a.Value() == e {
 			return true

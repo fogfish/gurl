@@ -150,7 +150,7 @@ The declaration of expected response is always starts with mandatory HTTP **stat
 ```go
   http.Join(
     ...
-    ƒ.Code(http.StatusCodeOK),
+    ƒ.Code(http.StatusOK),
     ...
   )
 ```
@@ -207,7 +207,7 @@ var reqf := http.Join(
   ø.Accept("application/json"),
 
   // requires HTTP Status Code to be 200 OK
-  ƒ.Code(gurl.StatusCodeOK),
+  ƒ.Code(gurl.StatusOK),
   // requites HTTP Header to be Content-Type: application/json
   ƒ.Served("application/json"),
   // unmarshal JSON to the variable

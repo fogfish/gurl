@@ -27,7 +27,7 @@ func TestCodeOk(t *testing.T) {
 	req := µ.Join(
 		ø.GET(ts.URL+"/json"),
 		ø.AcceptJSON(),
-		ƒ.Code(µ.StatusCodeOK),
+		ƒ.Code(µ.StatusOK),
 	)
 	cat := gurl.IO(µ.Default())
 
@@ -42,12 +42,12 @@ func TestCodeNoMatch(t *testing.T) {
 	req := µ.Join(
 		ø.GET(ts.URL+"/other"),
 		ø.AcceptJSON(),
-		ƒ.Code(µ.StatusCodeOK),
+		ƒ.Code(µ.StatusOK),
 	)
 	cat := gurl.IO(µ.Default())
 
 	it.Ok(t).
-		If(req(cat).Fail).Should().Be().Like(µ.StatusCodeBadRequest)
+		If(req(cat).Fail).Should().Be().Like(µ.StatusBadRequest)
 }
 
 func TestHeaderOk(t *testing.T) {
@@ -57,7 +57,7 @@ func TestHeaderOk(t *testing.T) {
 	req := µ.Join(
 		ø.GET(ts.URL+"/json"),
 		ø.AcceptJSON(),
-		ƒ.Code(µ.StatusCodeOK),
+		ƒ.Code(µ.StatusOK),
 		ƒ.Header("content-type").Is("application/json"),
 	)
 	cat := gurl.IO(µ.Default())
@@ -73,7 +73,7 @@ func TestHeaderAny(t *testing.T) {
 	req := µ.Join(
 		ø.GET(ts.URL+"/json"),
 		ø.AcceptJSON(),
-		ƒ.Code(µ.StatusCodeOK),
+		ƒ.Code(µ.StatusOK),
 		ƒ.Header("content-type").Any(),
 	)
 	cat := gurl.IO(µ.Default())
@@ -90,7 +90,7 @@ func TestHeaderVal(t *testing.T) {
 	req := µ.Join(
 		ø.GET(ts.URL+"/json"),
 		ø.AcceptJSON(),
-		ƒ.Code(µ.StatusCodeOK),
+		ƒ.Code(µ.StatusOK),
 		ƒ.Header("content-type").String(&content),
 	)
 	cat := gurl.IO(µ.Default())
@@ -107,7 +107,7 @@ func TestHeaderMismatch(t *testing.T) {
 	req := µ.Join(
 		ø.GET(ts.URL+"/json"),
 		ø.AcceptJSON(),
-		ƒ.Code(µ.StatusCodeOK),
+		ƒ.Code(µ.StatusOK),
 		ƒ.Header("content-type").Is("foo/bar"),
 	)
 	cat := gurl.IO(µ.Default())
@@ -123,7 +123,7 @@ func TestHeaderUndefinedWithLit(t *testing.T) {
 	req := µ.Join(
 		ø.GET(ts.URL+"/json"),
 		ø.AcceptJSON(),
-		ƒ.Code(µ.StatusCodeOK),
+		ƒ.Code(µ.StatusOK),
 		ƒ.Header("x-content-type").Is("foo/bar"),
 	)
 	cat := gurl.IO(µ.Default())
@@ -140,7 +140,7 @@ func TestHeaderUndefinedWithVal(t *testing.T) {
 	req := µ.Join(
 		ø.GET(ts.URL+"/json"),
 		ø.AcceptJSON(),
-		ƒ.Code(µ.StatusCodeOK),
+		ƒ.Code(µ.StatusOK),
 		ƒ.Header("x-content-type").String(&val),
 	)
 	cat := gurl.IO(µ.Default())
@@ -160,7 +160,7 @@ func TestRecvJSON(t *testing.T) {
 	var site Site
 	req := µ.Join(
 		ø.GET(ts.URL+"/json"),
-		ƒ.Code(µ.StatusCodeOK),
+		ƒ.Code(µ.StatusOK),
 		ƒ.ServedJSON(),
 		ƒ.Recv(&site),
 	)
@@ -182,7 +182,7 @@ func TestRecvForm(t *testing.T) {
 	var site Site
 	req := µ.Join(
 		ø.GET(ts.URL+"/form"),
-		ƒ.Code(µ.StatusCodeOK),
+		ƒ.Code(µ.StatusOK),
 		ƒ.ServedForm(),
 		ƒ.Recv(&site),
 	)
@@ -204,7 +204,7 @@ func TestRecvBytes(t *testing.T) {
 	var data []byte
 	req := µ.Join(
 		ø.GET(ts.URL+"/form"),
-		ƒ.Code(µ.StatusCodeOK),
+		ƒ.Code(µ.StatusOK),
 		ƒ.Served().Any(),
 		ƒ.Bytes(&data),
 	)
