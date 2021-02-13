@@ -9,6 +9,8 @@
 package send_test
 
 import (
+	"bytes"
+	"io/ioutil"
 	"net/url"
 	"testing"
 
@@ -156,11 +158,12 @@ func TestSendJSON(t *testing.T) {
 		ø.Header("Content-Type").Is("application/json"),
 		ø.Send(Site{"host", "site"}),
 	)
-	cat := gurl.IO(http.Default())
+	cat := req(http.DefaultIO())
+	buf, _ := ioutil.ReadAll(cat.HTTP.Send.Payload)
 
 	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil).
-		If(cat.HTTP.Send.Payload.String()).Should().Equal("{\"site\":\"host\",\"host\":\"site\"}")
+		If(cat.Fail).Should().Equal(nil).
+		If(string(buf)).Should().Equal("{\"site\":\"host\",\"host\":\"site\"}")
 }
 
 func TestSendForm(t *testing.T) {
@@ -174,11 +177,32 @@ func TestSendForm(t *testing.T) {
 		ø.Header("Content-Type").Is("application/x-www-form-urlencoded"),
 		ø.Send(Site{"host", "site"}),
 	)
-	cat := gurl.IO(http.Default())
+	cat := req(http.DefaultIO())
+	buf, _ := ioutil.ReadAll(cat.HTTP.Send.Payload)
 
 	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil).
-		If(cat.HTTP.Send.Payload.String()).Should().Equal("host=site&site=host")
+		If(cat.Fail).Should().Equal(nil).
+		If(string(buf)).Should().Equal("host=site&site=host")
+}
+
+func TestSendBytes(t *testing.T) {
+	for _, val := range []interface{}{
+		"host=site",
+		[]byte("host=site"),
+		bytes.NewBuffer([]byte("host=site")),
+	} {
+		req := http.Join(
+			ø.URL("GET", "https://example.com"),
+			ø.Header("Content-Type").Is("text/plain"),
+			ø.Send(val),
+		)
+		cat := req(http.DefaultIO())
+		buf, _ := ioutil.ReadAll(cat.HTTP.Send.Payload)
+
+		it.Ok(t).
+			If(cat.Fail).Should().Equal(nil).
+			If(string(buf)).Should().Equal("host=site")
+	}
 }
 
 func TestSendUnknown(t *testing.T) {
