@@ -99,3 +99,15 @@ func TestStatusCodeCodec(t *testing.T) {
 			If(fmt.Sprintf("%T", status)).Should().Equal(fmt.Sprintf("%T", val))
 	}
 }
+
+func TestStatusCodeRequired(t *testing.T) {
+	var code error = gurl.NewStatusCode(200, 201)
+	it.Ok(t).
+		If(code.Error()).Should().Equal("HTTP Status `200 OK`, required `201 Created`.")
+}
+
+func TestStatusCodeText(t *testing.T) {
+	var code error = gurl.NewStatusCode(200)
+	it.Ok(t).
+		If(code.Error()).Should().Equal("HTTP 200 OK")
+}
