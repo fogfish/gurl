@@ -24,7 +24,7 @@ Use type switch for error handling "branches"
     switch err {
     case http.StatusOK:
       // HTTP 200 OK
-		case http.StatusNotFound:
+    case http.StatusNotFound:
       // HTTP 404 NotFound
     default:
       // any other HTTP errors
