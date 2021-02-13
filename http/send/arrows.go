@@ -13,6 +13,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
 	"reflect"
 	"strings"
@@ -149,6 +150,9 @@ Send payload to destination URL. You can also use native Go data types
 (e.g. maps, struct, etc) as egress payload. The library implicitly encodes
 input structures to binary using Content-Type as a hint. The function fails
 if content type is not supported by the library.
+
+The function accept a "classical" data container such as string, []bytes or
+io.Reader interfaces.
 */
 func Send(data interface{}) http.Arrow {
 	return func(cat *gurl.IOCat) *gurl.IOCat {
@@ -158,7 +162,16 @@ func Send(data interface{}) http.Arrow {
 			return cat
 		}
 
-		cat.HTTP.Send.Payload, cat.Fail = encode(*content, data)
+		switch stream := data.(type) {
+		case string:
+			cat.HTTP.Send.Payload = bytes.NewBuffer([]byte(stream))
+		case []byte:
+			cat.HTTP.Send.Payload = bytes.NewBuffer(stream)
+		case io.Reader:
+			cat.HTTP.Send.Payload = stream
+		default:
+			cat.HTTP.Send.Payload, cat.Fail = encode(*content, data)
+		}
 		return cat
 	}
 }

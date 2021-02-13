@@ -9,7 +9,7 @@
 package gurl
 
 import (
-	"bytes"
+	"io"
 	"net/http"
 	"net/url"
 )
@@ -31,7 +31,8 @@ type UpStreamHTTP struct {
 	Method  string
 	URL     *url.URL
 	Header  map[string]*string
-	Payload *bytes.Buffer
+	Payload io.Reader
+	//*bytes.Buffer
 }
 
 /*
