@@ -109,5 +109,7 @@ func TestStatusCodeRequired(t *testing.T) {
 func TestStatusCodeText(t *testing.T) {
 	var code error = gurl.NewStatusCode(200)
 	it.Ok(t).
-		If(code.Error()).Should().Equal("HTTP 200 OK")
+		If(code.Error()).Should().Equal("HTTP 200 OK").
+		If(errors.Is(code, gurl.StatusOK)).Should().Equal(true).
+		If(errors.Is(code, gurl.StatusCreated)).Should().Equal(false)
 }
