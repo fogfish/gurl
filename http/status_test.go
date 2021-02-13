@@ -111,5 +111,6 @@ func TestStatusCodeText(t *testing.T) {
 	it.Ok(t).
 		If(code.Error()).Should().Equal("HTTP 200 OK").
 		If(errors.Is(code, gurl.StatusOK)).Should().Equal(true).
-		If(errors.Is(code, gurl.StatusCreated)).Should().Equal(false)
+		If(errors.Is(code, gurl.StatusCreated)).Should().Equal(false).
+		If(errors.Is(code, fmt.Errorf("some error"))).Should().Equal(false)
 }
