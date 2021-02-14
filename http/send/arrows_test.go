@@ -75,6 +75,16 @@ func TestURLEscape(t *testing.T) {
 		If(cat.HTTP.Send.URL.String()).Should().Equal("https://example.com/a%20b/1")
 }
 
+func TestURLEscapeSkip(t *testing.T) {
+	a := "a/b"
+	req := ø.URL("GET", "!https://example.com/%s", &a)
+	cat := gurl.IO(http.Default())
+
+	it.Ok(t).
+		If(req(cat).Fail).Should().Equal(nil).
+		If(cat.HTTP.Send.URL.String()).Should().Equal("https://example.com/a/b")
+}
+
 func TestURLType(t *testing.T) {
 	a := "a b"
 	b := 1

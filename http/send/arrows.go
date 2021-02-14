@@ -55,6 +55,15 @@ func URL(method, uri string, args ...interface{}) http.Arrow {
 }
 
 func mkURL(uri string, args ...interface{}) (*url.URL, error) {
+	switch uri[0] {
+	case '!':
+		return mkEscapedURL(false, uri[1:], args...)
+	default:
+		return mkEscapedURL(true, uri, args...)
+	}
+}
+
+func mkEscapedURL(escape bool, uri string, args ...interface{}) (*url.URL, error) {
 	opts := []interface{}{}
 	for _, x := range args {
 		switch v := x.(type) {
@@ -62,16 +71,27 @@ func mkURL(uri string, args ...interface{}) (*url.URL, error) {
 			v.Path = strings.TrimSuffix(v.Path, "/")
 			opts = append(opts, v.String())
 		default:
-			val := reflect.ValueOf(x)
-			if val.Kind() == reflect.Ptr {
-				opts = append(opts, url.PathEscape(fmt.Sprintf("%v", val.Elem())))
-			} else {
-				opts = append(opts, url.PathEscape(fmt.Sprintf("%v", val)))
-			}
+			opts = append(opts, urlSegment(escape, x))
 		}
 	}
 
 	return url.Parse(fmt.Sprintf(uri, opts...))
+}
+
+func urlSegment(escape bool, arg interface{}) (str string) {
+	val := reflect.ValueOf(arg)
+
+	if val.Kind() == reflect.Ptr {
+		str = fmt.Sprintf("%v", val.Elem())
+	} else {
+		str = fmt.Sprintf("%v", val)
+	}
+
+	if escape {
+		str = url.PathEscape(str)
+	}
+
+	return
 }
 
 /*
