@@ -70,28 +70,32 @@ func mkEscapedURL(escape bool, uri string, args ...interface{}) (*url.URL, error
 		case *url.URL:
 			v.Path = strings.TrimSuffix(v.Path, "/")
 			opts = append(opts, v.String())
+		case func() string:
+			opts = append(opts, maybeEscape(escape, v()))
 		default:
-			opts = append(opts, urlSegment(escape, x))
+			opts = append(opts, maybeEscape(escape, urlSegment(x)))
 		}
 	}
 
 	return url.Parse(fmt.Sprintf(uri, opts...))
 }
 
-func urlSegment(escape bool, arg interface{}) (str string) {
+func urlSegment(arg interface{}) string {
 	val := reflect.ValueOf(arg)
 
 	if val.Kind() == reflect.Ptr {
-		str = fmt.Sprintf("%v", val.Elem())
-	} else {
-		str = fmt.Sprintf("%v", val)
+		return fmt.Sprintf("%v", val.Elem())
 	}
 
+	return fmt.Sprintf("%v", val)
+}
+
+func maybeEscape(escape bool, val string) string {
 	if escape {
-		str = url.PathEscape(str)
+		return url.PathEscape(val)
 	}
 
-	return
+	return val
 }
 
 /*

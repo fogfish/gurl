@@ -97,6 +97,17 @@ func TestURLType(t *testing.T) {
 		If(cat.HTTP.Send.URL.String()).Should().Equal("https://example.com/a%20b/1")
 }
 
+func TestURLLazyVal(t *testing.T) {
+	a := func() string { return "a" }
+
+	req := ø.URL("GET", "https://example.com/%s", a)
+	cat := gurl.IO(http.Default())
+
+	it.Ok(t).
+		If(req(cat).Fail).Should().Equal(nil).
+		If(cat.HTTP.Send.URL.String()).Should().Equal("https://example.com/a")
+}
+
 func TestHeaderByLit(t *testing.T) {
 	req := http.Join(
 		ø.URL("GET", "http://example.com"),
