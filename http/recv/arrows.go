@@ -29,7 +29,7 @@ import (
 
 /*
 
-Code is a mandatory statement to match expected HTTP Status Code against
+Status is a mandatory statement to match expected HTTP Status Code against
 received one. The execution fails StatusCode error if service responds
 with other value then specified one.
 */
@@ -56,49 +56,56 @@ func hasCode(s []http.StatusCode, e int) bool {
 	return false
 }
 
-// THeader is tagged string, represents HTTP Header
-type THeader struct{ string }
-
 /*
 
 Header matches presence of header in the response or match its entire content.
 The execution fails with BadMatchHead if the matched value do not meet expectations.
+
+  http.Join(
+		...
+		ƒ.ContentType.JSON,
+		ƒ.ContentEncoding.Is(...),
+	)
 */
-func Header(header string) THeader {
-	return THeader{header}
-}
+type Header string
+
+/*
+
+List of supported HTTP header constants
+https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Response_fields
+*/
+const (
+	CacheControl     = Header("Cache-Control")
+	Connection       = Header("Connection")
+	ContentEncoding  = Header("Content-Encoding")
+	ContentLanguage  = Header("Content-Language")
+	ContentLength    = Header("Content-Length")
+	ContentType      = Content("Content-Type")
+	Date             = Header("Date")
+	ETag             = Header("ETag")
+	Expires          = Header("Expires")
+	LastModified     = Header("Last-Modified")
+	Link             = Header("Link")
+	Location         = Header("Location")
+	Server           = Header("Server")
+	SetCookie        = Header("Set-Cookie")
+	TransferEncoding = Header("Transfer-Encoding")
+)
 
 // Is matches value of HTTP header, Use wildcard string ("*") to match any header value
-func (header THeader) Is(value string) http.Arrow {
+func (header Header) Is(value string) http.Arrow {
 	return func(cat *gurl.IOCat) *gurl.IOCat {
-		h := cat.HTTP.Recv.Header.Get(header.string)
-		if h == "" {
-			cat.Fail = &gurl.Mismatch{
-				Diff:    fmt.Sprintf("- %s: %s", header.string, value),
-				Payload: nil,
-			}
-			return cat
-		}
-
-		if value != "*" && !strings.HasPrefix(h, value) {
-			cat.Fail = &gurl.Mismatch{
-				Diff:    fmt.Sprintf("+ %s: %s\n- %s: %s", header.string, h, header.string, value),
-				Payload: map[string]string{header.string: h},
-			}
-			return cat
-		}
-
-		return cat
+		return header.Match(cat, value)
 	}
 }
 
 // String matches a header value to closed variable of string type.
-func (header THeader) String(value *string) http.Arrow {
+func (header Header) String(value *string) http.Arrow {
 	return func(cat *gurl.IOCat) *gurl.IOCat {
-		val := cat.HTTP.Recv.Header.Get(header.string)
+		val := cat.HTTP.Recv.Header.Get(string(header))
 		if val == "" {
 			cat.Fail = &gurl.Mismatch{
-				Diff:    fmt.Sprintf("- %s: *", header.string),
+				Diff:    fmt.Sprintf("- %s: *", string(header)),
 				Payload: nil,
 			}
 		} else {
@@ -110,8 +117,63 @@ func (header THeader) String(value *string) http.Arrow {
 }
 
 // Any matches a header value, syntax sugar of Header(...).Is("*")
-func (header THeader) Any() http.Arrow {
+func (header Header) Any() http.Arrow {
 	return header.Is("*")
+}
+
+// Match is combinator to check HTTP header value
+func (header Header) Match(cat *gurl.IOCat, value string) *gurl.IOCat {
+	h := cat.HTTP.Recv.Header.Get(string(header))
+	if h == "" {
+		cat.Fail = &gurl.Mismatch{
+			Diff:    fmt.Sprintf("- %s: %s", string(header), value),
+			Payload: nil,
+		}
+		return cat
+	}
+
+	if value != "*" && !strings.HasPrefix(h, value) {
+		cat.Fail = &gurl.Mismatch{
+			Diff:    fmt.Sprintf("+ %s: %s\n- %s: %s", string(header), h, string(header), value),
+			Payload: map[string]string{string(header): h},
+		}
+		return cat
+	}
+
+	return cat
+}
+
+// Content defines headers for content negotiation
+type Content Header
+
+// JSON matches header `???: application/json`
+func (h Content) JSON(cat *gurl.IOCat) *gurl.IOCat {
+	return Header(h).Match(cat, "application/json")
+}
+
+// Form matches Header `???: application/x-www-form-urlencoded`
+func (h Content) Form(cat *gurl.IOCat) *gurl.IOCat {
+	return Header(h).Match(cat, "application/x-www-form-urlencoded")
+}
+
+// Text matches Header `???: plain/text`
+func (h Content) Text(cat *gurl.IOCat) *gurl.IOCat {
+	return Header(h).Match(cat, "plain/text")
+}
+
+// Html matches Header `???: plain/html`
+func (h Content) Html(cat *gurl.IOCat) *gurl.IOCat {
+	return Header(h).Match(cat, "plain/html")
+}
+
+// Is matches value of HTTP header, Use wildcard string ("*") to match any header value
+func (h Content) Is(value string) http.Arrow {
+	return Header(h).Is(value)
+}
+
+// String matches a header value to closed variable of string type.
+func (h Content) String(value *string) http.Arrow {
+	return Header(h).String(value)
 }
 
 /*
@@ -167,18 +229,3 @@ func Bytes(val *[]byte) http.Arrow {
 // alias arrows
 //
 //-------------------------------------------------------------------
-
-// Served is a syntax sugar of Header("Content-Type")
-func Served() THeader {
-	return Header("Content-Type")
-}
-
-// ServedJSON is a syntax sugar of Header("Content-Type").Is("application/json")
-func ServedJSON() http.Arrow {
-	return Served().Is("application/json")
-}
-
-// ServedForm is a syntax sugar of Header("Content-Type", "application/x-www-form-urlencoded")
-func ServedForm() http.Arrow {
-	return Served().Is("application/x-www-form-urlencoded")
-}
