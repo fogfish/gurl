@@ -10,6 +10,7 @@ package send_test
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/url"
 	"testing"
@@ -21,7 +22,7 @@ import (
 )
 
 func TestSchemaHTTP(t *testing.T) {
-	req := ø.URL("GET", "http://example.com")
+	req := ø.GET.URL("http://example.com")
 	cat := gurl.IO(http.Default())
 
 	it.Ok(t).
@@ -29,7 +30,7 @@ func TestSchemaHTTP(t *testing.T) {
 }
 
 func TestSchemaHTTPS(t *testing.T) {
-	req := ø.URL("GET", "https://example.com")
+	req := ø.GET.URL("https://example.com")
 	cat := gurl.IO(http.Default())
 
 	it.Ok(t).
@@ -37,7 +38,7 @@ func TestSchemaHTTPS(t *testing.T) {
 }
 
 func TestSchemaUnsupported(t *testing.T) {
-	req := ø.URL("GET", "other://example.com")
+	req := ø.GET.URL("other://example.com")
 	cat := gurl.IO(http.Default())
 
 	it.Ok(t).
@@ -45,7 +46,7 @@ func TestSchemaUnsupported(t *testing.T) {
 }
 
 func TestURL(t *testing.T) {
-	req := ø.URL("GET", "https://example.com/%s/%v", "a", 1)
+	req := ø.GET.URL("https://example.com/%s/%v", "a", 1)
 	cat := gurl.IO(http.Default())
 
 	it.Ok(t).
@@ -56,7 +57,7 @@ func TestURL(t *testing.T) {
 func TestURLByRef(t *testing.T) {
 	a := "a"
 	b := 1
-	req := ø.URL("GET", "https://example.com/%s/%v", &a, &b)
+	req := ø.GET.URL("https://example.com/%s/%v", &a, &b)
 	cat := gurl.IO(http.Default())
 
 	it.Ok(t).
@@ -67,7 +68,7 @@ func TestURLByRef(t *testing.T) {
 func TestURLEscape(t *testing.T) {
 	a := "a b"
 	b := 1
-	req := ø.URL("GET", "https://example.com/%s/%v", &a, &b)
+	req := ø.GET.URL("https://example.com/%s/%v", &a, &b)
 	cat := gurl.IO(http.Default())
 
 	it.Ok(t).
@@ -77,7 +78,7 @@ func TestURLEscape(t *testing.T) {
 
 func TestURLEscapeSkip(t *testing.T) {
 	a := "a/b"
-	req := ø.URL("GET", "!https://example.com/%s", &a)
+	req := ø.GET.URL("!https://example.com/%s", &a)
 	cat := gurl.IO(http.Default())
 
 	it.Ok(t).
@@ -89,7 +90,7 @@ func TestURLType(t *testing.T) {
 	a := "a b"
 	b := 1
 	p, _ := url.Parse("https://example.com")
-	req := ø.URL("GET", "%s/%s/%v", p, &a, &b)
+	req := ø.GET.URL("%s/%s/%v", p, &a, &b)
 	cat := gurl.IO(http.Default())
 
 	it.Ok(t).
@@ -100,7 +101,7 @@ func TestURLType(t *testing.T) {
 func TestURLLazyVal(t *testing.T) {
 	a := func() string { return "a" }
 
-	req := ø.URL("GET", "https://example.com/%s", a)
+	req := ø.GET.URL("https://example.com/%s", a)
 	cat := gurl.IO(http.Default())
 
 	it.Ok(t).
@@ -110,7 +111,7 @@ func TestURLLazyVal(t *testing.T) {
 
 func TestHeaderByLit(t *testing.T) {
 	req := http.Join(
-		ø.URL("GET", "http://example.com"),
+		ø.GET.URL("http://example.com"),
 		ø.Header("Accept").Is("text/plain"),
 	)
 	cat := gurl.IO(http.Default())
@@ -125,7 +126,7 @@ func TestHeaderByVal(t *testing.T) {
 	val := "text/plain"
 
 	req := http.Join(
-		ø.URL("GET", "http://example.com"),
+		ø.GET.URL("http://example.com"),
 		ø.Header("Accept").Val(&val),
 	)
 	cat := gurl.IO(http.Default())
@@ -142,7 +143,7 @@ func TestParams(t *testing.T) {
 	}
 
 	req := http.Join(
-		ø.URL("GET", "https://example.com"),
+		ø.GET.URL("https://example.com"),
 		ø.Params(Site{"host", "site"}),
 	)
 	cat := gurl.IO(http.Default())
@@ -159,7 +160,7 @@ func TestParamsInvalidFormat(t *testing.T) {
 	}
 
 	req := http.Join(
-		ø.URL("GET", "https://example.com"),
+		ø.GET.URL("https://example.com"),
 		ø.Params(Site{"host", 100}),
 	)
 	cat := gurl.IO(http.Default())
@@ -175,7 +176,7 @@ func TestSendJSON(t *testing.T) {
 	}
 
 	req := http.Join(
-		ø.URL("GET", "https://example.com"),
+		ø.GET.URL("https://example.com"),
 		ø.Header("Content-Type").Is("application/json"),
 		ø.Send(Site{"host", "site"}),
 	)
@@ -194,7 +195,7 @@ func TestSendForm(t *testing.T) {
 	}
 
 	req := http.Join(
-		ø.URL("GET", "https://example.com"),
+		ø.GET.URL("https://example.com"),
 		ø.Header("Content-Type").Is("application/x-www-form-urlencoded"),
 		ø.Send(Site{"host", "site"}),
 	)
@@ -213,7 +214,7 @@ func TestSendBytes(t *testing.T) {
 		bytes.NewBuffer([]byte("host=site")),
 	} {
 		req := http.Join(
-			ø.URL("GET", "https://example.com"),
+			ø.GET.URL("https://example.com"),
 			ø.Header("Content-Type").Is("text/plain"),
 			ø.Send(val),
 		)
@@ -233,7 +234,7 @@ func TestSendUnknown(t *testing.T) {
 	}
 
 	req := http.Join(
-		ø.URL("GET", "https://example.com"),
+		ø.GET.URL("https://example.com"),
 		ø.Send(Site{"host", "site"}),
 	)
 	cat := gurl.IO(http.Default())
@@ -249,7 +250,7 @@ func TestSendNotSupported(t *testing.T) {
 	}
 
 	req := http.Join(
-		ø.URL("GET", "https://example.com"),
+		ø.GET.URL("https://example.com"),
 		ø.Header("Content-Type").Is("foo/bar"),
 		ø.Send(Site{"host", "site"}),
 	)
@@ -261,10 +262,11 @@ func TestSendNotSupported(t *testing.T) {
 
 func TestAliasesURL(t *testing.T) {
 	for mthd, f := range map[string]func(string, ...interface{}) http.Arrow{
-		"GET":    ø.GET,
-		"PUT":    ø.PUT,
-		"POST":   ø.POST,
-		"DELETE": ø.DELETE,
+		"GET":    ø.GET.URL,
+		"PUT":    ø.PUT.URL,
+		"POST":   ø.POST.URL,
+		"DELETE": ø.DELETE.URL,
+		"PATCH":  ø.PATCH.URL,
 	} {
 		req := f("https://example.com/%s/%v", "a", 1)
 		cat := gurl.IO(http.Default())
@@ -284,17 +286,17 @@ func TestAliasesHeader(t *testing.T) {
 	}
 
 	for _, unit := range []Unit{
-		{"accept", "foo/bar", ø.Accept().Is("foo/bar")},
-		{"accept", "application/json", ø.AcceptJSON()},
-		{"accept", "application/x-www-form-urlencoded", ø.AcceptForm()},
-		{"content-type", "foo/bar", ø.Content().Is("foo/bar")},
-		{"content-type", "application/json", ø.ContentJSON()},
-		{"content-type", "application/x-www-form-urlencoded", ø.ContentForm()},
-		{"connection", "keep-alive", ø.KeepAlive()},
-		{"authorization", "foo bar", ø.Authorization().Is("foo bar")},
+		{"accept", "foo/bar", ø.Accept.Is("foo/bar")},
+		{"accept", "application/json", ø.Accept.JSON},
+		{"accept", "application/x-www-form-urlencoded", ø.Accept.Form},
+		{"content-type", "foo/bar", ø.ContentType.Is("foo/bar")},
+		{"content-type", "application/json", ø.ContentType.JSON},
+		{"content-type", "application/x-www-form-urlencoded", ø.ContentType.Form},
+		{"connection", "keep-alive", ø.Connection.KeepAlive},
+		{"authorization", "foo bar", ø.Authorization.Is("foo bar")},
 	} {
 		req := http.Join(
-			ø.URL("GET", "http://example.com"),
+			ø.GET.URL("http://example.com"),
 			unit.arrow,
 		)
 		cat := gurl.IO(http.Default())
@@ -303,4 +305,14 @@ func TestAliasesHeader(t *testing.T) {
 			If(req(cat).Fail).Should().Equal(nil).
 			If(*cat.HTTP.Send.Header[unit.header]).Should().Equal(unit.value)
 	}
+}
+
+func TestX(t *testing.T) {
+	req := http.Join(
+		ø.GET.URL("http://example.com"),
+		ø.Accept.JSON,
+	)
+	cat := gurl.IO(http.Default())
+	req(cat)
+	fmt.Println(*cat.HTTP.Send.Header["accept"])
 }
