@@ -88,13 +88,9 @@ func (StatusCode) eval(code http.StatusCode, cat *gurl.IOCat) *gurl.IOCat {
 	return cat
 }
 
-// Continue ⟼ http.StatusContinue
-func (code StatusCode) Continue(cat *gurl.IOCat) *gurl.IOCat {
-	return code.eval(http.StatusContinue, cat)
-}
-
 /*
 TODO:
+  Continue
 	SwitchingProtocols
 	Processing
 	EarlyHints

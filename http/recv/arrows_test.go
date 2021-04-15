@@ -11,6 +11,8 @@ package recv_test
 import (
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/fogfish/gurl"
@@ -48,6 +50,59 @@ func TestCodeNoMatch(t *testing.T) {
 
 	it.Ok(t).
 		If(req(cat).Fail).Should().Be().Like(µ.StatusBadRequest)
+}
+
+func TestStatusCodes(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	for code, check := range map[µ.StatusCode]µ.Arrow{
+		//
+		µ.StatusOK:                   ƒ.Status.OK,
+		µ.StatusCreated:              ƒ.Status.Created,
+		µ.StatusAccepted:             ƒ.Status.Accepted,
+		µ.StatusNonAuthoritativeInfo: ƒ.Status.NonAuthoritativeInfo,
+		µ.StatusNoContent:            ƒ.Status.NoContent,
+		µ.StatusResetContent:         ƒ.Status.ResetContent,
+		//
+		µ.StatusMultipleChoices:  ƒ.Status.MultipleChoices,
+		µ.StatusMovedPermanently: ƒ.Status.MovedPermanently,
+		µ.StatusFound:            ƒ.Status.Found,
+		µ.StatusSeeOther:         ƒ.Status.SeeOther,
+		µ.StatusNotModified:      ƒ.Status.NotModified,
+		µ.StatusUseProxy:         ƒ.Status.UseProxy,
+		//
+		µ.StatusBadRequest:            ƒ.Status.BadRequest,
+		µ.StatusUnauthorized:          ƒ.Status.Unauthorized,
+		µ.StatusPaymentRequired:       ƒ.Status.PaymentRequired,
+		µ.StatusForbidden:             ƒ.Status.Forbidden,
+		µ.StatusNotFound:              ƒ.Status.NotFound,
+		µ.StatusMethodNotAllowed:      ƒ.Status.MethodNotAllowed,
+		µ.StatusNotAcceptable:         ƒ.Status.NotAcceptable,
+		µ.StatusProxyAuthRequired:     ƒ.Status.ProxyAuthRequired,
+		µ.StatusRequestTimeout:        ƒ.Status.RequestTimeout,
+		µ.StatusConflict:              ƒ.Status.Conflict,
+		µ.StatusGone:                  ƒ.Status.Gone,
+		µ.StatusPreconditionFailed:    ƒ.Status.PreconditionFailed,
+		µ.StatusRequestEntityTooLarge: ƒ.Status.RequestEntityTooLarge,
+		µ.StatusRequestURITooLong:     ƒ.Status.RequestURITooLong,
+		µ.StatusUnsupportedMediaType:  ƒ.Status.UnsupportedMediaType,
+		//
+		µ.StatusInternalServerError:     ƒ.Status.InternalServerError,
+		µ.StatusNotImplemented:          ƒ.Status.NotImplemented,
+		µ.StatusBadGateway:              ƒ.Status.BadGateway,
+		µ.StatusServiceUnavailable:      ƒ.Status.ServiceUnavailable,
+		µ.StatusGatewayTimeout:          ƒ.Status.GatewayTimeout,
+		µ.StatusHTTPVersionNotSupported: ƒ.Status.HTTPVersionNotSupported,
+	} {
+		req := µ.Join(
+			ø.GET.URL("!%s/code/%s", ts.URL, code.Value()),
+			check,
+		)
+		cat := gurl.IO(µ.Default())
+		it.Ok(t).
+			If(req(cat).Fail).Should().Equal(nil)
+	}
 }
 
 func TestHeaderOk(t *testing.T) {
@@ -226,6 +281,19 @@ func mock() *httptest.Server {
 			case r.URL.Path == "/form":
 				w.Header().Add("Content-Type", "application/x-www-form-urlencoded")
 				w.Write([]byte("site=example.com"))
+			case r.URL.Path == "/code/301":
+				w.Header().Add("Location", "http://127.1")
+				w.WriteHeader(301)
+			case r.URL.Path == "/code/302":
+				w.Header().Add("Location", "http://127.1")
+				w.WriteHeader(302)
+			case r.URL.Path == "/code/303":
+				w.Header().Add("Location", "http://127.1")
+				w.WriteHeader(303)
+			case strings.HasPrefix(r.URL.Path, "/code"):
+				seq := strings.Split(r.URL.Path, "/")
+				code, _ := strconv.Atoi(seq[2])
+				w.WriteHeader(code)
 			default:
 				w.WriteHeader(http.StatusBadRequest)
 			}
