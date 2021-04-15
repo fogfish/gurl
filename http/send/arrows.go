@@ -203,8 +203,8 @@ func (h Content) Text(cat *gurl.IOCat) *gurl.IOCat {
 	return Header(h).Set(cat, "plain/text")
 }
 
-// Html defined Header `???: plain/html`
-func (h Content) Html(cat *gurl.IOCat) *gurl.IOCat {
+// HTML defined Header `???: plain/html`
+func (h Content) HTML(cat *gurl.IOCat) *gurl.IOCat {
 	return Header(h).Set(cat, "plain/html")
 }
 

@@ -73,6 +73,7 @@ StatusCode is a warpper type over http.StatusCode
 */
 type StatusCode int
 
+// HTTP Status Code check constants
 const Status = StatusCode(0)
 
 func (StatusCode) eval(code http.StatusCode, cat *gurl.IOCat) *gurl.IOCat {
@@ -414,8 +415,8 @@ func (h Content) Text(cat *gurl.IOCat) *gurl.IOCat {
 	return Header(h).Match(cat, "plain/text")
 }
 
-// Html matches Header `???: plain/html`
-func (h Content) Html(cat *gurl.IOCat) *gurl.IOCat {
+// HTML matches Header `???: plain/html`
+func (h Content) HTML(cat *gurl.IOCat) *gurl.IOCat {
 	return Header(h).Match(cat, "plain/html")
 }
 
