@@ -1,5 +1,5 @@
 <p align="center">
-  <h1 align="center">ᵍ🆄🆁🅻</h1>
+  <h3 align="center">ᵍ🆄🆁🅻</h3>
   <p align="center"><strong>Network I/O "combinator" library for Golang</strong></p>
 
   <p align="center">
