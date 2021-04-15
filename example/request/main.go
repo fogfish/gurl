@@ -26,7 +26,7 @@ import (
 
 // data types used by HTTP payload(s)
 type headers struct {
-	UserAgent string `json:"X-User-Agent,omitempty"`
+	UserAgent string `json:"User-Agent,omitempty"`
 }
 
 type httpbin struct {
@@ -38,13 +38,13 @@ type httpbin struct {
 // basic declarative request
 func request(val *httpbin) gurl.Arrow {
 	return http.Join(
-		// HTTP output
-		ø.GET("https://httpbin.org/get"),
-		ø.Header("Accept").Is("application/json"),
-		ø.Header("X-User-Agent").Is("gurl"),
-		// HTTP input and its validation
-		ƒ.Code(http.StatusOK),
-		ƒ.Header("Content-Type").Is("application/json"),
+		// HTTP Request
+		ø.GET.URL("https://httpbin.org/get"),
+		ø.Accept.JSON,
+		ø.UserAgent.Is("gurl"),
+		// HTTP Response and its validation
+		ƒ.Status.OK,
+		ƒ.ContentType.JSON,
 		ƒ.Recv(val),
 	).Then(
 		c.Defined(&val.Headers.UserAgent),

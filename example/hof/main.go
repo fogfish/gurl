@@ -39,10 +39,10 @@ type httpbin struct {
 // uuid declares HTTP I/O. Its result is returned via id variable.
 func uuid(id *id) gurl.Arrow {
 	return http.Join(
-		ø.GET("https://httpbin.org/uuid"),
-		ø.AcceptJSON(),
-		ƒ.Code(http.StatusOK),
-		ƒ.ServedJSON(),
+		ø.GET.URL("https://httpbin.org/uuid"),
+		ø.Accept.JSON,
+		ƒ.Status.OK,
+		ƒ.ContentType.JSON,
 		ƒ.Recv(id),
 	)
 }
@@ -52,11 +52,11 @@ func uuid(id *id) gurl.Arrow {
 // Its result is returned via doc variable.
 func post(uuid *id, doc *httpbin) gurl.Arrow {
 	return http.Join(
-		ø.POST("https://httpbin.org/post"),
-		ø.AcceptJSON(),
-		ø.ContentJSON(),
+		ø.POST.URL("https://httpbin.org/post"),
+		ø.Accept.JSON,
+		ø.ContentType.JSON,
 		ø.Send(&uuid.UUID),
-		ƒ.Code(http.StatusOK),
+		ƒ.Status.OK,
 		ƒ.Recv(doc),
 	)
 }

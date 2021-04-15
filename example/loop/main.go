@@ -45,10 +45,10 @@ type seq []repo
 // request declares HTTP I/O that fetches a portion (page) from api
 func (s *seq) request(page int) gurl.Arrow {
 	return http.Join(
-		ø.GET("https://api.github.com/users/fogfish/repos"),
+		ø.GET.URL("https://api.github.com/users/fogfish/repos"),
 		ø.Params(map[string]string{"type": "all", "page": strconv.Itoa(page)}),
-		ø.AcceptJSON(),
-		ƒ.Code(http.StatusOK),
+		ø.Accept.JSON,
+		ƒ.Status.OK,
 		ƒ.Recv(s),
 	)
 }
