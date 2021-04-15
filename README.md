@@ -61,19 +61,61 @@ This semantic provides an intuitive approach to specify HTTP requests and expect
 
 ## Key features
 
-* cause-and-effect abstraction of HTTP request/response, naive do-notation
-* high-order composition of individual HTTP requests to complex networking computations
+* cause-and-effect abstraction of HTTP I/O using Golang naive do-notation
+* lazy composition of individual HTTP requests to complex networking computations
 * human-friendly, Go native and declarative syntax to depict HTTP operations
 * implements a declarative approach for testing of RESTful interfaces
-* automatically encodes/decodes Go native HTTP payload using Content-Type hints
+* automatically encodes/decodes Golang native HTTP payload using Content-Type hints
 * supports generic transformation to algebraic data types
-* simplify error handling with naive Either implementation
+* simplifies error handling with naive Either implementation
 
 ## Getting started
 
 The library requires **Go 1.13** or later 
 
 The latest version of the library is available at its `master` branch. All development, including new features and bug fixes, take place on the `master` branch using forking and pull requests as described in contribution guidelines.
+
+The following code snippet demonstrates a typical usage scenario. See runnable [http request example](example/request/main.go).
+
+```go
+import (
+  "github.com/fogfish/gurl"
+  "github.com/fogfish/gurl/http"
+  ø "github.com/fogfish/gurl/http/send"
+  ƒ "github.com/fogfish/gurl/http/recv"
+)
+
+// You can declare any types and use them as part of networking I/O.
+type Payload struct {
+  Origin string `json:"origin"`
+  Url    string `json:"url"`
+}
+
+// the variable holds results of network I/O
+var data Payload
+var lazy := http.Join(
+  // declare HTTP request
+  ø.GET.URL("http://httpbin.org/get"),
+  ø.Accept.JSON,
+
+  // declare expected HTTP response and "recv" JSON to the variable
+  ƒ.Status.OK,
+  ƒ.ContentType.JSON,
+  ƒ.Recv(&data),
+)
+
+// Note: neither `lazy` or `data` holds a results of HTTP I/O.
+//       the code above just built composable "promise".
+//       it is required to evaluate a side-effect of "HTTP computation".
+if lazy(http.DefaultIO()).Fail != nil {
+  // error handling
+}
+```
+
+The evaluation of "program" fails if either networking fails or expectations do not match actual response. There are no needs to check error code after each operation. The composition is smart enough to terminate "program" execution.
+
+
+---
 
 Import the library in your code
 
