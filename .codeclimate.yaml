@@ -1,3 +1,4 @@
-- checks:
-  - method-count
-    - enabled: false
+checks:
+  method-count:
+    config:
+      threshold: 100
