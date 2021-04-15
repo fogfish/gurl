@@ -25,8 +25,8 @@ func TestCodeOk(t *testing.T) {
 	defer ts.Close()
 
 	req := µ.Join(
-		ø.GET(ts.URL+"/json"),
-		ø.AcceptJSON(),
+		ø.GET.URL(ts.URL+"/json"),
+		ø.Accept.JSON,
 		ƒ.Code(µ.StatusOK),
 	)
 	cat := gurl.IO(µ.Default())
@@ -40,9 +40,9 @@ func TestCodeNoMatch(t *testing.T) {
 	defer ts.Close()
 
 	req := µ.Join(
-		ø.GET(ts.URL+"/other"),
-		ø.AcceptJSON(),
-		ƒ.Code(µ.StatusOK),
+		ø.GET.URL(ts.URL+"/other"),
+		ø.Accept.JSON,
+		ƒ.Status.OK,
 	)
 	cat := gurl.IO(µ.Default())
 
@@ -55,10 +55,10 @@ func TestHeaderOk(t *testing.T) {
 	defer ts.Close()
 
 	req := µ.Join(
-		ø.GET(ts.URL+"/json"),
-		ø.AcceptJSON(),
-		ƒ.Code(µ.StatusOK),
-		ƒ.Header("content-type").Is("application/json"),
+		ø.GET.URL(ts.URL+"/json"),
+		ø.Accept.JSON,
+		ƒ.Status.OK,
+		ƒ.ContentType.JSON,
 	)
 	cat := gurl.IO(µ.Default())
 
@@ -71,10 +71,10 @@ func TestHeaderAny(t *testing.T) {
 	defer ts.Close()
 
 	req := µ.Join(
-		ø.GET(ts.URL+"/json"),
-		ø.AcceptJSON(),
-		ƒ.Code(µ.StatusOK),
-		ƒ.Header("content-type").Any(),
+		ø.GET.URL(ts.URL+"/json"),
+		ø.Accept.JSON,
+		ƒ.Status.OK,
+		ƒ.ContentType.Is("*"),
 	)
 	cat := gurl.IO(µ.Default())
 
@@ -88,10 +88,10 @@ func TestHeaderVal(t *testing.T) {
 
 	var content string
 	req := µ.Join(
-		ø.GET(ts.URL+"/json"),
-		ø.AcceptJSON(),
-		ƒ.Code(µ.StatusOK),
-		ƒ.Header("content-type").String(&content),
+		ø.GET.URL(ts.URL+"/json"),
+		ø.Accept.JSON,
+		ƒ.Status.OK,
+		ƒ.ContentType.String(&content),
 	)
 	cat := gurl.IO(µ.Default())
 
@@ -105,10 +105,10 @@ func TestHeaderMismatch(t *testing.T) {
 	defer ts.Close()
 
 	req := µ.Join(
-		ø.GET(ts.URL+"/json"),
-		ø.AcceptJSON(),
-		ƒ.Code(µ.StatusOK),
-		ƒ.Header("content-type").Is("foo/bar"),
+		ø.GET.URL(ts.URL+"/json"),
+		ø.Accept.JSON,
+		ƒ.Status.OK,
+		ƒ.ContentType.Is("foo/bar"),
 	)
 	cat := gurl.IO(µ.Default())
 
@@ -121,9 +121,9 @@ func TestHeaderUndefinedWithLit(t *testing.T) {
 	defer ts.Close()
 
 	req := µ.Join(
-		ø.GET(ts.URL+"/json"),
-		ø.AcceptJSON(),
-		ƒ.Code(µ.StatusOK),
+		ø.GET.URL(ts.URL+"/json"),
+		ø.Accept.JSON,
+		ƒ.Status.OK,
 		ƒ.Header("x-content-type").Is("foo/bar"),
 	)
 	cat := gurl.IO(µ.Default())
@@ -138,9 +138,9 @@ func TestHeaderUndefinedWithVal(t *testing.T) {
 
 	var val string
 	req := µ.Join(
-		ø.GET(ts.URL+"/json"),
-		ø.AcceptJSON(),
-		ƒ.Code(µ.StatusOK),
+		ø.GET.URL(ts.URL+"/json"),
+		ø.Accept.JSON,
+		ƒ.Status.OK,
 		ƒ.Header("x-content-type").String(&val),
 	)
 	cat := gurl.IO(µ.Default())
@@ -159,9 +159,9 @@ func TestRecvJSON(t *testing.T) {
 
 	var site Site
 	req := µ.Join(
-		ø.GET(ts.URL+"/json"),
-		ƒ.Code(µ.StatusOK),
-		ƒ.ServedJSON(),
+		ø.GET.URL(ts.URL+"/json"),
+		ƒ.Status.OK,
+		ƒ.ContentType.JSON,
 		ƒ.Recv(&site),
 	)
 	cat := gurl.IO(µ.Default())
@@ -181,9 +181,9 @@ func TestRecvForm(t *testing.T) {
 
 	var site Site
 	req := µ.Join(
-		ø.GET(ts.URL+"/form"),
-		ƒ.Code(µ.StatusOK),
-		ƒ.ServedForm(),
+		ø.GET.URL(ts.URL+"/form"),
+		ƒ.Status.OK,
+		ƒ.ContentType.Form,
 		ƒ.Recv(&site),
 	)
 	cat := gurl.IO(µ.Default())
@@ -203,9 +203,9 @@ func TestRecvBytes(t *testing.T) {
 
 	var data []byte
 	req := µ.Join(
-		ø.GET(ts.URL+"/form"),
-		ƒ.Code(µ.StatusOK),
-		ƒ.Served().Any(),
+		ø.GET.URL(ts.URL+"/form"),
+		ƒ.Status.OK,
+		ƒ.ContentType.Is("*"),
 		ƒ.Bytes(&data),
 	)
 	cat := gurl.IO(µ.Default())

@@ -29,7 +29,7 @@ import (
 
 /*
 
-Status is a mandatory statement to match expected HTTP Status Code against
+Code is a mandatory statement to match expected HTTP Status Code against
 received one. The execution fails StatusCode error if service responds
 with other value then specified one.
 */
@@ -55,6 +55,259 @@ func hasCode(s []http.StatusCode, e int) bool {
 	}
 	return false
 }
+
+/*
+
+StatusCode is a warpper type over http.StatusCode
+
+  http.Join(
+		...
+		ƒ.Code(http.StatusOK),
+	)
+
+	so that response code is matched using constant
+	http.Join(
+		...
+		ƒ.Status.OK,
+	)
+*/
+type StatusCode int
+
+const Status = StatusCode(0)
+
+func (StatusCode) eval(code http.StatusCode, cat *gurl.IOCat) *gurl.IOCat {
+	if cat = cat.Unsafe(); cat.Fail != nil {
+		return cat
+	}
+
+	status := cat.HTTP.Recv.StatusCode
+	if !hasCode([]http.StatusCode{code}, status) {
+		cat.Fail = http.NewStatusCode(status, code)
+	}
+	return cat
+}
+
+// Continue ⟼ http.StatusContinue
+func (code StatusCode) Continue(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusContinue, cat)
+}
+
+/*
+TODO:
+	SwitchingProtocols
+	Processing
+	EarlyHints
+*/
+
+// OK ⟼ http.StatusOK
+func (code StatusCode) OK(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusOK, cat)
+}
+
+// Created ⟼ http.StatusCreated
+func (code StatusCode) Created(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusCreated, cat)
+}
+
+// Accepted ⟼ http.StatusAccepted
+func (code StatusCode) Accepted(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusAccepted, cat)
+}
+
+// NonAuthoritativeInfo ⟼ http.StatusNonAuthoritativeInfo
+func (code StatusCode) NonAuthoritativeInfo(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusNonAuthoritativeInfo, cat)
+}
+
+// NoContent ⟼ http.StatusNoContent
+func (code StatusCode) NoContent(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusNoContent, cat)
+}
+
+// ResetContent ⟼ http.StatusResetContent
+func (code StatusCode) ResetContent(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusResetContent, cat)
+}
+
+/*
+TODO:
+	PartialContent
+	MultiStatus
+	AlreadyReported
+	IMUsed
+*/
+
+// MultipleChoices ⟼ http.StatusMultipleChoices
+func (code StatusCode) MultipleChoices(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusMultipleChoices, cat)
+}
+
+// MovedPermanently ⟼ http.StatusMovedPermanently
+func (code StatusCode) MovedPermanently(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusMovedPermanently, cat)
+}
+
+// Found ⟼ http.StatusFound
+func (code StatusCode) Found(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusFound, cat)
+}
+
+// SeeOther ⟼ http.StatusSeeOther
+func (code StatusCode) SeeOther(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusSeeOther, cat)
+}
+
+// NotModified ⟼ http.StatusNotModified
+func (code StatusCode) NotModified(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusNotModified, cat)
+}
+
+// UseProxy ⟼ http.StatusUseProxy
+func (code StatusCode) UseProxy(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusUseProxy, cat)
+}
+
+/*
+TODO:
+	TemporaryRedirect
+	PermanentRedirect
+*/
+
+// BadRequest ⟼ http.StatusBadRequest
+func (code StatusCode) BadRequest(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusBadRequest, cat)
+}
+
+// Unauthorized ⟼ http.StatusUnauthorized
+func (code StatusCode) Unauthorized(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusUnauthorized, cat)
+}
+
+// PaymentRequired ⟼ http.StatusPaymentRequired
+func (code StatusCode) PaymentRequired(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusPaymentRequired, cat)
+}
+
+// Forbidden ⟼ http.StatusForbidden
+func (code StatusCode) Forbidden(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusForbidden, cat)
+}
+
+// NotFound ⟼ http.StatusNotFound
+func (code StatusCode) NotFound(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusNotFound, cat)
+}
+
+// MethodNotAllowed ⟼ http.StatusMethodNotAllowed
+func (code StatusCode) MethodNotAllowed(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusMethodNotAllowed, cat)
+}
+
+// NotAcceptable ⟼ http.StatusNotAcceptable
+func (code StatusCode) NotAcceptable(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusNotAcceptable, cat)
+}
+
+// ProxyAuthRequired ⟼ http.StatusProxyAuthRequired
+func (code StatusCode) ProxyAuthRequired(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusProxyAuthRequired, cat)
+}
+
+// RequestTimeout ⟼ http.StatusRequestTimeout
+func (code StatusCode) RequestTimeout(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusRequestTimeout, cat)
+}
+
+// Conflict ⟼ http.StatusConflict
+func (code StatusCode) Conflict(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusConflict, cat)
+}
+
+// Gone ⟼ http.StatusGone
+func (code StatusCode) Gone(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusGone, cat)
+}
+
+// LengthRequired ⟼ http.StatusLengthRequired
+func (code StatusCode) LengthRequired(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusLengthRequired, cat)
+}
+
+// PreconditionFailed ⟼ http.StatusPreconditionFailed
+func (code StatusCode) PreconditionFailed(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusPreconditionFailed, cat)
+}
+
+// RequestEntityTooLarge ⟼ http.StatusRequestEntityTooLarge
+func (code StatusCode) RequestEntityTooLarge(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusRequestEntityTooLarge, cat)
+}
+
+// RequestURITooLong ⟼ http.StatusRequestURITooLong
+func (code StatusCode) RequestURITooLong(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusRequestURITooLong, cat)
+}
+
+// UnsupportedMediaType ⟼ http.StatusUnsupportedMediaType
+func (code StatusCode) UnsupportedMediaType(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusUnsupportedMediaType, cat)
+}
+
+/*
+TODO:
+	RequestedRangeNotSatisfiable
+	ExpectationFailed
+	Teapot
+	MisdirectedRequest
+	UnprocessableEntity
+	Locked
+	FailedDependency
+	TooEarly
+	UpgradeRequired
+	PreconditionRequired
+	TooManyRequests
+	RequestHeaderFieldsTooLarge
+	UnavailableForLegalReasons
+*/
+
+// InternalServerError ⟼ http.StatusInternalServerError
+func (code StatusCode) InternalServerError(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusInternalServerError, cat)
+}
+
+// NotImplemented ⟼ http.StatusNotImplemented
+func (code StatusCode) NotImplemented(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusNotImplemented, cat)
+}
+
+// BadGateway ⟼ http.StatusBadGateway
+func (code StatusCode) BadGateway(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusBadGateway, cat)
+}
+
+// ServiceUnavailable ⟼ http.StatusServiceUnavailable
+func (code StatusCode) ServiceUnavailable(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusServiceUnavailable, cat)
+}
+
+// GatewayTimeout ⟼ http.StatusGatewayTimeout
+func (code StatusCode) GatewayTimeout(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusGatewayTimeout, cat)
+}
+
+// HTTPVersionNotSupported ⟼ http.StatusHTTPVersionNotSupported
+func (code StatusCode) HTTPVersionNotSupported(cat *gurl.IOCat) *gurl.IOCat {
+	return code.eval(http.StatusHTTPVersionNotSupported, cat)
+}
+
+/*
+TODO:
+	VariantAlsoNegotiates
+	InsufficientStorage
+	LoopDetected
+	NotExtended
+	NetworkAuthenticationRequired
+*/
 
 /*
 
@@ -223,9 +476,3 @@ func Bytes(val *[]byte) http.Arrow {
 		return cat
 	}
 }
-
-//-------------------------------------------------------------------
-//
-// alias arrows
-//
-//-------------------------------------------------------------------
