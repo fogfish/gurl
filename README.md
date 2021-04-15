@@ -1,6 +1,6 @@
 <p align="center">
-  <h1 align="center">ᵍ🆄🆁🅻</h1>
-  <p align="center"><strong>Network I/O combinator library for Golang</strong></p>
+  <h3 align="center">ᵍ🆄🆁🅻</h3>
+  <p align="center"><strong>Network I/O "combinator" library for Golang</strong></p>
 
   <p align="center">
     <!-- Documentation -->
@@ -30,20 +30,9 @@
   </p>
 </p>
 
+---
 
-# HTTP High Order Component
-
-A class of High Order Component which can do http requests with few interesting property such as composition and laziness.
-
-[![Documentation](https://godoc.org/github.com/fogfish/gurl?status.svg)](http://godoc.org/github.com/fogfish/gurl)
-[![Build Status](https://github.com/fogfish/gurl/workflows/Go/badge.svg)](https://github.com/fogfish/gurl/actions/)
-[![Git Hub](https://img.shields.io/github/last-commit/fogfish/gurl.svg)](http://travis-ci.org/fogfish/gurl)
-[![Coverage Status](https://coveralls.io/repos/github/fogfish/gurl/badge.svg?branch=master)](https://coveralls.io/github/fogfish/gurl?branch=master)
-[![Go Report Card](https://goreportcard.com/badge/github.com/fogfish/gurl)](https://goreportcard.com/report/github.com/fogfish/gurl)
-[![Maintainability](https://api.codeclimate.com/v1/badges/b9ff76a1f641ce98cd26/maintainability)](https://codeclimate.com/github/fogfish/gurl/maintainability)
-
-
-The library implements rough and naive Haskell's equivalent of do-notation, so called monadic binding form. This construction decorates http i/o pipeline(s) with "programmable commas".
+The library implements rough and naive Haskell's equivalent of do-notation, so called monadic binding form. This construction decorates http i/o pipeline(s) with "programmable commas", allowing to make http requests with few interesting property such as composition and laziness.   
 
 
 ## Inspiration

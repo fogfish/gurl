@@ -10,7 +10,6 @@ package send_test
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"net/url"
 	"testing"
@@ -208,22 +207,27 @@ func TestSendForm(t *testing.T) {
 }
 
 func TestSendBytes(t *testing.T) {
-	for _, val := range []interface{}{
-		"host=site",
-		[]byte("host=site"),
-		bytes.NewBuffer([]byte("host=site")),
+	for _, content := range []http.Arrow{
+		ø.ContentType.Text,
+		ø.ContentType.HTML,
 	} {
-		req := http.Join(
-			ø.GET.URL("https://example.com"),
-			ø.Header("Content-Type").Is("text/plain"),
-			ø.Send(val),
-		)
-		cat := req(http.DefaultIO())
-		buf, _ := ioutil.ReadAll(cat.HTTP.Send.Payload)
+		for _, val := range []interface{}{
+			"host=site",
+			[]byte("host=site"),
+			bytes.NewBuffer([]byte("host=site")),
+		} {
+			req := http.Join(
+				ø.GET.URL("https://example.com"),
+				content,
+				ø.Send(val),
+			)
+			cat := req(http.DefaultIO())
+			buf, _ := ioutil.ReadAll(cat.HTTP.Send.Payload)
 
-		it.Ok(t).
-			If(cat.Fail).Should().Equal(nil).
-			If(string(buf)).Should().Equal("host=site")
+			it.Ok(t).
+				If(cat.Fail).Should().Equal(nil).
+				If(string(buf)).Should().Equal("host=site")
+		}
 	}
 }
 
@@ -305,14 +309,4 @@ func TestAliasesHeader(t *testing.T) {
 			If(req(cat).Fail).Should().Equal(nil).
 			If(*cat.HTTP.Send.Header[unit.header]).Should().Equal(unit.value)
 	}
-}
-
-func TestX(t *testing.T) {
-	req := http.Join(
-		ø.GET.URL("http://example.com"),
-		ø.Accept.JSON,
-	)
-	cat := gurl.IO(http.Default())
-	req(cat)
-	fmt.Println(*cat.HTTP.Send.Header["accept"])
 }
