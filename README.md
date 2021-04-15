@@ -1,5 +1,5 @@
 <p align="center">
-  <h3 align="center">ᵍ🆄🆁🅻</h3>
+  <h1 align="center">ᵍ🆄🆁🅻</h1>
   <p align="center"><strong>Network I/O "combinator" library for Golang</strong></p>
 
   <p align="center">
@@ -34,12 +34,15 @@
 
 The library implements rough and naive Haskell's equivalent of do-notation, so called monadic binding form. This construction decorates http i/o pipeline(s) with "programmable commas", allowing to make http requests with few interesting property such as composition and laziness.   
 
+[User Guide](./doc/user-guide.md) |
+[Example](./example/) |
+[API Specification](http://godoc.org/github.com/fogfish/gurl)
 
 ## Inspiration
 
-Microservices have become a design style to evolve system architecture in parallel, implement stable and consistent interfaces. An expressive language is required to design the variety of network communication use-cases. A pure functional languages fits very well to express communication behavior. The language gives a rich techniques to hide the networking complexity using monads as abstraction. The IO-monads helps us to compose a chain of network operations and represent them as pure computation, build a new things from small reusable elements. The library is implemented after Erlang's [m_http](https://github.com/fogfish/m_http)
+Microservices have become a design style to evolve system architecture in parallel, implement stable and consistent interfaces. An expressive language is required to design the variety of network communication use-cases. A pure functional languages fits very well to express communication behavior. These language gives a rich abstractions to hide the networking complexity using monads. The IO-monads helps us to compose a chain of network operations and represent them as pure computation, build a new things from small reusable elements. This library is implemented after Erlang's [m_http](https://github.com/fogfish/m_http)
 
-The library attempts to adapts a human-friendly syntax of HTTP request/response logging/definition used by curl with Behavior as a Code paradigm. It tries to connect cause-and-effect (Given/When/Then) with the networking (Input/Process/Output).
+The library attempts to adapt a human-friendly logging syntax of HTTP I/O used by curl and Behavior as a Code paradigm. It connects cause-and-effect (Given/When/Then) with the networking (Input/Process/Output).
 
 ```
 > GET / HTTP/1.1
@@ -53,7 +56,7 @@ The library attempts to adapts a human-friendly syntax of HTTP request/response 
 < ...
 ```
 
-This semantic provides an intuitive approach to specify HTTP requests/responses. Adoption of this syntax as Go native code provides a rich capability to network programming.
+This semantic provides an intuitive approach to specify HTTP requests and expected responses. Adoption of this syntax as Go native code provides a rich capabilities for network programming.
 
 
 ## Key features
