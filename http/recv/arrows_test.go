@@ -83,6 +83,7 @@ func TestStatusCodes(t *testing.T) {
 		µ.StatusRequestTimeout:        ƒ.Status.RequestTimeout,
 		µ.StatusConflict:              ƒ.Status.Conflict,
 		µ.StatusGone:                  ƒ.Status.Gone,
+		µ.StatusLengthRequired:        ƒ.Status.LengthRequired,
 		µ.StatusPreconditionFailed:    ƒ.Status.PreconditionFailed,
 		µ.StatusRequestEntityTooLarge: ƒ.Status.RequestEntityTooLarge,
 		µ.StatusRequestURITooLong:     ƒ.Status.RequestURITooLong,
@@ -130,6 +131,7 @@ func TestHeaderAny(t *testing.T) {
 		ø.Accept.JSON,
 		ƒ.Status.OK,
 		ƒ.ContentType.Is("*"),
+		ƒ.Header("Content-Type").Any(),
 	)
 	cat := gurl.IO(µ.Default())
 
@@ -249,25 +251,27 @@ func TestRecvForm(t *testing.T) {
 }
 
 func TestRecvBytes(t *testing.T) {
-	type Site struct {
-		Site string `json:"site"`
-	}
-
 	ts := mock()
 	defer ts.Close()
 
-	var data []byte
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/form"),
-		ƒ.Status.OK,
-		ƒ.ContentType.Is("*"),
-		ƒ.Bytes(&data),
-	)
-	cat := gurl.IO(µ.Default())
+	for path, content := range map[string]µ.Arrow{
+		"/text": ƒ.ContentType.Text,
+		"/html": ƒ.ContentType.HTML,
+	} {
 
-	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil).
-		If(string(data)).Should().Equal("site=example.com")
+		var data []byte
+		req := µ.Join(
+			ø.GET.URL(ts.URL+path),
+			ƒ.Status.OK,
+			content,
+			ƒ.Bytes(&data),
+		)
+		cat := gurl.IO(µ.Default())
+
+		it.Ok(t).
+			If(req(cat).Fail).Should().Equal(nil).
+			If(string(data)).Should().Equal("site=example.com")
+	}
 }
 
 //
@@ -280,6 +284,12 @@ func mock() *httptest.Server {
 				w.Write([]byte(`{"site": "example.com"}`))
 			case r.URL.Path == "/form":
 				w.Header().Add("Content-Type", "application/x-www-form-urlencoded")
+				w.Write([]byte("site=example.com"))
+			case r.URL.Path == "/text":
+				w.Header().Add("Content-Type", "text/plain")
+				w.Write([]byte("site=example.com"))
+			case r.URL.Path == "/html":
+				w.Header().Add("Content-Type", "text/html")
 				w.Write([]byte("site=example.com"))
 			case r.URL.Path == "/code/301":
 				w.Header().Add("Location", "http://127.1")

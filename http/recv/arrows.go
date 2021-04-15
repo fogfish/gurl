@@ -406,14 +406,14 @@ func (h Content) Form(cat *gurl.IOCat) *gurl.IOCat {
 	return Header(h).Match(cat, "application/x-www-form-urlencoded")
 }
 
-// Text matches Header `???: plain/text`
+// Text matches Header `???: text/plain`
 func (h Content) Text(cat *gurl.IOCat) *gurl.IOCat {
-	return Header(h).Match(cat, "plain/text")
+	return Header(h).Match(cat, "text/plain")
 }
 
-// HTML matches Header `???: plain/html`
+// HTML matches Header `???: text/html`
 func (h Content) HTML(cat *gurl.IOCat) *gurl.IOCat {
-	return Header(h).Match(cat, "plain/html")
+	return Header(h).Match(cat, "text/html")
 }
 
 // Is matches value of HTTP header, Use wildcard string ("*") to match any header value

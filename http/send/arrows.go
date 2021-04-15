@@ -198,14 +198,14 @@ func (h Content) Form(cat *gurl.IOCat) *gurl.IOCat {
 	return Header(h).Set(cat, "application/x-www-form-urlencoded")
 }
 
-// Text defined Header `???: plain/text`
+// Text defined Header `???: text/plain`
 func (h Content) Text(cat *gurl.IOCat) *gurl.IOCat {
-	return Header(h).Set(cat, "plain/text")
+	return Header(h).Set(cat, "text/plain")
 }
 
-// HTML defined Header `???: plain/html`
+// HTML defined Header `???: text/html`
 func (h Content) HTML(cat *gurl.IOCat) *gurl.IOCat {
-	return Header(h).Set(cat, "plain/html")
+	return Header(h).Set(cat, "text/html")
 }
 
 // Is sets a literval value of HTTP header

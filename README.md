@@ -1,3 +1,36 @@
+<p align="center">
+  <h1 align="center">ᵍ🆄🆁🅻</h1>
+  <p align="center"><strong>Network I/O combinator library for Golang</strong></p>
+
+  <p align="center">
+    <!-- Documentation -->
+    <a href="http://godoc.org/github.com/fogfish/gurl">
+      <img src="https://godoc.org/github.com/fogfish/gurl?status.svg" />
+    </a>
+    <!-- Build Status  -->
+    <a href="https://github.com/fogfish/gurl/actions/">
+      <img src="https://github.com/fogfish/gurl/workflows/Go/badge.svg" />
+    </a>
+    <!-- GitHub -->
+    <a href="http://github.com/fogfish/gurl">
+      <img src="https://img.shields.io/github/last-commit/fogfish/gurl.svg" />
+    </a>
+    <!-- Coverage -->
+    <a href="https://coveralls.io/github/fogfish/gurl?branch=master">
+      <img src="https://coveralls.io/repos/github/fogfish/gurl/badge.svg?branch=master" />
+    </a>
+    <!-- Go Card -->
+    <a href="https://goreportcard.com/report/github.com/fogfish/gurl">
+      <img src="https://goreportcard.com/badge/github.com/fogfish/gurl" />
+    </a>
+    <!-- Maintainability -->
+    <a href="https://codeclimate.com/github/fogfish/gurl/maintainability">
+      <img src="https://api.codeclimate.com/v1/badges/b9ff76a1f641ce98cd26/maintainability" />
+    </a>
+  </p>
+</p>
+
+
 # HTTP High Order Component
 
 A class of High Order Component which can do http requests with few interesting property such as composition and laziness.
