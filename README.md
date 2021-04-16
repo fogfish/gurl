@@ -61,6 +61,8 @@ This semantic provides an intuitive approach to specify HTTP requests and expect
 
 ## Key features
 
+Standard Golang packages implements low-level HTTP interface, which requires knowledge about protocol itself, understanding of Golang implementation aspects, and a bit of boilerplate coding. It also missing standardized chaining (composition) of individual requests. ᵍ🆄🆁🅻 inherits an ability of pure functional languages to express communication behavior by hiding the networking complexity using combinators (sometimes it is called category pattern). Combinators make a chain of network operations as a pure computation. 
+
 * cause-and-effect abstraction of HTTP I/O using Golang naive do-notation
 * lazy composition of individual HTTP requests to complex networking computations
 * human-friendly, Go native and declarative syntax to depict HTTP operations
@@ -93,24 +95,33 @@ type Payload struct {
 
 // the variable holds results of network I/O
 var data Payload
+
+// lazy HTTP I/O specification
 var lazy := http.Join(
   // declare HTTP request
   ø.GET.URL("http://httpbin.org/get"),
   ø.Accept.JSON,
 
-  // declare expected HTTP response and "recv" JSON to the variable
+  // declare HTTP response and "recv" JSON to the variable
   ƒ.Status.OK,
   ƒ.ContentType.JSON,
   ƒ.Recv(&data),
 )
 
-// Note: neither `lazy` or `data` holds a results of HTTP I/O.
+// Note: neither `lazy` or `data` hold a results of HTTP I/O.
 //       the code above just built composable "promise".
 //       it is required to evaluate a side-effect of "HTTP computation".
+//       the lazy pipeline is evaluated when HTTP I/O pool is applied over
 if lazy(http.DefaultIO()).Fail != nil {
   // error handling
 }
 ```
+
+## Next steps
+
+* 
+
+
 
 The evaluation of "program" fails if either networking fails or expectations do not match actual response. There are no needs to check error code after each operation. The composition is smart enough to terminate "program" execution.
 
