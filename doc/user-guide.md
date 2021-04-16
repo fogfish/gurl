@@ -14,6 +14,8 @@
     - [Request Headers](#request-headers)
     - [Request Payload](#request-payload)
   - [Reader morphism](#reader-morphism)
+    - [Status Code](#status-code)
+    - [Response Headers](#response-headers)
 
 
 ---
@@ -287,6 +289,27 @@ http.Join(
 
 ### Reader morphism
 
+Reader morphism focuses into side-effect of HTTP protocol. It does a pattern matching of HTTP response code, header values and response payload.
+
+#### Status Code
+
+Status code validation is only mandatory reader morphism in I/O declaration. The status code "arrow" checks the code in HTTP response and fails with error if the status code do not match expected one. The library implements a constants for all HTTP status codes.
+
+```go
+http.Join(
+  // ...
+  ƒ.Status.OK,
+)
+
+// Sometime a multiple HTTP status codes has to be accepted
+// `ƒ.Code` arrow is variadic function that does it
+http.Join(
+  // ...
+  ƒ.Code(http.StatusOK, http.StatusCreated, http.StatusAccepted),
+)
+```
+
+#### Response Headers
 
 
 The implementation defines an abstraction of the protocol environments and lenses to focus inside it. In other words, the category represents the environment as an "invisible" side-effect of the composition.
