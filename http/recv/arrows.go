@@ -366,11 +366,6 @@ func (header Header) String(value *string) http.Arrow {
 	}
 }
 
-// Any matches a header value, syntax sugar of Header(...).Is("*")
-func (header Header) Any() http.Arrow {
-	return header.Is("*")
-}
-
 // Match is combinator to check HTTP header value
 func (header Header) Match(cat *gurl.IOCat, value string) *gurl.IOCat {
 	h := cat.HTTP.Recv.Header.Get(string(header))
@@ -391,6 +386,11 @@ func (header Header) Match(cat *gurl.IOCat, value string) *gurl.IOCat {
 	}
 
 	return cat
+}
+
+// Any matches a header value, syntax sugar of Header(...).Is("*")
+func (header Header) Any(cat *gurl.IOCat) *gurl.IOCat {
+	return header.Match(cat, "*")
 }
 
 // Content defines headers for content negotiation
@@ -414,6 +414,11 @@ func (h Content) Text(cat *gurl.IOCat) *gurl.IOCat {
 // HTML matches Header `???: text/html`
 func (h Content) HTML(cat *gurl.IOCat) *gurl.IOCat {
 	return Header(h).Match(cat, "text/html")
+}
+
+// Any matches a header value `???: *`
+func (h Content) Any(cat *gurl.IOCat) *gurl.IOCat {
+	return Header(h).Match(cat, "*")
 }
 
 // Is matches value of HTTP header, Use wildcard string ("*") to match any header value

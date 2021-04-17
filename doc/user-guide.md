@@ -16,6 +16,7 @@
   - [Reader morphism](#reader-morphism)
     - [Status Code](#status-code)
     - [Response Headers](#response-headers)
+    - [Response Payload](#response-payload)
 
 
 ---
@@ -293,7 +294,7 @@ Reader morphism focuses into side-effect of HTTP protocol. It does a pattern mat
 
 #### Status Code
 
-Status code validation is only mandatory reader morphism in I/O declaration. The status code "arrow" checks the code in HTTP response and fails with error if the status code do not match expected one. The library implements a constants for all HTTP status codes.
+Status code validation is only mandatory reader morphism in I/O declaration. The status code "arrow" checks the code in HTTP response and fails with error if the status code do not match expected one. The library implements a constants for all known HTTP status codes.
 
 ```go
 http.Join(
@@ -310,6 +311,68 @@ http.Join(
 ```
 
 #### Response Headers
+
+Use `type Header string` to pattern match presence of HTTP header and its value in the response. The matching fails if response is missing header or its value do not equal.
+
+```go
+http.Join(
+  // ...
+  ƒ.Header("Content-Type").Is("application/json"),
+)
+
+// The library implements a syntax sugar for mostly used HTTP headers
+// https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Response_fields
+http.Join(
+  // ...
+  ƒ.Authorization.Is("Bearer eyJhbGciOiJIU...adQssw5c"),
+)
+
+// The library implements a syntax sugar for content negotiation headers
+http.Join(
+  // ...
+  ƒ.ContentType.JSON,
+)
+
+// Any arrow is a syntax sugar of Header("Content-Type").Is("*")
+http.Join(
+  // ...
+  ƒ.Server.Any,
+  ƒ.ContentType.Any,
+)
+```
+
+#### Response Payload
+
+The `func Recv(out interface{}) http.Arrow` decodes the response payload to Golang native data structure using Content-Type header as a hint.
+
+```go
+type MyType struct {
+  Site string `json:"site,omitempty"`
+  Host string `json:"host,omitempty"`
+}
+
+var data MyType
+http.Join(
+  // ...
+  ƒ.Recv(&data), // Note: pointer to data structure is required
+)
+```
+
+The library supports auto decoding of
+* `application/json`
+* `application/x-www-form-urlencoded`
+
+It support also receiving of raw binaries in case if data type is not supported.  
+
+```go
+var data []byte
+http.Join(
+  // ...
+  ƒ.Bytes(&data), // Note: pointer to data buffer is required
+)
+```
+
+
 
 
 The implementation defines an abstraction of the protocol environments and lenses to focus inside it. In other words, the category represents the environment as an "invisible" side-effect of the composition.

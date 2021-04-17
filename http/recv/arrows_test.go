@@ -131,7 +131,7 @@ func TestHeaderAny(t *testing.T) {
 		ø.Accept.JSON,
 		ƒ.Status.OK,
 		ƒ.ContentType.Is("*"),
-		ƒ.Header("Content-Type").Any(),
+		ƒ.Header("Content-Type").Any,
 	)
 	cat := gurl.IO(µ.Default())
 
