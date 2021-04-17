@@ -4,7 +4,7 @@
 </p>
 
 - [Overview](#overview)
-- [Composition](#composition)
+- [Compose HoF](#compose-hof)
 - [Life-cycle](#life-cycle)
 - [Import library](#import-library)
 - [Arrow types](#arrow-types)
@@ -17,7 +17,9 @@
     - [Status Code](#status-code)
     - [Response Headers](#response-headers)
     - [Response Payload](#response-payload)
-
+  - [Using Variables for Dynamic Behavior](#using-variables-for-dynamic-behavior)
+- [Assert Protocol Payload](#assert-protocol-payload)
+- [Chain Network I/O](#chain-network-io)
 
 ---
 
@@ -55,7 +57,7 @@ Example of HTTP I/O visualization made by curl give **naive** perspective about 
 ```
 
 
-## Composition
+## Compose HoF 
 
 `Arrow` can be composed with another `Arrow` into new `Arrow` and so on. The library support only "and-then" style. It builds a strict product Arrow: `A × B × C × ... ⟼ D`. The product type takes a protocol environment and applies "morphism" sequentially unless some step fails. Use variadic function `http.Join` to compose HTTP primitives:
 
@@ -103,7 +105,7 @@ These rules of `Arrow` composition allow anyone to build a complex HTTP I/O scen
 lazy := gurl.Join(/* ... */)
 ```
 
-The instance of `Arrow` produced by one of `Join` functions does not hold a results of HTTP I/O. It only builds a composable "promise" - a pure computation. The computation needs to be evaluated by applying it over the protocol environment. The library provides simple interface to create and customize the environment.  
+The instance of `Arrow` produced by one of `Join` functions does not hold a results of HTTP I/O. It only builds a composable "promise" ("lazy I/O") - a pure computation. The computation needs to be evaluated by applying it over the protocol environment. The library provides simple interface to create and customize the environment.  
 
 ```go
 // HTTP protocol provides default out-of-the-box environment.
@@ -230,7 +232,7 @@ http.Join(
 
 #### Request Headers
 
-Use `type Header string` to declare headers and its values.
+Use `type Header string` to declare headers and its values. Each request might contain declaration of multiple headers.
 
 ```go
 http.Join(
@@ -372,19 +374,98 @@ http.Join(
 )
 ```
 
+### Using Variables for Dynamic Behavior
+
+A pure functional style of development does not have variables or assignment statements. The program is defined by applying type constructors, constants and functions. However, this principle do not closely match current architectures. Programs are implemented using variables such as memory lookups and updates. Any complex real-life networking I/O is not an exception, it requires a global operational state. So far, all examples have used constants and literals but ᵍ🆄🆁🅻 combinators also support dynamic behavior of I/O parameters using pointers to variables.  
+
+```go
+func dynamic(host, token, lang *string, req, data *T) gurl.Arrow {
+  return http.Join(
+    //
+    ø.GET.URL("https://%s", host),
+    ø.Authorization.Val(token),
+    ø.Send(req),
+    //
+    ƒ.Status.OK,
+    ƒ.ContentLanguage.String(lang),
+    ƒ.Recv(data),
+  )
+}
+```
+
+## Assert Protocol Payload
+
+ᵍ🆄🆁🅻 library is not only about networking I/O. It also allows to assert the response. It defines a few helper function combine assert logic with I/O chain. These functions act as lense they are focuses inside the structure, fetches values and asserts them. These helpers abort the evaluation of “program” if expectations do not match actual response. The `func FMap(f func() error) Arrow` lifts any function/closure to composable `Arrow`, allowing to implement assert procedure.  
+
+```go
+type T struct {
+  ID int
+}
+
+func (t *T) CheckValue() error {
+  if t.ID == 0 {
+    return fmt.Errorf("...")
+  }
+
+  return nil
+}
+
+func (t *T) SomeIO() gurl.Arrow {
+  return http.Join(
+    // ...
+    ƒ.Recv(t),
+  ).Then(gurl.FMap(t.CheckValue))
+}
+```
 
 
+## Chain Network I/O
 
-The implementation defines an abstraction of the protocol environments and lenses to focus inside it. In other words, the category represents the environment as an "invisible" side-effect of the composition.
+Ease of the composition is one of major feature in ᵍ🆄🆁🅻 library. It allows to chain multiple independent HTTP I/O to the high order computation.
 
+```go
+// declare a product type to depict IO context
+type HoF struct {
+  Token AccessToken
+  User  User
+  Org   Org
+}
 
-calls combinator  using .  
+// Declare set of independent HTTP I/O.
+// Each operation either reads or writes the context
+func (hof *HoF) FetchAccessToken() gurl.Arrow {
+  return http.Join(
+    // ...
+    ƒ.Recv(&hof.Token),
+  )
+}
 
-A category is a concept that is defined in abstract terms of objects, arrows together with two functions composition ◦ and identity 𝒊𝒅. These functions shall be compliant with category laws
+//
+func (hof *HoF) FetchUser() gurl.Arrow {
+  return http.Join(
+    ø.POST.URL(/* ... */),
+    ø.Authorization().Val(&hof.Token),
+    // ...
+    ƒ.Recv(&hof.user),
+  )
+}
 
-Associativity : (𝒇 ◦ 𝒈) ◦ 𝒉 = 𝒇 ◦ (𝒈 ◦ 𝒉)
-Left identity : 𝒊𝒅 ◦ 𝒇 = 𝒇
-Right identity : 𝒇 ◦ 𝒊𝒅 = 𝒇
-The category leaves the definition of object, arrows, composition and identity to us, which gives a powerful abstraction!
+func (hof *HoF) FetchContribution() gurl.Arrow {
+  return http.Join(
+    ø.POST(/* ... */),
+    ø.Authorization().Val(&hof.Token),
+    // ...
+    ƒ.Recv(&hof.Org),
+  )
+}
 
+// Combine HTTP I/O to sequential chain of execution 
+api := &HoF{}
+http.Join(
+  api.FetchAccessToken(),
+  api.FetchUser(),
+  api.FetchContribution(),
+)
+```
 
+See [example](../example) for details about the compositions.

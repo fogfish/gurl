@@ -71,3 +71,49 @@ func TestRecover(t *testing.T) {
 		If(c.Fail).Should().Equal(nil).
 		If(c.Recover()).Should().Equal(nil)
 }
+
+func TestFMap(t *testing.T) {
+	var s string
+
+	f := gurl.Join(
+		identity(),
+		gurl.FMap(func() error {
+			s = "value"
+			return nil
+		}),
+	)
+
+	it.Ok(t).
+		IfNil(f(gurl.IO()).Fail).
+		If(s).Equal("value")
+}
+
+func TestFMapError(t *testing.T) {
+	f := gurl.Join(
+		identity(),
+		gurl.FMap(func() error {
+			return errors.New("fail")
+		}),
+	)
+
+	it.Ok(t).
+		IfNotNil(f(gurl.IO()).Fail)
+}
+
+func TestFlatMap(t *testing.T) {
+	seq := ""
+
+	f := gurl.FMap(func() error {
+		seq = seq + "a"
+		return nil
+	})
+
+	g := gurl.Join(
+		f,
+		gurl.FlatMap(func() gurl.Arrow { return f }),
+	)
+
+	it.Ok(t).
+		IfNil(g(gurl.IO()).Fail).
+		If(seq).Equal("aa")
+}

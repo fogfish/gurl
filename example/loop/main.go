@@ -28,7 +28,6 @@ import (
 	"strconv"
 
 	"github.com/fogfish/gurl"
-	c "github.com/fogfish/gurl/cats"
 	"github.com/fogfish/gurl/http"
 	ƒ "github.com/fogfish/gurl/http/recv"
 	ø "github.com/fogfish/gurl/http/send"
@@ -74,7 +73,7 @@ func (s *seq) lookup(page int) gurl.Arrow {
 	// HoF combines HTTP requests with a logic that continues evaluation.
 	return gurl.Join(
 		head.request(page),
-		c.FlatMap(func() gurl.Arrow { return s.untilEOF(head, page) }),
+		gurl.FlatMap(func() gurl.Arrow { return s.untilEOF(head, page) }),
 	)
 }
 
