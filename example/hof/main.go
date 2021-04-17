@@ -29,14 +29,14 @@ type tID struct {
 }
 
 // httpbin implements payload for https://httpbin.org/post
-type tHttpBin struct {
+type tHTTPBin struct {
 	URL  string `json:"url,omitempty"`
 	Data string `json:"data,omitempty"`
 }
 
 type tHoF struct {
 	tID
-	tHttpBin
+	tHTTPBin
 }
 
 //
@@ -61,7 +61,7 @@ func (hof *tHoF) post() gurl.Arrow {
 		ø.ContentType.JSON,
 		ø.Send(&hof.tID.UUID),
 		ƒ.Status.OK,
-		ƒ.Recv(&hof.tHttpBin),
+		ƒ.Recv(&hof.tHTTPBin),
 	)
 }
 

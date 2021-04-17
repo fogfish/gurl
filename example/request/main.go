@@ -28,13 +28,13 @@ type tHeaders struct {
 	UserAgent string `json:"User-Agent,omitempty"`
 }
 
-type tHttpBin struct {
+type tHTTPBin struct {
 	URL     string   `json:"url,omitempty"`
 	Origin  string   `json:"origin,omitempty"`
 	Headers tHeaders `json:"headers,omitempty"`
 }
 
-func (bin *tHttpBin) validate() error {
+func (bin *tHTTPBin) validate() error {
 	if bin.Headers.UserAgent == "" {
 		return fmt.Errorf("User-Agent is not defined")
 	}
@@ -47,7 +47,7 @@ func (bin *tHttpBin) validate() error {
 }
 
 // basic declarative request
-func request(val *tHttpBin) gurl.Arrow {
+func request(val *tHTTPBin) gurl.Arrow {
 	return http.Join(
 		// HTTP Request
 		ø.GET.URL("https://httpbin.org/get"),
@@ -61,7 +61,7 @@ func request(val *tHttpBin) gurl.Arrow {
 }
 
 func main() {
-	var val tHttpBin
+	var val tHTTPBin
 	req := request(&val)
 	cat := http.DefaultIO(gurl.Logging(3))
 
