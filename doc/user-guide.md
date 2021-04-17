@@ -28,7 +28,7 @@
 
 ᵍ🆄🆁🅻 is a "combinator" library for network I/O. Combinators open up an opportunity to depict computation problems in terms of fundamental elements like physics talks about universe in terms of particles. The only definite purpose of combinators are building blocks for composition of "atomic" functions into computational structures. ᵍ🆄🆁🅻 combinators provide a powerful symbolic expressions in networking domain.
 
-Standard Golang packages implements low-level HTTP interface, which requires knowledge about protocol itself, understanding of Golang implementation aspects, and a bit of boilerplate coding. It also missing standardized chaining (composition) of individual requests. ᵍ🆄🆁🅻 inherits an ability of pure functional languages to express communication behavior by hiding the networking complexity using combinators. The composition becomes a fundamental operation in the library: the codomain of `𝒇` be the domain of `𝒈` so that the composite operation `𝒇 ◦ 𝒈` is defined.
+Standard Golang packages implements a low-level HTTP interface, which requires knowledge about protocol itself, understanding of Golang implementation aspects, and a bit of boilerplate coding. It also misses standardized chaining (composition) of individual requests. ᵍ🆄🆁🅻 inherits an ability of pure functional languages to express communication behavior by hiding the networking complexity using combinators. The composition becomes a fundamental operation in the library: the codomain of `𝒇` be the domain of `𝒈` so that the composite operation `𝒇 ◦ 𝒈` is defined.
 
 The library uses `Arrow` as a key abstraction of combinators. It is a *pure function* that takes an abstraction of the protocol environments, so called IO category and applies morphism as an "invisible" side-effect of the composition.
 
@@ -40,7 +40,7 @@ Arrow: IO ⟼ IO
 type Arrow func(*gurl.IOCat) *gurl.IOCat
 ```
 
-There are two classes of arrows. The first class is a writer morphism that focuses inside and reshapes HTTP protocol request. The writer morphism is used to declare HTTP method, destination URL, request headers and payload. Second one is a reader morphism that focuses into side-effect of HTTP protocol. The reader morphism is a pattern matcher, is used to match HTTP response code, headers and response payload.
+There are two classes of arrows. The first class is a writer morphism that focuses inside and reshapes HTTP protocol requests. The writer morphism is used to declare HTTP method, destination URL, request headers and payload. Second one is a reader morphism that focuses on the side-effect of HTTP protocol. The reader morphism is a pattern matcher, and is used to match HTTP response code, headers and response payload.
 
 Example of HTTP I/O visualization made by curl give **naive** perspective about arrows.
 
@@ -59,7 +59,7 @@ Example of HTTP I/O visualization made by curl give **naive** perspective about 
 
 ## Compose HoF 
 
-`Arrow` can be composed with another `Arrow` into new `Arrow` and so on. The library support only "and-then" style. It builds a strict product Arrow: `A × B × C × ... ⟼ D`. The product type takes a protocol environment and applies "morphism" sequentially unless some step fails. Use variadic function `http.Join` to compose HTTP primitives:
+`Arrow` can be composed with another `Arrow` into new `Arrow` and so on. The library supports only "and-then" style. It builds a strict product Arrow: `A × B × C × ... ⟼ D`. The product type takes a protocol environment and applies "morphism" sequentially unless some step fails. Use variadic function `http.Join` to compose HTTP primitives:
 
 ```go
 /*
@@ -77,7 +77,7 @@ var c: http.Arrow = /* ... */
 d := http.Join(a, b, c)
 ```
 
-Ease of the composition is one of major intent why ᵍ🆄🆁🅻 library has deviated from standard Golang HTTP interface. `http.Join` produces instance of higher order `gurl.Arrow` type, which is composable “promises” of HTTP I/O and so on. Essentially, the network I/O is just set of `Arrow` functions.
+Ease of the composition is one of major intent why ᵍ🆄🆁🅻 library has deviated from standard Golang HTTP interface. `http.Join` produces instances of higher order `gurl.Arrow` type, which is composable “promises” of HTTP I/O and so on. Essentially, the network I/O is just a set of `Arrow` functions.
 
 ```go
 /*
@@ -95,7 +95,7 @@ var c: gurl.Arrow = http.Join(/* ... */)
 d := gurl.Join(a, b, c)
 ```
 
-These rules of `Arrow` composition allow anyone to build a complex HTTP I/O scenario from small re-usable block.
+These rules of `Arrow` composition allow anyone to build a complex HTTP I/O scenario from a small reusable block.
 
 
 
@@ -105,10 +105,10 @@ These rules of `Arrow` composition allow anyone to build a complex HTTP I/O scen
 lazy := gurl.Join(/* ... */)
 ```
 
-The instance of `Arrow` produced by one of `Join` functions does not hold a results of HTTP I/O. It only builds a composable "promise" ("lazy I/O") - a pure computation. The computation needs to be evaluated by applying it over the protocol environment. The library provides simple interface to create and customize the environment.  
+The instance of `Arrow` produced by one of `Join` functions does not hold a result of HTTP I/O. It only builds a composable "promise" ("lazy I/O") - a pure computation. The computation needs to be evaluated by applying it over the protocol environment. The library provides a simple interface to create and customize the environment.  
 
 ```go
-// HTTP protocol provides default out-of-the-box environment.
+// HTTP protocol provides a default out-of-the-box environment.
 // use the default environment with caution in production workload
 env := http.DefaultIO() 
 
@@ -117,7 +117,7 @@ env = lazy(env)
 
 // handle either networking error or failure of expectation.
 // there are not need for error handling after each operation
-// in the contrast with classical networking I/O. The combinator
+// in contrast with classical networking I/O. The combinator
 // is smart enough to terminate execution.
 if env.Fail != nil {
   // ...
@@ -129,7 +129,7 @@ if err := env.Recover(); err != nil {
 }
 ```
 
-Usage of the library for production workload require a careful configuration of HTTP protocol timeouts, TLS policies, etc. Another aspect is thread safeness. The protocol environment is not thread safe. Each golang routine shall create one. Re-use for `http.Client` pointer across environments reduces resources consumption.  
+Usage of the library for production workload requires a careful configuration of HTTP protocol timeouts, TLS policies, etc. Another aspect is thread safeness. The protocol environment is not thread safe. Each golang routine shall create one. Re-use of `http.Client` pointer across environments reduces resource consumption.  
 
 ```go
 env := gurl.IO(
@@ -174,7 +174,7 @@ Writer morphism focuses inside and reshapes HTTP requests. The writer morphism i
 
 #### Method and URL
 
-Method and URL are only mandatory writer morphism in I/O declaration. Use `type Method string` to declare verb of HTTP request. It's received method `URL` allows to specify a destination endpoint.
+Method and URL are only mandatory writer morphism in I/O declaration. Use `type Method string` to declare the verb of HTTP request. It's received method `URL` allows to specify a destination endpoint.
 
 ```go
 http.Join(
@@ -196,7 +196,7 @@ http.Join(
 
 // All path segments are escaped by default, use ! symbol to disable it
 http.Join(
-  // this do not work
+  // this does not work
   ø.GET.URL("%s/%s", "http://example.com", "foo/bar"),
 
   // this works
@@ -257,7 +257,7 @@ http.Join(
 
 #### Request payload
 
-The `func Send(data interface{}) http.Arrow` transmits the payload to destination URL. The function takes Go data types (e.g. maps, struct, etc) and encodes its to binary using `Content-Type` header as a hint. The function fails if content type is not defined or not supported by the library.
+The `func Send(data interface{}) http.Arrow` transmits the payload to the destination URL. The function takes Go data types (e.g. maps, struct, etc) and encodes it to binary using `Content-Type` header as a hint. The function fails if content type is not defined or not supported by the library.
 
 ```go
 type MyType struct {
@@ -292,11 +292,11 @@ http.Join(
 
 ### Reader morphism
 
-Reader morphism focuses into side-effect of HTTP protocol. It does a pattern matching of HTTP response code, header values and response payload.
+Reader morphism focuses on the side-effect of HTTP protocol. It does a pattern matching of HTTP response code, header values and response payload.
 
 #### Status Code
 
-Status code validation is only mandatory reader morphism in I/O declaration. The status code "arrow" checks the code in HTTP response and fails with error if the status code do not match expected one. The library implements a constants for all known HTTP status codes.
+Status code validation is only mandatory reader morphism in I/O declaration. The status code "arrow" checks the code in HTTP response and fails with error if the status code does not match the expected one. The library defines a `type StatusCode int` and constants (e.g. `Status.OK`) for all known HTTP status codes.
 
 ```go
 http.Join(
@@ -314,7 +314,7 @@ http.Join(
 
 #### Response Headers
 
-Use `type Header string` to pattern match presence of HTTP header and its value in the response. The matching fails if response is missing header or its value do not equal.
+Use `type Header string` to pattern match presence of HTTP header and its value in the response. The matching fails if the response is missing the header or its value do not equal.
 
 ```go
 http.Join(
@@ -364,7 +364,7 @@ The library supports auto decoding of
 * `application/json`
 * `application/x-www-form-urlencoded`
 
-It support also receiving of raw binaries in case if data type is not supported.  
+It also receives raw binaries in case data type is not supported.  
 
 ```go
 var data []byte
@@ -376,7 +376,7 @@ http.Join(
 
 ### Using Variables for Dynamic Behavior
 
-A pure functional style of development does not have variables or assignment statements. The program is defined by applying type constructors, constants and functions. However, this principle do not closely match current architectures. Programs are implemented using variables such as memory lookups and updates. Any complex real-life networking I/O is not an exception, it requires a global operational state. So far, all examples have used constants and literals but ᵍ🆄🆁🅻 combinators also support dynamic behavior of I/O parameters using pointers to variables.  
+A pure functional style of development does not have variables or assignment statements. The program is defined by applying type constructors, constants and functions. However, this principle does not closely match current architectures. Programs are implemented using variables such as memory lookups and updates. Any complex real-life networking I/O is not an exception, it requires a global operational state. So far, all examples have used constants and literals but ᵍ🆄🆁🅻 combinators also support dynamic behavior of I/O parameters using pointers to variables.  
 
 ```go
 func dynamic(host, token, lang *string, req, data *T) gurl.Arrow {
@@ -395,13 +395,14 @@ func dynamic(host, token, lang *string, req, data *T) gurl.Arrow {
 
 ## Assert Protocol Payload
 
-ᵍ🆄🆁🅻 library is not only about networking I/O. It also allows to assert the response. It defines a few helper function combine assert logic with I/O chain. These functions act as lense they are focuses inside the structure, fetches values and asserts them. These helpers abort the evaluation of “program” if expectations do not match actual response. The `func FMap(f func() error) Arrow` lifts any function/closure to composable `Arrow`, allowing to implement assert procedure.  
+ᵍ🆄🆁🅻 library is not only about networking I/O. It also allows to assert the response. It defines a few helper functions that combine assert logic with I/O chain. These functions act as lense that are focused inside the structure, fetching values and asserts them. These helpers abort the evaluation of “program” if expectations do not match actual response. The `func FMap(f func() error) Arrow` lifts any function/closure to composable `Arrow`, allowing to implement assert procedure.  
 
 ```go
 type T struct {
   ID int
 }
 
+// a type receiver to assert the value
 func (t *T) CheckValue() error {
   if t.ID == 0 {
     return fmt.Errorf("...")
@@ -414,6 +415,7 @@ func (t *T) SomeIO() gurl.Arrow {
   return http.Join(
     // ...
     ƒ.Recv(t),
+  // compose the assertion into I/O chain   
   ).Then(gurl.FMap(t.CheckValue))
 }
 ```
@@ -421,7 +423,7 @@ func (t *T) SomeIO() gurl.Arrow {
 
 ## Chain Network I/O
 
-Ease of the composition is one of major feature in ᵍ🆄🆁🅻 library. It allows to chain multiple independent HTTP I/O to the high order computation.
+Ease of the composition is one of major feature in ᵍ🆄🆁🅻 library. It allows chain multiple independent HTTP I/O to the high order computation.
 
 ```go
 // declare a product type to depict IO context
@@ -440,7 +442,6 @@ func (hof *HoF) FetchAccessToken() gurl.Arrow {
   )
 }
 
-//
 func (hof *HoF) FetchUser() gurl.Arrow {
   return http.Join(
     ø.POST.URL(/* ... */),
