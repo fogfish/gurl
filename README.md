@@ -1,6 +1,6 @@
 <p align="center">
   <h3 align="center">ᵍ🆄🆁🅻</h3>
-  <p align="center"><strong>Network I/O "combinator" library for Golang</strong></p>
+  <p align="center"><strong>Combinator library for network I/O</strong></p>
 
   <p align="center">
     <!-- Documentation -->
@@ -32,7 +32,7 @@
 
 ---
 
-The library implements rough and naive Haskell's equivalent of do-notation, so called monadic binding form. This construction decorates http i/o pipeline(s) with "programmable commas", allowing to make http requests with few interesting property such as composition and laziness.   
+A pure functional style to express communication behavior by hiding the networking complexity using combinators. This construction decorates http i/o pipeline(s) with "programmable commas", allowing to make http requests with few interesting properties such as composition and laziness.   
 
 [User Guide](./doc/user-guide.md) |
 [Playground](https://play.golang.org/p/hPTgNhoJM2-) |
@@ -41,7 +41,7 @@ The library implements rough and naive Haskell's equivalent of do-notation, so c
 
 ## Inspiration
 
-Microservices have become a design style to evolve system architecture in parallel, implement stable and consistent interfaces. An expressive language is required to design the variety of network communication use-cases. A pure functional languages fits very well to express communication behavior. These language gives a rich abstractions to hide the networking complexity using monads. The IO-monads helps us to compose a chain of network operations and represent them as pure computation, build a new things from small reusable elements. This library is implemented after Erlang's [m_http](https://github.com/fogfish/m_http)
+Microservices have become a design style to evolve system architecture in parallel, implement stable and consistent interfaces. An expressive language is required to design the variety of network communication use-cases. Pure functional languages fit very well to express communication behavior. These languages give rich abstractions to hide the networking complexity using monads. The IO-monads help us to compose a chain of network operations and represent them as pure computation, building new things from small reusable elements. This library is implemented after Erlang's [m_http](https://github.com/fogfish/m_http)
 
 The library attempts to adapt a human-friendly logging syntax of HTTP I/O used by curl and Behavior as a Code paradigm. It connects cause-and-effect (Given/When/Then) with the networking (Input/Process/Output).
 
@@ -62,7 +62,7 @@ This semantic provides an intuitive approach to specify HTTP requests and expect
 
 ## Key features
 
-Standard Golang packages implements low-level HTTP interface, which requires knowledge about protocol itself, understanding of Golang implementation aspects, and a bit of boilerplate coding. It also missing standardized chaining (composition) of individual requests. ᵍ🆄🆁🅻 inherits an ability of pure functional languages to express communication behavior by hiding the networking complexity using combinators (sometimes it is called category pattern). Combinators make a chain of network operations as a pure computation. 
+Standard Golang packages implement a low-level HTTP interface, which requires knowledge about the protocol itself, understanding of Golang implementation aspects, and a bit of boilerplate coding. It also misses standardized chaining (composition) of individual requests. ᵍ🆄🆁🅻 inherits an ability of pure functional languages to express communication behavior by hiding the networking complexity using combinators (sometimes it is called category pattern). Combinators make a chain of network operations as a pure computation. 
 
 * cause-and-effect abstraction of HTTP I/O using Golang naive do-notation
 * lazy composition of individual HTTP requests to complex networking computations
@@ -109,8 +109,8 @@ var lazy := http.Join(
   ƒ.Recv(&data),
 )
 
-// Note: neither `lazy` or `data` hold a results of HTTP I/O.
-//       the code above just built composable "promise".
+// Note: neither `lazy` or `data` hold the result of HTTP I/O.
+//       the code above just builds a composable "promise".
 //       it is required to evaluate a side-effect of "HTTP computation".
 //       the lazy pipeline is evaluated when HTTP I/O pool is applied over
 if lazy(http.DefaultIO()).Fail != nil {
@@ -138,17 +138,17 @@ The library is [MIT](LICENSE) licensed and accepts contributions via GitHub pull
 
 The build and testing process requires [Go](https://golang.org) version 1.13 or later.
 
-**Build** and **run** service in your development console. The following command boots Erlang virtual machine and opens Erlang shell.
+**Build** and **test** the library in your development console.
 
 ```bash
 git clone https://github.com/fogfish/gurl
 cd gurl
-go test -cover
+go test ./...
 ```
 
 ### commit message
 
-The commit message helps us to write a good release note, speed-up review process. The message should address two question what changed and why. The project follows the template defined by chapter [Contributing to a Project](http://git-scm.com/book/ch5-2.html) of Git book.
+The commit message helps us to write a good release note, speed-up review process. The message should address two questions what changed and why. The project follows the template defined by chapter [Contributing to a Project](http://git-scm.com/book/ch5-2.html) of Git book.
 
 >
 > Short (50 chars or less) summary of changes
@@ -169,7 +169,7 @@ If you experience any issues with the library, please let us know via [GitHub is
 
 * **Specify** the configuration of your environment. Include which operating system you use and the versions of runtime environments. 
 
-* **Attach** logs, screenshots and exceptions, in possible.
+* **Attach** logs, screenshots and exceptions, if possible.
 
 * **Reveal** the steps you took to reproduce the problem, include code snippet or links to your project.
 
