@@ -1,5 +1,3 @@
-github.com/ajg/form v1.5.1 h1:t9c7v8JUKu/XxOGBU0yjNpaMloxGEJhUkqFRq0ibGeU=
-github.com/ajg/form v1.5.1/go.mod h1:uL1WgH+h2mgNtvBq0339dVnzXdBETtL2LeUXaIv25UY=
 github.com/ajg/form v1.5.2-0.20200323032839-9aeb3cf462e1 h1:8Qzi+0Uch1VJvdrOhJ8U8FqoPLbUdETPgMqGJ6DSMSQ=
 github.com/ajg/form v1.5.2-0.20200323032839-9aeb3cf462e1/go.mod h1:uL1WgH+h2mgNtvBq0339dVnzXdBETtL2LeUXaIv25UY=
 github.com/fogfish/it v0.9.0 h1:Ja+b0eTDq9F+tNyUgEfWLHTfOQeWFfSGlfw/k0QHsPA=
