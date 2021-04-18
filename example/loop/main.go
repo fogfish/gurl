@@ -28,7 +28,6 @@ import (
 	"strconv"
 
 	"github.com/fogfish/gurl"
-	c "github.com/fogfish/gurl/cats"
 	"github.com/fogfish/gurl/http"
 	ƒ "github.com/fogfish/gurl/http/recv"
 	ø "github.com/fogfish/gurl/http/send"
@@ -45,10 +44,10 @@ type seq []repo
 // request declares HTTP I/O that fetches a portion (page) from api
 func (s *seq) request(page int) gurl.Arrow {
 	return http.Join(
-		ø.GET("https://api.github.com/users/fogfish/repos"),
+		ø.GET.URL("https://api.github.com/users/fogfish/repos"),
 		ø.Params(map[string]string{"type": "all", "page": strconv.Itoa(page)}),
-		ø.AcceptJSON(),
-		ƒ.Code(http.StatusOK),
+		ø.Accept.JSON,
+		ƒ.Status.OK,
 		ƒ.Recv(s),
 	)
 }
@@ -74,7 +73,7 @@ func (s *seq) lookup(page int) gurl.Arrow {
 	// HoF combines HTTP requests with a logic that continues evaluation.
 	return gurl.Join(
 		head.request(page),
-		c.FlatMap(func() gurl.Arrow { return s.untilEOF(head, page) }),
+		gurl.FlatMap(func() gurl.Arrow { return s.untilEOF(head, page) }),
 	)
 }
 

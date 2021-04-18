@@ -18,49 +18,50 @@ import (
 	"fmt"
 
 	"github.com/fogfish/gurl"
-	c "github.com/fogfish/gurl/cats"
 	"github.com/fogfish/gurl/http"
 	ƒ "github.com/fogfish/gurl/http/recv"
 	ø "github.com/fogfish/gurl/http/send"
 )
 
 // data types used by HTTP payload(s)
-type headers struct {
-	UserAgent string `json:"X-User-Agent,omitempty"`
+type tHeaders struct {
+	UserAgent string `json:"User-Agent,omitempty"`
 }
 
-type httpbin struct {
-	URL     string  `json:"url,omitempty"`
-	Origin  string  `json:"origin,omitempty"`
-	Headers headers `json:"headers,omitempty"`
+type tHTTPBin struct {
+	URL     string   `json:"url,omitempty"`
+	Origin  string   `json:"origin,omitempty"`
+	Headers tHeaders `json:"headers,omitempty"`
+}
+
+func (bin *tHTTPBin) validate() error {
+	if bin.Headers.UserAgent == "" {
+		return fmt.Errorf("User-Agent is not defined")
+	}
+
+	if bin.Headers.UserAgent != "gurl" {
+		return fmt.Errorf("User-Agent is not valid")
+	}
+
+	return nil
 }
 
 // basic declarative request
-func request(val *httpbin) gurl.Arrow {
+func request(val *tHTTPBin) gurl.Arrow {
 	return http.Join(
-		// HTTP output
-		ø.GET("https://httpbin.org/get"),
-		ø.Header("Accept").Is("application/json"),
-		ø.Header("X-User-Agent").Is("gurl"),
-		// HTTP input and its validation
-		ƒ.Code(http.StatusOK),
-		ƒ.Header("Content-Type").Is("application/json"),
+		// HTTP Request
+		ø.GET.URL("https://httpbin.org/get"),
+		ø.Accept.JSON,
+		ø.UserAgent.Is("gurl"),
+		// HTTP Response and its validation
+		ƒ.Status.OK,
+		ƒ.ContentType.JSON,
 		ƒ.Recv(val),
-	).Then(
-		c.Defined(&val.Headers.UserAgent),
-		c.Value(&val.Headers.UserAgent).String("gurl"),
-		c.FMap(validate(val)),
-	)
-}
-
-func validate(val *httpbin) func() error {
-	return func() error {
-		return nil
-	}
+	).Then(gurl.FMap(val.validate))
 }
 
 func main() {
-	var val httpbin
+	var val tHTTPBin
 	req := request(&val)
 	cat := http.DefaultIO(gurl.Logging(3))
 

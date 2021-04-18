@@ -1,0 +1,6 @@
+version: "2"
+
+checks:
+  method-count:
+    config:
+      threshold: 100

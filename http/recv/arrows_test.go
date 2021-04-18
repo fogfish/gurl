@@ -11,6 +11,8 @@ package recv_test
 import (
 	"net/http"
 	"net/http/httptest"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/fogfish/gurl"
@@ -25,8 +27,8 @@ func TestCodeOk(t *testing.T) {
 	defer ts.Close()
 
 	req := µ.Join(
-		ø.GET(ts.URL+"/json"),
-		ø.AcceptJSON(),
+		ø.GET.URL(ts.URL+"/json"),
+		ø.Accept.JSON,
 		ƒ.Code(µ.StatusOK),
 	)
 	cat := gurl.IO(µ.Default())
@@ -40,9 +42,9 @@ func TestCodeNoMatch(t *testing.T) {
 	defer ts.Close()
 
 	req := µ.Join(
-		ø.GET(ts.URL+"/other"),
-		ø.AcceptJSON(),
-		ƒ.Code(µ.StatusOK),
+		ø.GET.URL(ts.URL+"/other"),
+		ø.Accept.JSON,
+		ƒ.Status.OK,
 	)
 	cat := gurl.IO(µ.Default())
 
@@ -50,15 +52,69 @@ func TestCodeNoMatch(t *testing.T) {
 		If(req(cat).Fail).Should().Be().Like(µ.StatusBadRequest)
 }
 
+func TestStatusCodes(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	for code, check := range map[µ.StatusCode]µ.Arrow{
+		//
+		µ.StatusOK:                   ƒ.Status.OK,
+		µ.StatusCreated:              ƒ.Status.Created,
+		µ.StatusAccepted:             ƒ.Status.Accepted,
+		µ.StatusNonAuthoritativeInfo: ƒ.Status.NonAuthoritativeInfo,
+		µ.StatusNoContent:            ƒ.Status.NoContent,
+		µ.StatusResetContent:         ƒ.Status.ResetContent,
+		//
+		µ.StatusMultipleChoices:  ƒ.Status.MultipleChoices,
+		µ.StatusMovedPermanently: ƒ.Status.MovedPermanently,
+		µ.StatusFound:            ƒ.Status.Found,
+		µ.StatusSeeOther:         ƒ.Status.SeeOther,
+		µ.StatusNotModified:      ƒ.Status.NotModified,
+		µ.StatusUseProxy:         ƒ.Status.UseProxy,
+		//
+		µ.StatusBadRequest:            ƒ.Status.BadRequest,
+		µ.StatusUnauthorized:          ƒ.Status.Unauthorized,
+		µ.StatusPaymentRequired:       ƒ.Status.PaymentRequired,
+		µ.StatusForbidden:             ƒ.Status.Forbidden,
+		µ.StatusNotFound:              ƒ.Status.NotFound,
+		µ.StatusMethodNotAllowed:      ƒ.Status.MethodNotAllowed,
+		µ.StatusNotAcceptable:         ƒ.Status.NotAcceptable,
+		µ.StatusProxyAuthRequired:     ƒ.Status.ProxyAuthRequired,
+		µ.StatusRequestTimeout:        ƒ.Status.RequestTimeout,
+		µ.StatusConflict:              ƒ.Status.Conflict,
+		µ.StatusGone:                  ƒ.Status.Gone,
+		µ.StatusLengthRequired:        ƒ.Status.LengthRequired,
+		µ.StatusPreconditionFailed:    ƒ.Status.PreconditionFailed,
+		µ.StatusRequestEntityTooLarge: ƒ.Status.RequestEntityTooLarge,
+		µ.StatusRequestURITooLong:     ƒ.Status.RequestURITooLong,
+		µ.StatusUnsupportedMediaType:  ƒ.Status.UnsupportedMediaType,
+		//
+		µ.StatusInternalServerError:     ƒ.Status.InternalServerError,
+		µ.StatusNotImplemented:          ƒ.Status.NotImplemented,
+		µ.StatusBadGateway:              ƒ.Status.BadGateway,
+		µ.StatusServiceUnavailable:      ƒ.Status.ServiceUnavailable,
+		µ.StatusGatewayTimeout:          ƒ.Status.GatewayTimeout,
+		µ.StatusHTTPVersionNotSupported: ƒ.Status.HTTPVersionNotSupported,
+	} {
+		req := µ.Join(
+			ø.GET.URL("!%s/code/%s", ts.URL, code.Value()),
+			check,
+		)
+		cat := gurl.IO(µ.Default())
+		it.Ok(t).
+			If(req(cat).Fail).Should().Equal(nil)
+	}
+}
+
 func TestHeaderOk(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
 	req := µ.Join(
-		ø.GET(ts.URL+"/json"),
-		ø.AcceptJSON(),
-		ƒ.Code(µ.StatusOK),
-		ƒ.Header("content-type").Is("application/json"),
+		ø.GET.URL(ts.URL+"/json"),
+		ø.Accept.JSON,
+		ƒ.Status.OK,
+		ƒ.ContentType.JSON,
 	)
 	cat := gurl.IO(µ.Default())
 
@@ -71,10 +127,11 @@ func TestHeaderAny(t *testing.T) {
 	defer ts.Close()
 
 	req := µ.Join(
-		ø.GET(ts.URL+"/json"),
-		ø.AcceptJSON(),
-		ƒ.Code(µ.StatusOK),
-		ƒ.Header("content-type").Any(),
+		ø.GET.URL(ts.URL+"/json"),
+		ø.Accept.JSON,
+		ƒ.Status.OK,
+		ƒ.ContentType.Is("*"),
+		ƒ.Header("Content-Type").Any,
 	)
 	cat := gurl.IO(µ.Default())
 
@@ -88,10 +145,10 @@ func TestHeaderVal(t *testing.T) {
 
 	var content string
 	req := µ.Join(
-		ø.GET(ts.URL+"/json"),
-		ø.AcceptJSON(),
-		ƒ.Code(µ.StatusOK),
-		ƒ.Header("content-type").String(&content),
+		ø.GET.URL(ts.URL+"/json"),
+		ø.Accept.JSON,
+		ƒ.Status.OK,
+		ƒ.ContentType.String(&content),
 	)
 	cat := gurl.IO(µ.Default())
 
@@ -105,10 +162,10 @@ func TestHeaderMismatch(t *testing.T) {
 	defer ts.Close()
 
 	req := µ.Join(
-		ø.GET(ts.URL+"/json"),
-		ø.AcceptJSON(),
-		ƒ.Code(µ.StatusOK),
-		ƒ.Header("content-type").Is("foo/bar"),
+		ø.GET.URL(ts.URL+"/json"),
+		ø.Accept.JSON,
+		ƒ.Status.OK,
+		ƒ.ContentType.Is("foo/bar"),
 	)
 	cat := gurl.IO(µ.Default())
 
@@ -121,9 +178,9 @@ func TestHeaderUndefinedWithLit(t *testing.T) {
 	defer ts.Close()
 
 	req := µ.Join(
-		ø.GET(ts.URL+"/json"),
-		ø.AcceptJSON(),
-		ƒ.Code(µ.StatusOK),
+		ø.GET.URL(ts.URL+"/json"),
+		ø.Accept.JSON,
+		ƒ.Status.OK,
 		ƒ.Header("x-content-type").Is("foo/bar"),
 	)
 	cat := gurl.IO(µ.Default())
@@ -138,9 +195,9 @@ func TestHeaderUndefinedWithVal(t *testing.T) {
 
 	var val string
 	req := µ.Join(
-		ø.GET(ts.URL+"/json"),
-		ø.AcceptJSON(),
-		ƒ.Code(µ.StatusOK),
+		ø.GET.URL(ts.URL+"/json"),
+		ø.Accept.JSON,
+		ƒ.Status.OK,
 		ƒ.Header("x-content-type").String(&val),
 	)
 	cat := gurl.IO(µ.Default())
@@ -159,9 +216,9 @@ func TestRecvJSON(t *testing.T) {
 
 	var site Site
 	req := µ.Join(
-		ø.GET(ts.URL+"/json"),
-		ƒ.Code(µ.StatusOK),
-		ƒ.ServedJSON(),
+		ø.GET.URL(ts.URL+"/json"),
+		ƒ.Status.OK,
+		ƒ.ContentType.JSON,
 		ƒ.Recv(&site),
 	)
 	cat := gurl.IO(µ.Default())
@@ -181,9 +238,9 @@ func TestRecvForm(t *testing.T) {
 
 	var site Site
 	req := µ.Join(
-		ø.GET(ts.URL+"/form"),
-		ƒ.Code(µ.StatusOK),
-		ƒ.ServedForm(),
+		ø.GET.URL(ts.URL+"/form"),
+		ƒ.Status.OK,
+		ƒ.ContentType.Form,
 		ƒ.Recv(&site),
 	)
 	cat := gurl.IO(µ.Default())
@@ -194,25 +251,27 @@ func TestRecvForm(t *testing.T) {
 }
 
 func TestRecvBytes(t *testing.T) {
-	type Site struct {
-		Site string `json:"site"`
-	}
-
 	ts := mock()
 	defer ts.Close()
 
-	var data []byte
-	req := µ.Join(
-		ø.GET(ts.URL+"/form"),
-		ƒ.Code(µ.StatusOK),
-		ƒ.Served().Any(),
-		ƒ.Bytes(&data),
-	)
-	cat := gurl.IO(µ.Default())
+	for path, content := range map[string]µ.Arrow{
+		"/text": ƒ.ContentType.Text,
+		"/html": ƒ.ContentType.HTML,
+	} {
 
-	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil).
-		If(string(data)).Should().Equal("site=example.com")
+		var data []byte
+		req := µ.Join(
+			ø.GET.URL(ts.URL+path),
+			ƒ.Status.OK,
+			content,
+			ƒ.Bytes(&data),
+		)
+		cat := gurl.IO(µ.Default())
+
+		it.Ok(t).
+			If(req(cat).Fail).Should().Equal(nil).
+			If(string(data)).Should().Equal("site=example.com")
+	}
 }
 
 //
@@ -226,6 +285,25 @@ func mock() *httptest.Server {
 			case r.URL.Path == "/form":
 				w.Header().Add("Content-Type", "application/x-www-form-urlencoded")
 				w.Write([]byte("site=example.com"))
+			case r.URL.Path == "/text":
+				w.Header().Add("Content-Type", "text/plain")
+				w.Write([]byte("site=example.com"))
+			case r.URL.Path == "/html":
+				w.Header().Add("Content-Type", "text/html")
+				w.Write([]byte("site=example.com"))
+			case r.URL.Path == "/code/301":
+				w.Header().Add("Location", "http://127.1")
+				w.WriteHeader(301)
+			case r.URL.Path == "/code/302":
+				w.Header().Add("Location", "http://127.1")
+				w.WriteHeader(302)
+			case r.URL.Path == "/code/303":
+				w.Header().Add("Location", "http://127.1")
+				w.WriteHeader(303)
+			case strings.HasPrefix(r.URL.Path, "/code"):
+				seq := strings.Split(r.URL.Path, "/")
+				code, _ := strconv.Atoi(seq[2])
+				w.WriteHeader(code)
 			default:
 				w.WriteHeader(http.StatusBadRequest)
 			}

@@ -108,6 +108,33 @@ func IO(opts ...Config) *IOCat {
 	return cat
 }
 
+/*
+
+FMap applies clojure to category.
+The function lifts any computation to the category and make it composable
+with the "program".
+*/
+func FMap(f func() error) Arrow {
+	return func(cat *IOCat) *IOCat {
+		cat.Fail = f()
+		return cat
+	}
+}
+
+/*
+
+FlatMap applies closure to matched HTTP request.
+It returns an arrow, which continue evaluation.
+*/
+func FlatMap(f func() Arrow) Arrow {
+	return func(cat *IOCat) *IOCat {
+		if g := f(); g != nil {
+			return g(cat)
+		}
+		return cat
+	}
+}
+
 // NotSupported is returned if communication schema is not supported.
 type NotSupported struct{ URL *url.URL }
 
@@ -141,7 +168,7 @@ This interface is a helper abstraction to evaluate presence of element in the se
 
   gurl.Join(
     ...
-    ç.Seq(&seq).Has("example"),
+    gurl.Seq(&seq).Has("example"),
     ...
   )
 
@@ -164,4 +191,13 @@ type Ord interface {
 	String(int) string
 	// Value return value at index
 	Value(int) interface{}
+}
+
+/*
+
+UnApply interface decomposes "struct" to sequence of value.
+This interface a helper abstraction to support pattern matching of instances.
+*/
+type UnApply interface {
+	UnApply() []interface{}
 }

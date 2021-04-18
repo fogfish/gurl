@@ -113,16 +113,16 @@ The following code snippet demonstrates a typical usage scenario.
   }
 
   var data Payload
-  var reqf := http.Join(
+  var lazy := http.Join(
     // declares HTTP method and destination URL
-    ø.GET("http://httpbin.org/get"),
+    ø.GET.URL("http://httpbin.org/get"),
     // HTTP content negotiation, declares acceptable types
-    ø.Accept().Is("application/json"),
+    ø.Accept.JSON,
 
     // requires HTTP Status Code to be 200 OK
-    ƒ.Code(gurl.StatusOK),
+    ƒ.Status.OK,
     // requites HTTP Header to be Content-Type: application/json
-    ƒ.Served().Is("application/json"),
+    ƒ.ContentType.JSON,
     // unmarshal JSON to the variable
     ƒ.Recv(&data),
   )
@@ -130,7 +130,7 @@ The following code snippet demonstrates a typical usage scenario.
   // Note: http do not hold yet, a results of HTTP I/O
   //       it is just a composable "promise", you have to
   //       evaluate a side-effect of HTTP "computation"
-  if reqf(gurl.IO( ... )).Fail != nil {
+  if lazy(gurl.IO( ... )).Fail != nil {
     // error handling
   }
 
@@ -138,60 +138,7 @@ The evaluation of "program" fails if either networking fails or expectations
 do not match actual response. There are no needs to check error code after
 each operation. The composition is smart enough to terminate "program" execution.
 
-Composition
+See User Guide about the library at https://github.com/fogfish/gurl
 
-The composition of multiple HTTP I/O is an essential part of the library.
-The composition is handled in context of IO category. For example,
-RESTfull API primitives declared as function, each deals with gurl.IOCat.
-
-  import (
-    "github.com/fogfish/gurl"
-    "github.com/fogfish/gurl/http"
-    ƒ "github.com/fogfish/gurl/http/recv"
-    ø "github.com/fogfish/gurl/http/send"
-  )
-
-  func HoF() {
-    var (
-      token AccessToken
-      user User
-      org Org
-    )
-
-    reqf := gurl.Join(
-      AccessToken(&token),
-      UserProfile(&token, &user),
-      UserContribution(&token, &org)
-    )
-
-    if reqf(gurl.IO( ... )).Fail != nil {
-      // error handling
-    }
-  }
-
-  func AccessToken(token *AccessToken) gurl.Arrow {
-    return http.Join(
-      // ...
-      ƒ.Recv(token),
-    )
-  }
-
-  func UserProfile(token *AccessToken, user *User) gurl.Arrow {
-    return http.Join(
-      ø.POST("..."),
-      ø.Authorization().Is(token.Bearer),
-      // ...
-      ƒ.Recv(user),
-    )
-  }
-
-  func UserContribution(token *AccessToken, org *Org) {
-    return http.Join(
-      ø.POST("..."),
-      ø.Authorization().Is(token.Bearer),
-      // ...
-      ƒ.Recv(org),
-    )
-  }
 */
 package gurl

@@ -24,11 +24,29 @@ import (
 
 /*
 
+Method is base type for HTTP methods
+*/
+type Method string
+
+/*
+
+List of supported built-in method constants
+*/
+const (
+	GET    = Method("GET")
+	POST   = Method("POST")
+	PUT    = Method("PUT")
+	DELETE = Method("DELETE")
+	PATCH  = Method("PATCH")
+)
+
+/*
+
 URL defines a mandatory parameters to the request such as
 HTTP method and destination URL, use Params arrow if you
 need to supply URL query params.
 */
-func URL(method, uri string, args ...interface{}) http.Arrow {
+func (method Method) URL(uri string, args ...interface{}) http.Arrow {
 	return func(cat *gurl.IOCat) *gurl.IOCat {
 		var addr *url.URL
 		if addr, cat.Fail = mkURL(uri, args...); cat.Fail != nil {
@@ -42,7 +60,7 @@ func URL(method, uri string, args ...interface{}) http.Arrow {
 		switch addr.Scheme {
 		case "http", "https":
 			cat.HTTP.Send = &gurl.UpStreamHTTP{
-				Method:  method,
+				Method:  string(method),
 				URL:     addr,
 				Header:  make(map[string]*string),
 				Payload: bytes.NewBuffer(nil),
@@ -100,12 +118,6 @@ func maybeEscape(escape bool, val string) string {
 
 /*
 
-THeader is tagged string, represents HTTP Header
-*/
-type THeader struct{ string }
-
-/*
-
 Header defines HTTP headers to the request, use combinator
 to define multiple header values.
 
@@ -114,16 +126,45 @@ to define multiple header values.
 		ø.Header("Content-Type").Is(...),
 	)
 */
-func Header(header string) THeader {
-	return THeader{header}
-}
+type Header string
 
-func (header THeader) name() string {
-	return strings.ToLower(header.string)
+/*
+
+List of supported HTTP header constants
+https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Request_fields
+*/
+const (
+	Accept            = Content("Accept")
+	AcceptCharset     = Header("Accept-Charset")
+	AcceptEncoding    = Header("Accept-Encoding")
+	AcceptLanguage    = Header("Accept-Language")
+	Authorization     = Header("Authorization")
+	CacheControl      = Header("Cache-Control")
+	Connection        = Lifecycle("Connection")
+	ContentEncoding   = Header("Content-Encoding")
+	ContentLength     = Header("Content-Length")
+	ContentType       = Content("Content-Type")
+	Cookie            = Header("Cookie")
+	Date              = Header("Date")
+	Host              = Header("Host")
+	IfMatch           = Header("If-Match")
+	IfModifiedSince   = Header("If-Modified-Since")
+	IfNoneMatch       = Header("If-None-Match")
+	IfRange           = Header("If-Range")
+	IfUnmodifiedSince = Header("If-Unmodified-Since")
+	Origin            = Header("Origin")
+	Range             = Header("Range")
+	TransferEncoding  = Header("Transfer-Encoding")
+	UserAgent         = Header("User-Agent")
+	Upgrade           = Header("Upgrade")
+)
+
+func (header Header) name() string {
+	return strings.ToLower(string(header))
 }
 
 // Is sets a literval value of HTTP header
-func (header THeader) Is(value string) http.Arrow {
+func (header Header) Is(value string) http.Arrow {
 	return func(cat *gurl.IOCat) *gurl.IOCat {
 		cat.HTTP.Send.Header[header.name()] = &value
 		return cat
@@ -131,11 +172,73 @@ func (header THeader) Is(value string) http.Arrow {
 }
 
 // Val sets a value of HTTP header from variable
-func (header THeader) Val(value *string) http.Arrow {
+func (header Header) Val(value *string) http.Arrow {
 	return func(cat *gurl.IOCat) *gurl.IOCat {
 		cat.HTTP.Send.Header[header.name()] = value
 		return cat
 	}
+}
+
+// Set is combinator to define HTTP header into request
+func (header Header) Set(cat *gurl.IOCat, value string) *gurl.IOCat {
+	cat.HTTP.Send.Header[header.name()] = &value
+	return cat
+}
+
+// Content defines headers for content negotiation
+type Content Header
+
+// JSON defines header `???: application/json`
+func (h Content) JSON(cat *gurl.IOCat) *gurl.IOCat {
+	return Header(h).Set(cat, "application/json")
+}
+
+// Form defined Header `???: application/x-www-form-urlencoded`
+func (h Content) Form(cat *gurl.IOCat) *gurl.IOCat {
+	return Header(h).Set(cat, "application/x-www-form-urlencoded")
+}
+
+// Text defined Header `???: text/plain`
+func (h Content) Text(cat *gurl.IOCat) *gurl.IOCat {
+	return Header(h).Set(cat, "text/plain")
+}
+
+// HTML defined Header `???: text/html`
+func (h Content) HTML(cat *gurl.IOCat) *gurl.IOCat {
+	return Header(h).Set(cat, "text/html")
+}
+
+// Is sets a literval value of HTTP header
+func (h Content) Is(value string) http.Arrow {
+	return Header(h).Is(value)
+}
+
+// Val sets a value of HTTP header from variable
+func (h Content) Val(value *string) http.Arrow {
+	return Header(h).Val(value)
+}
+
+// Lifecycle defines headers for connection management
+type Lifecycle Header
+
+// KeepAlive defines header `???: keep-alive`
+func (h Lifecycle) KeepAlive(cat *gurl.IOCat) *gurl.IOCat {
+	return Header(h).Set(cat, "keep-alive")
+}
+
+// Close defines header `???: close`
+func (h Lifecycle) Close(cat *gurl.IOCat) *gurl.IOCat {
+	return Header(h).Set(cat, "close")
+}
+
+// Is sets a literval value of HTTP header
+func (h Lifecycle) Is(value string) http.Arrow {
+	return Header(h).Is(value)
+}
+
+// Val sets a value of HTTP header from variable
+func (h Lifecycle) Val(value *string) http.Arrow {
+	return Header(h).Val(value)
 }
 
 /*
@@ -237,70 +340,4 @@ func encodeForm(data interface{}) (*bytes.Buffer, error) {
 		payload[key] = []string{val}
 	}
 	return bytes.NewBuffer([]byte(payload.Encode())), nil
-}
-
-//-------------------------------------------------------------------
-//
-// arrows aliases
-//
-//-------------------------------------------------------------------
-
-// GET is syntax sugar of URL("GET", ...)
-func GET(uri string, args ...interface{}) http.Arrow {
-	return URL("GET", uri, args...)
-}
-
-// POST is syntax sugar of URL("POST", ...)
-func POST(uri string, args ...interface{}) http.Arrow {
-	return URL("POST", uri, args...)
-}
-
-// PUT is syntax sugar of URL("PUT", ...)
-func PUT(uri string, args ...interface{}) http.Arrow {
-	return URL("PUT", uri, args...)
-}
-
-// DELETE is syntax sugar of URL("DELETE", ...)
-func DELETE(uri string, args ...interface{}) http.Arrow {
-	return URL("DELETE", uri, args...)
-}
-
-// Accept is syntax sugar of Header("Accept")
-func Accept() THeader {
-	return Header("Accept")
-}
-
-// AcceptJSON is syntax sugar of Header("Accept").Is("application/json")
-func AcceptJSON() http.Arrow {
-	return Accept().Is("application/json")
-}
-
-// AcceptForm is syntax sugar of Header("Accept").Is("application/x-www-form-urlencoded")
-func AcceptForm() http.Arrow {
-	return Accept().Is("application/x-www-form-urlencoded")
-}
-
-// Content is syntax sugar of Header("Content-Type")
-func Content() THeader {
-	return Header("Content-Type")
-}
-
-// ContentJSON is syntax sugar of Header("Content-Type").Is("application/json")
-func ContentJSON() http.Arrow {
-	return Content().Is("application/json")
-}
-
-// ContentForm is syntax sugar of Header("Content-Type").Is("application/x-www-form-urlencoded")
-func ContentForm() http.Arrow {
-	return Content().Is("application/x-www-form-urlencoded")
-}
-
-// KeepAlive is a syntax sugar of Header("Connection").Is("keep-alive")
-func KeepAlive() http.Arrow {
-	return Header("Connection").Is("keep-alive")
-}
-
-// Authorization is syntax sugar of Header("Authorization")
-func Authorization() THeader {
-	return Header("Authorization")
 }
