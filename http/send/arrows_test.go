@@ -108,31 +108,37 @@ func TestURLLazyVal(t *testing.T) {
 		If(cat.HTTP.Send.URL.String()).Should().Equal("https://example.com/a")
 }
 
-func TestHeaderByLit(t *testing.T) {
-	req := http.Join(
-		ø.GET.URL("http://example.com"),
-		ø.Header("Accept").Is("text/plain"),
-	)
-	cat := gurl.IO(http.Default())
+func TestHeaders(t *testing.T) {
+	defAccept := "text/plain"
+	defClose := "close"
 
-	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil).
-		If(*cat.HTTP.Send.Header["accept"]).Should().Equal("text/plain")
+	for val, arr := range map[*[]string]http.Arrow{
+		//
+		{"accept", "text/plain"}:                        ø.Header("Accept").Is("text/plain"),
+		{"accept", "text/plain"}:                        ø.Header("Accept").Val(&defAccept),
+		{"accept", "text/plain"}:                        ø.Accept.Text,
+		{"accept", "application/json"}:                  ø.Accept.JSON,
+		{"accept", "application/x-www-form-urlencoded"}: ø.Accept.Form,
 
-}
+		{"accept", "text/plain"}: ø.Accept.Is("text/plain"),
+		{"accept", "text/plain"}: ø.Accept.Val(&defAccept),
+		//
+		{"connection", "keep-alive"}: ø.Connection.KeepAlive,
+		{"connection", "close"}:      ø.Connection.Is("close"),
+		{"connection", "close"}:      ø.Connection.Val(&defClose),
+		//
+		{"authorization", "foo bar"}: ø.Authorization.Is("foo bar"),
+	} {
+		req := http.Join(
+			ø.GET.URL("http://example.com"),
+			arr,
+		)
+		cat := gurl.IO(http.Default())
 
-func TestHeaderByVal(t *testing.T) {
-	val := "text/plain"
-
-	req := http.Join(
-		ø.GET.URL("http://example.com"),
-		ø.Header("Accept").Val(&val),
-	)
-	cat := gurl.IO(http.Default())
-
-	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil).
-		If(*cat.HTTP.Send.Header["accept"]).Should().Equal("text/plain")
+		it.Ok(t).
+			If(req(cat).Fail).Should().Equal(nil).
+			If(*cat.HTTP.Send.Header[(*val)[0]]).Equal((*val)[1])
+	}
 }
 
 func TestParams(t *testing.T) {
@@ -279,34 +285,5 @@ func TestAliasesURL(t *testing.T) {
 			If(req(cat).Fail).Should().Equal(nil).
 			If(cat.HTTP.Send.URL.String()).Should().Equal("https://example.com/a/1").
 			If(cat.HTTP.Send.Method).Should().Equal(mthd)
-	}
-}
-
-func TestAliasesHeader(t *testing.T) {
-	type Unit struct {
-		header string
-		value  string
-		arrow  http.Arrow
-	}
-
-	for _, unit := range []Unit{
-		{"accept", "foo/bar", ø.Accept.Is("foo/bar")},
-		{"accept", "application/json", ø.Accept.JSON},
-		{"accept", "application/x-www-form-urlencoded", ø.Accept.Form},
-		{"content-type", "foo/bar", ø.ContentType.Is("foo/bar")},
-		{"content-type", "application/json", ø.ContentType.JSON},
-		{"content-type", "application/x-www-form-urlencoded", ø.ContentType.Form},
-		{"connection", "keep-alive", ø.Connection.KeepAlive},
-		{"authorization", "foo bar", ø.Authorization.Is("foo bar")},
-	} {
-		req := http.Join(
-			ø.GET.URL("http://example.com"),
-			unit.arrow,
-		)
-		cat := gurl.IO(http.Default())
-
-		it.Ok(t).
-			If(req(cat).Fail).Should().Equal(nil).
-			If(*cat.HTTP.Send.Header[unit.header]).Should().Equal(unit.value)
 	}
 }
