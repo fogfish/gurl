@@ -112,7 +112,7 @@ func (p pool) Unsafe(cat *gurl.IOCat) *gurl.IOCat {
 	var eg *http.Request
 	eg, cat.Fail = http.NewRequest(
 		cat.HTTP.Send.Method,
-		cat.HTTP.Send.URL.String(),
+		cat.HTTP.Send.URL,
 		cat.HTTP.Send.Payload,
 	)
 	if cat.Fail != nil {

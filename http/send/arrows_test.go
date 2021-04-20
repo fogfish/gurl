@@ -50,7 +50,7 @@ func TestURL(t *testing.T) {
 
 	it.Ok(t).
 		If(req(cat).Fail).Should().Equal(nil).
-		If(cat.HTTP.Send.URL.String()).Should().Equal("https://example.com/a/1")
+		If(cat.HTTP.Send.URL).Should().Equal("https://example.com/a/1")
 }
 
 func TestURLByRef(t *testing.T) {
@@ -61,7 +61,7 @@ func TestURLByRef(t *testing.T) {
 
 	it.Ok(t).
 		If(req(cat).Fail).Should().Equal(nil).
-		If(cat.HTTP.Send.URL.String()).Should().Equal("https://example.com/a/1")
+		If(cat.HTTP.Send.URL).Should().Equal("https://example.com/a/1")
 }
 
 func TestURLEscape(t *testing.T) {
@@ -72,7 +72,7 @@ func TestURLEscape(t *testing.T) {
 
 	it.Ok(t).
 		If(req(cat).Fail).Should().Equal(nil).
-		If(cat.HTTP.Send.URL.String()).Should().Equal("https://example.com/a%20b/1")
+		If(cat.HTTP.Send.URL).Should().Equal("https://example.com/a%20b/1")
 }
 
 func TestURLEscapeSkip(t *testing.T) {
@@ -82,7 +82,7 @@ func TestURLEscapeSkip(t *testing.T) {
 
 	it.Ok(t).
 		If(req(cat).Fail).Should().Equal(nil).
-		If(cat.HTTP.Send.URL.String()).Should().Equal("https://example.com/a/b")
+		If(cat.HTTP.Send.URL).Should().Equal("https://example.com/a/b")
 }
 
 func TestURLType(t *testing.T) {
@@ -94,7 +94,7 @@ func TestURLType(t *testing.T) {
 
 	it.Ok(t).
 		If(req(cat).Fail).Should().Equal(nil).
-		If(cat.HTTP.Send.URL.String()).Should().Equal("https://example.com/a%20b/1")
+		If(cat.HTTP.Send.URL).Should().Equal("https://example.com/a%20b/1")
 }
 
 func TestURLLazyVal(t *testing.T) {
@@ -105,7 +105,7 @@ func TestURLLazyVal(t *testing.T) {
 
 	it.Ok(t).
 		If(req(cat).Fail).Should().Equal(nil).
-		If(cat.HTTP.Send.URL.String()).Should().Equal("https://example.com/a")
+		If(cat.HTTP.Send.URL).Should().Equal("https://example.com/a")
 }
 
 func TestHeaders(t *testing.T) {
@@ -124,6 +124,7 @@ func TestHeaders(t *testing.T) {
 		{"accept", "text/plain"}: ø.Accept.Val(&defAccept),
 		//
 		{"connection", "keep-alive"}: ø.Connection.KeepAlive,
+		{"connection", "close"}:      ø.Connection.Close,
 		{"connection", "close"}:      ø.Connection.Is("close"),
 		{"connection", "close"}:      ø.Connection.Val(&defClose),
 		//
@@ -155,7 +156,7 @@ func TestParams(t *testing.T) {
 
 	it.Ok(t).
 		If(req(cat).Fail).Should().Equal(nil).
-		If(cat.HTTP.Send.URL.String()).Should().Equal("https://example.com?host=site&site=host")
+		If(cat.HTTP.Send.URL).Should().Equal("https://example.com?host=site&site=host")
 }
 
 func TestParamsInvalidFormat(t *testing.T) {
@@ -283,7 +284,7 @@ func TestAliasesURL(t *testing.T) {
 
 		it.Ok(t).
 			If(req(cat).Fail).Should().Equal(nil).
-			If(cat.HTTP.Send.URL.String()).Should().Equal("https://example.com/a/1").
+			If(cat.HTTP.Send.URL).Should().Equal("https://example.com/a/1").
 			If(cat.HTTP.Send.Method).Should().Equal(mthd)
 	}
 }

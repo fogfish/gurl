@@ -10,7 +10,6 @@ package gurl
 
 import (
 	"fmt"
-	"net/url"
 	"sort"
 )
 
@@ -136,10 +135,10 @@ func FlatMap(f func() Arrow) Arrow {
 }
 
 // NotSupported is returned if communication schema is not supported.
-type NotSupported struct{ URL *url.URL }
+type NotSupported struct{ URL string }
 
 func (e *NotSupported) Error() string {
-	return fmt.Sprintf("Not supported: %s", e.URL.String())
+	return fmt.Sprintf("Not supported: %s", e.URL)
 }
 
 // Mismatch is returned by api if expectation at body value is failed
