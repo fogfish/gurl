@@ -124,6 +124,7 @@ func TestHeaders(t *testing.T) {
 		{"accept", "text/plain"}: ø.Accept.Val(&defAccept),
 		//
 		{"connection", "keep-alive"}: ø.Connection.KeepAlive,
+		{"connection", "close"}:      ø.Connection.Close,
 		{"connection", "close"}:      ø.Connection.Is("close"),
 		{"connection", "close"}:      ø.Connection.Val(&defClose),
 		//
