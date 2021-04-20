@@ -48,17 +48,14 @@ need to supply URL query params.
 */
 func (method Method) URL(uri string, args ...interface{}) http.Arrow {
 	return func(cat *gurl.IOCat) *gurl.IOCat {
-		var addr *url.URL
-		if addr, cat.Fail = mkURL(uri, args...); cat.Fail != nil {
-			return cat
-		}
+		addr := mkURL(uri, args...)
 
 		if cat.HTTP == nil {
 			cat.HTTP = &gurl.IOCatHTTP{}
 		}
 
-		switch addr.Scheme {
-		case "http", "https":
+		switch {
+		case strings.HasPrefix(addr, "http"):
 			cat.HTTP.Send = &gurl.UpStreamHTTP{
 				Method:  string(method),
 				URL:     addr,
@@ -72,7 +69,7 @@ func (method Method) URL(uri string, args ...interface{}) http.Arrow {
 	}
 }
 
-func mkURL(uri string, args ...interface{}) (*url.URL, error) {
+func mkURL(uri string, args ...interface{}) string {
 	switch uri[0] {
 	case '!':
 		return mkEscapedURL(false, uri[1:], args...)
@@ -81,7 +78,7 @@ func mkURL(uri string, args ...interface{}) (*url.URL, error) {
 	}
 }
 
-func mkEscapedURL(escape bool, uri string, args ...interface{}) (*url.URL, error) {
+func mkEscapedURL(escape bool, uri string, args ...interface{}) string {
 	opts := []interface{}{}
 	for _, x := range args {
 		switch v := x.(type) {
@@ -95,7 +92,7 @@ func mkEscapedURL(escape bool, uri string, args ...interface{}) (*url.URL, error
 		}
 	}
 
-	return url.Parse(fmt.Sprintf(uri, opts...))
+	return fmt.Sprintf(uri, opts...)
 }
 
 func urlSegment(arg interface{}) string {
@@ -262,11 +259,19 @@ func Params(query interface{}) http.Arrow {
 			return cat
 		}
 
-		q := cat.HTTP.Send.URL.Query()
+		uri, err := url.Parse(cat.HTTP.Send.URL)
+		if err != nil {
+			cat.Fail = err
+			return cat
+		}
+
+		q := uri.Query()
 		for k, v := range req {
 			q.Add(k, v)
 		}
-		cat.HTTP.Send.URL.RawQuery = q.Encode()
+		uri.RawQuery = q.Encode()
+		cat.HTTP.Send.URL = uri.String()
+
 		return cat
 	}
 }

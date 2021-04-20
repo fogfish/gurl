@@ -11,7 +11,6 @@ package gurl
 import (
 	"io"
 	"net/http"
-	"net/url"
 )
 
 /*
@@ -29,7 +28,7 @@ UpStreamHTTP specify parameters for HTTP requests
 */
 type UpStreamHTTP struct {
 	Method  string
-	URL     *url.URL
+	URL     string
 	Header  map[string]*string
 	Payload io.Reader
 }
