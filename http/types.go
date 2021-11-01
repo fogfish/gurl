@@ -10,15 +10,18 @@ package http
 
 import (
 	"crypto/tls"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
+	"net/http/cookiejar"
 	"net/http/httputil"
 	"time"
 
 	"github.com/fogfish/gurl"
+	"golang.org/x/net/publicsuffix"
 )
 
 /*
@@ -71,26 +74,8 @@ func Stack(client *http.Client) gurl.Config {
 Default configures default HTTP stack for the category.
 */
 func Default() gurl.Config {
-	pool := pool{defaultClient()}
+	pool := pool{Client()}
 	return gurl.SideEffect(pool.Unsafe)
-}
-
-func defaultClient() *http.Client {
-	return &http.Client{
-		Timeout: 60 * time.Second,
-		Transport: &http.Transport{
-			ReadBufferSize: 128 * 1024,
-			Dial: (&net.Dialer{
-				Timeout: 10 * time.Second,
-			}).Dial,
-			TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
-			MaxIdleConns:        100,
-			MaxIdleConnsPerHost: 100,
-		},
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-	}
 }
 
 // DefaultIO creates default HTTP IO category
@@ -150,5 +135,64 @@ func logRecv(level int, in *http.Response) {
 		if msg, err := httputil.DumpResponse(in, level == gurl.LogLevelDebug); err == nil {
 			log.Printf("<<<<\n%s\n", msg)
 		}
+	}
+}
+
+// Config for HTTP client
+type Config func(*http.Client)
+
+/*
+
+Client creates HTTP client
+*/
+func Client(opts ...Config) *http.Client {
+	cli := &http.Client{
+		Timeout: 60 * time.Second,
+		Transport: &http.Transport{
+			ReadBufferSize: 128 * 1024,
+			Dial: (&net.Dialer{
+				Timeout: 10 * time.Second,
+			}).Dial,
+			// TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
+			MaxIdleConns:        100,
+			MaxIdleConnsPerHost: 100,
+		},
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	for _, opt := range opts {
+		opt(cli)
+	}
+
+	return cli
+}
+
+// InsecureTLS disables certificates validation
+func InsecureTLS() Config {
+	return func(c *http.Client) {
+		switch t := c.Transport.(type) {
+		case *http.Transport:
+			if t.TLSClientConfig == nil {
+				t.TLSClientConfig = &tls.Config{}
+			}
+			t.TLSClientConfig.InsecureSkipVerify = true
+		default:
+			panic(fmt.Errorf("Unsupported transport type %T", t))
+		}
+	}
+}
+
+// CookieJar enables cookie handlings
+func CookieJar() Config {
+	return func(c *http.Client) {
+		jar, err := cookiejar.New(&cookiejar.Options{
+			PublicSuffixList: publicsuffix.List,
+		})
+		if err != nil {
+			panic(err)
+		}
+		c.Jar = jar
 	}
 }
