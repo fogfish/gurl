@@ -194,13 +194,14 @@ http.Join(
   ø.GET.URL("http://%s/%s", "example.com", "foo"),
 )
 
-// All path segments are escaped by default, use ! symbol to disable it
+// All path segments are escaped by default, use ø.Authority or ø.Segment
+// types to disable escaping
 http.Join(
   // this does not work
   ø.GET.URL("%s/%s", "http://example.com", "foo/bar"),
 
   // this works
-  ø.GET.URL("!%s/%s", "http://example.com", "foo/bar"),
+  ø.GET.URL("%s/%s", ø.Authority("http://example.com"), ø.Segment("foo/bar")),
 )
 ```
 

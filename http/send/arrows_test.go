@@ -77,12 +77,22 @@ func TestURLEscape(t *testing.T) {
 
 func TestURLEscapeSkip(t *testing.T) {
 	a := "a/b"
-	req := ø.GET.URL("!https://example.com/%s", &a)
+	req := ø.GET.URL("https://example.com/%s/%s", (*ø.Segment)(&a), ø.Segment(a))
 	cat := gurl.IO(http.Default())
 
 	it.Ok(t).
 		If(req(cat).Fail).Should().Equal(nil).
-		If(cat.HTTP.Send.URL).Should().Equal("https://example.com/a/b")
+		If(cat.HTTP.Send.URL).Should().Equal("https://example.com/a/b/a/b")
+}
+
+func TestURLEscapeAuthority(t *testing.T) {
+	a := "a.b"
+	req := ø.GET.URL("https://%s.%s", ø.Authority(a), (*ø.Authority)(&a))
+	cat := gurl.IO(http.Default())
+
+	it.Ok(t).
+		If(req(cat).Fail).Should().Equal(nil).
+		If(cat.HTTP.Send.URL).Should().Equal("https://a.b.a.b")
 }
 
 func TestURLType(t *testing.T) {
