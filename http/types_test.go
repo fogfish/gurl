@@ -67,8 +67,9 @@ func TestIOWithContext(t *testing.T) {
 	)
 
 	cat := µ.DefaultIO()
+	err := cat.IO(ctx, req)
 	it.Ok(t).
-		If(cat.IO(ctx, req)).ShouldNot().Equal(nil)
+		If(err).ShouldNot().Equal(nil)
 
 	cancel()
 }
@@ -85,8 +86,10 @@ func TestIOWithContextCancel(t *testing.T) {
 
 	cat := µ.DefaultIO()
 	cancel()
+	err := cat.IO(ctx, req)
+
 	it.Ok(t).
-		If(cat.IO(ctx, req)).ShouldNot().Equal(nil)
+		If(err).ShouldNot().Equal(nil)
 }
 
 //
