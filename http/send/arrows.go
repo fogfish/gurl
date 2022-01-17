@@ -42,6 +42,18 @@ const (
 
 /*
 
+Authority is part of URL, use the type to prevent escaping
+*/
+type Authority string
+
+/*
+
+Segment is part of URL, use the type to prevent path escaping
+*/
+type Segment string
+
+/*
+
 URL defines a mandatory parameters to the request such as
 HTTP method and destination URL, use Params arrow if you
 need to supply URL query params.
@@ -70,25 +82,24 @@ func (method Method) URL(uri string, args ...interface{}) http.Arrow {
 }
 
 func mkURL(uri string, args ...interface{}) string {
-	switch uri[0] {
-	case '!':
-		return mkEscapedURL(false, uri[1:], args...)
-	default:
-		return mkEscapedURL(true, uri, args...)
-	}
-}
-
-func mkEscapedURL(escape bool, uri string, args ...interface{}) string {
 	opts := []interface{}{}
 	for _, x := range args {
 		switch v := x.(type) {
 		case *url.URL:
 			v.Path = strings.TrimSuffix(v.Path, "/")
 			opts = append(opts, v.String())
+		case *Segment:
+			opts = append(opts, *v)
+		case Segment:
+			opts = append(opts, v)
+		case *Authority:
+			opts = append(opts, *v)
+		case Authority:
+			opts = append(opts, v)
 		case func() string:
-			opts = append(opts, maybeEscape(escape, v()))
+			opts = append(opts, url.PathEscape(v()))
 		default:
-			opts = append(opts, maybeEscape(escape, urlSegment(x)))
+			opts = append(opts, url.PathEscape(urlSegment(x)))
 		}
 	}
 
@@ -103,14 +114,6 @@ func urlSegment(arg interface{}) string {
 	}
 
 	return fmt.Sprintf("%v", val)
-}
-
-func maybeEscape(escape bool, val string) string {
-	if escape {
-		return url.PathEscape(val)
-	}
-
-	return val
 }
 
 /*
