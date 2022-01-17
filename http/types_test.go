@@ -60,7 +60,7 @@ func TestIOWithContext(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
-	ctx, _ := context.WithTimeout(context.Background(), 1*time.Nanosecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
 	req := µ.Join(
 		ø.GET.URL(ts.URL+"/ok"),
 		ƒ.Status.OK,
@@ -69,6 +69,8 @@ func TestIOWithContext(t *testing.T) {
 	cat := µ.DefaultIO()
 	it.Ok(t).
 		If(cat.IO(ctx, req)).ShouldNot().Equal(nil)
+
+	cancel()
 }
 
 func TestIOWithContextCancel(t *testing.T) {
