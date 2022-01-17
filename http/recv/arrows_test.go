@@ -97,7 +97,7 @@ func TestStatusCodes(t *testing.T) {
 		µ.StatusHTTPVersionNotSupported: ƒ.Status.HTTPVersionNotSupported,
 	} {
 		req := µ.Join(
-			ø.GET.URL("!%s/code/%s", ts.URL, code.Value()),
+			ø.GET.URL("%s/code/%s", ø.Authority(ts.URL), code.Value()),
 			check,
 		)
 		cat := gurl.IO(µ.Default())

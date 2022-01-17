@@ -108,6 +108,10 @@ func (p pool) Unsafe(cat *gurl.IOCat) *gurl.IOCat {
 		eg.Header.Set(head, *value)
 	}
 
+	if cat.Context != nil {
+		eg = eg.WithContext(cat.Context)
+	}
+
 	var in *http.Response
 	in, cat.Fail = p.Client.Do(eg)
 	if cat.Fail != nil {

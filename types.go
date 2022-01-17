@@ -9,6 +9,7 @@
 package gurl
 
 import (
+	"context"
 	"fmt"
 	"sort"
 )
@@ -21,7 +22,19 @@ type IOCat struct {
 	Fail       error
 	HTTP       *IOCatHTTP
 	LogLevel   int
+	Context    context.Context
 	sideEffect Arrow
+}
+
+/*
+
+IO evaluates the I/O computation with Context
+*/
+func (cat *IOCat) IO(ctx context.Context, f Arrow) error {
+	cat.Context = ctx
+	f(cat)
+	cat.Context = nil
+	return cat.Fail
 }
 
 /*

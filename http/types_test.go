@@ -9,9 +9,11 @@
 package http_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/fogfish/gurl"
 	µ "github.com/fogfish/gurl/http"
@@ -52,6 +54,37 @@ func TestJoinCats(t *testing.T) {
 
 	it.Ok(t).
 		If(req(cat).Fail).Should().Equal(nil)
+}
+
+func TestIOWithContext(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	ctx, _ := context.WithTimeout(context.Background(), 1*time.Nanosecond)
+	req := µ.Join(
+		ø.GET.URL(ts.URL+"/ok"),
+		ƒ.Status.OK,
+	)
+
+	cat := µ.DefaultIO()
+	it.Ok(t).
+		If(cat.IO(ctx, req)).ShouldNot().Equal(nil)
+}
+
+func TestIOWithContextCancel(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Nanosecond)
+	req := µ.Join(
+		ø.GET.URL(ts.URL+"/ok"),
+		ƒ.Status.OK,
+	)
+
+	cat := µ.DefaultIO()
+	cancel()
+	it.Ok(t).
+		If(cat.IO(ctx, req)).ShouldNot().Equal(nil)
 }
 
 //
