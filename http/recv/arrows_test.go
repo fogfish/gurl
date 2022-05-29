@@ -15,7 +15,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fogfish/gurl"
 	µ "github.com/fogfish/gurl/http"
 	ƒ "github.com/fogfish/gurl/http/recv"
 	ø "github.com/fogfish/gurl/http/send"
@@ -31,10 +30,10 @@ func TestCodeOk(t *testing.T) {
 		ø.Accept.JSON,
 		ƒ.Code(µ.StatusOK),
 	)
-	cat := gurl.IO(µ.Default())
+	cat := µ.New()
 
 	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil)
+		If(cat.IO(nil, req)).Should().Equal(nil)
 }
 
 func TestCodeNoMatch(t *testing.T) {
@@ -46,10 +45,10 @@ func TestCodeNoMatch(t *testing.T) {
 		ø.Accept.JSON,
 		ƒ.Status.OK,
 	)
-	cat := gurl.IO(µ.Default())
+	cat := µ.New()
 
 	it.Ok(t).
-		If(req(cat).Fail).Should().Be().Like(µ.StatusBadRequest)
+		If(cat.IO(nil, req)).Should().Be().Like(µ.StatusBadRequest)
 }
 
 func TestStatusCodes(t *testing.T) {
@@ -100,9 +99,9 @@ func TestStatusCodes(t *testing.T) {
 			ø.GET.URL("%s/code/%s", ø.Authority(ts.URL), code.Value()),
 			check,
 		)
-		cat := gurl.IO(µ.Default())
+		cat := µ.New()
 		it.Ok(t).
-			If(req(cat).Fail).Should().Equal(nil)
+			If(cat.IO(nil, req)).Should().Equal(nil)
 	}
 }
 
@@ -116,10 +115,10 @@ func TestHeaderOk(t *testing.T) {
 		ƒ.Status.OK,
 		ƒ.ContentType.JSON,
 	)
-	cat := gurl.IO(µ.Default())
+	cat := µ.New()
 
 	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil)
+		If(cat.IO(nil, req)).Should().Equal(nil)
 }
 
 func TestHeaderAny(t *testing.T) {
@@ -133,10 +132,10 @@ func TestHeaderAny(t *testing.T) {
 		ƒ.ContentType.Is("*"),
 		ƒ.Header("Content-Type").Any,
 	)
-	cat := gurl.IO(µ.Default())
+	cat := µ.New()
 
 	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil)
+		If(cat.IO(nil, req)).Should().Equal(nil)
 }
 
 func TestHeaderVal(t *testing.T) {
@@ -148,12 +147,12 @@ func TestHeaderVal(t *testing.T) {
 		ø.GET.URL(ts.URL+"/json"),
 		ø.Accept.JSON,
 		ƒ.Status.OK,
-		ƒ.ContentType.String(&content),
+		ƒ.ContentType.To(&content),
 	)
-	cat := gurl.IO(µ.Default())
+	cat := µ.New()
 
 	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil).
+		If(cat.IO(nil, req)).Should().Equal(nil).
 		If(content).Should().Equal("application/json")
 }
 
@@ -167,10 +166,10 @@ func TestHeaderMismatch(t *testing.T) {
 		ƒ.Status.OK,
 		ƒ.ContentType.Is("foo/bar"),
 	)
-	cat := gurl.IO(µ.Default())
+	cat := µ.New()
 
 	it.Ok(t).
-		If(req(cat).Fail).ShouldNot().Equal(nil)
+		If(cat.IO(nil, req)).ShouldNot().Equal(nil)
 }
 
 func TestHeaderUndefinedWithLit(t *testing.T) {
@@ -183,10 +182,10 @@ func TestHeaderUndefinedWithLit(t *testing.T) {
 		ƒ.Status.OK,
 		ƒ.Header("x-content-type").Is("foo/bar"),
 	)
-	cat := gurl.IO(µ.Default())
+	cat := µ.New()
 
 	it.Ok(t).
-		If(req(cat).Fail).ShouldNot().Equal(nil)
+		If(cat.IO(nil, req)).ShouldNot().Equal(nil)
 }
 
 func TestHeaderUndefinedWithVal(t *testing.T) {
@@ -198,12 +197,12 @@ func TestHeaderUndefinedWithVal(t *testing.T) {
 		ø.GET.URL(ts.URL+"/json"),
 		ø.Accept.JSON,
 		ƒ.Status.OK,
-		ƒ.Header("x-content-type").String(&val),
+		ƒ.Header("x-content-type").To(&val),
 	)
-	cat := gurl.IO(µ.Default())
+	cat := µ.New()
 
 	it.Ok(t).
-		If(req(cat).Fail).ShouldNot().Equal(nil)
+		If(cat.IO(nil, req)).ShouldNot().Equal(nil)
 }
 
 func TestRecvJSON(t *testing.T) {
@@ -221,10 +220,10 @@ func TestRecvJSON(t *testing.T) {
 		ƒ.ContentType.JSON,
 		ƒ.Recv(&site),
 	)
-	cat := gurl.IO(µ.Default())
+	cat := µ.New()
 
 	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil).
+		If(cat.IO(nil, req)).Should().Equal(nil).
 		If(site.Site).Should().Equal("example.com")
 }
 
@@ -243,10 +242,10 @@ func TestRecvForm(t *testing.T) {
 		ƒ.ContentType.Form,
 		ƒ.Recv(&site),
 	)
-	cat := gurl.IO(µ.Default())
+	cat := µ.New()
 
 	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil).
+		If(cat.IO(nil, req)).Should().Equal(nil).
 		If(site.Site).Should().Equal("example.com")
 }
 
@@ -266,10 +265,10 @@ func TestRecvBytes(t *testing.T) {
 			content,
 			ƒ.Bytes(&data),
 		)
-		cat := gurl.IO(µ.Default())
+		cat := µ.New()
 
 		it.Ok(t).
-			If(req(cat).Fail).Should().Equal(nil).
+			If(cat.IO(nil, req)).Should().Equal(nil).
 			If(string(data)).Should().Equal("site=example.com")
 	}
 }
