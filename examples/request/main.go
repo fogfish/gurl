@@ -34,7 +34,7 @@ type tHTTPBin struct {
 	Headers tHeaders `json:"headers,omitempty"`
 }
 
-func (bin *tHTTPBin) validate() error {
+func (bin *tHTTPBin) validate(*http.Context) error {
 	if bin.Headers.UserAgent == "" {
 		return fmt.Errorf("User-Agent is not defined")
 	}
@@ -48,20 +48,28 @@ func (bin *tHTTPBin) validate() error {
 
 // basic declarative request
 func request(cat http.Stack) (*tHTTPBin, error) {
-	return http.IO[tHTTPBin](cat.WithContext(context.TODO()),
+	var data tHTTPBin
+
+	err := cat.IO(context.TODO(),
 		// HTTP Request
 		ø.GET.URL("https://httpbin.org/get"),
 		ø.Accept.JSON,
 		ø.UserAgent.Is("gurl"),
-		//
+
 		// HTTP Response
 		ƒ.Status.OK,
 		ƒ.ContentType.JSON,
+		ƒ.Recv(&data),
+
+		// asserts
+		data.validate,
 	)
+
+	return &data, err
 }
 
 func main() {
-	cat := http.New(http.LogDebug())
+	cat := http.New(http.LogPayload())
 
 	val, err := request(cat)
 	if err != nil {

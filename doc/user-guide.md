@@ -30,14 +30,14 @@
 
 Standard Golang packages implements a low-level HTTP interface, which requires knowledge about protocol itself, understanding of Golang implementation aspects, and a bit of boilerplate coding. It also misses standardized chaining (composition) of individual requests. ᵍ🆄🆁🅻 inherits an ability of pure functional languages to express communication behavior by hiding the networking complexity using combinators. The composition becomes a fundamental operation in the library: the codomain of `𝒇` be the domain of `𝒈` so that the composite operation `𝒇 ◦ 𝒈` is defined.
 
-The library uses `Arrow` as a key abstraction of combinators. It is a *pure function* that takes an abstraction of the protocol environments, so called IO category and applies morphism as an "invisible" side-effect of the composition.
+The library uses `Arrow` as a key abstraction of combinators. It is a *pure function* that takes an abstraction of the protocol context, so called IO category and applies morphism as an "invisible" side-effect of the composition.
 
 ```go
 /*
 
 Arrow: IO ⟼ IO
 */
-type Arrow func(*gurl.IOCat) *gurl.IOCat
+type Arrow func(*Context) error
 ```
 
 There are two classes of arrows. The first class is a writer morphism that focuses inside and reshapes HTTP protocol requests. The writer morphism is used to declare HTTP method, destination URL, request headers and payload. Second one is a reader morphism that focuses on the side-effect of HTTP protocol. The reader morphism is a pattern matcher, and is used to match HTTP response code, headers and response payload.
@@ -59,7 +59,7 @@ Example of HTTP I/O visualization made by curl give **naive** perspective about 
 
 ## Compose HoF 
 
-`Arrow` can be composed with another `Arrow` into new `Arrow` and so on. The library supports only "and-then" style. It builds a strict product Arrow: `A × B × C × ... ⟼ D`. The product type takes a protocol environment and applies "morphism" sequentially unless some step fails. Use variadic function `http.Join` to compose HTTP primitives:
+`Arrow` can be composed with another `Arrow` into new `Arrow` and so on. The library supports only "and-then" style. It builds a strict product Arrow: `A × B × C × ... ⟼ D`. The product type takes a protocol context and applies "morphism" sequentially unless some step fails. Use variadic function `http.Join` to compose HTTP primitives:
 
 ```go
 /*
@@ -67,7 +67,7 @@ Example of HTTP I/O visualization made by curl give **naive** perspective about 
 Join composes HTTP arrows to high-order function
 (a ⟼ b, b ⟼ c, c ⟼ d) ⤇ a ⟼ d
 */
-func http.Join(arrows ...http.Arrow) gurl.Arrow
+func http.Join(arrows ...http.Arrow) http.Arrow
 
 //
 var a: http.Arrow = /* ... */
@@ -77,63 +77,39 @@ var c: http.Arrow = /* ... */
 d := http.Join(a, b, c)
 ```
 
-Ease of the composition is one of major intent why ᵍ🆄🆁🅻 library has deviated from standard Golang HTTP interface. `http.Join` produces instances of higher order `gurl.Arrow` type, which is composable “promises” of HTTP I/O and so on. Essentially, the network I/O is just a set of `Arrow` functions.
-
-```go
-/*
-
-Join composes arrows to high-order function
-(a ⟼ b, b ⟼ c, c ⟼ d) ⤇ a ⟼ d
-*/
-func Join(arrows ...gurl.Arrow) gurl.Arrow
-
-//
-var a: gurl.Arrow = http.Join(/* ... */)
-var b: gurl.Arrow = http.Join(/* ... */)
-var c: gurl.Arrow = http.Join(/* ... */)
-
-d := gurl.Join(a, b, c)
-```
-
-These rules of `Arrow` composition allow anyone to build a complex HTTP I/O scenario from a small reusable block.
-
+Ease of the composition is one of major intent why ᵍ🆄🆁🅻 library has deviated from standard Golang HTTP interface. `http.Join` produces instances of higher order `http.Arrow` type, which is composable “promises” of HTTP I/O and so on. Essentially, the network I/O is just a set of `Arrow` functions. These rules of `Arrow` composition allow anyone to build a complex HTTP I/O scenario from a small reusable block.
 
 
 ## Life-cycle
 
 ```go
-lazy := gurl.Join(/* ... */)
+lazy := http.Join(/* ... */)
 ```
 
-The instance of `Arrow` produced by one of `Join` functions does not hold a result of HTTP I/O. It only builds a composable "promise" ("lazy I/O") - a pure computation. The computation needs to be evaluated by applying it over the protocol environment. The library provides a simple interface to create and customize the environment.  
+The instance of `Arrow` produced by one of `Join` functions does not hold a result of HTTP I/O. It only builds a composable "promise" ("lazy I/O") - a pure computation. The computation needs to be evaluated by applying it over the protocol context. The library provides a simple interface to create and customize the environment.  
 
 ```go
 // HTTP protocol provides a default out-of-the-box environment.
 // use the default environment with caution in production workload
-env := http.DefaultIO() 
+cat := http.New() 
 
 // apply the computation over the environment
-env = lazy(env)
+err := cat.IO(context.TODO(), lazy)
 
-// handle either networking error or failure of expectation.
-// there are not need for error handling after each operation
-// in contrast with classical networking I/O. The combinator
-// is smart enough to terminate execution.
-if env.Fail != nil {
-  // ...
-}
-
-// the environment holds failed state until it is recovered 
-if err := env.Recover(); err != nil {
-  // ...
-}
+// alternatively, inline the request
+err := cat.IO(context.TODO(), a, b, c)
 ```
 
-Usage of the library for production workload requires a careful configuration of HTTP protocol timeouts, TLS policies, etc. Another aspect is thread safeness. The protocol environment is not thread safe. Each golang routine shall create one. Re-use of `http.Client` pointer across environments reduces resource consumption.  
+Usage of the library for production workload requires a careful configuration of HTTP protocol timeouts, TLS policies, etc.
 
 ```go
-env := gurl.IO(
-  http.Stack(&http.Client{/* ... */})
+cat := http.New(
+  http.WithClient(/* ... */),
+  http.InsecureTLS(),
+  http.CookieJar(),
+  http.LogRequest(),
+  http.LogResponse(),
+  http.LogPayload(),
 )
 ```
 
@@ -216,7 +192,7 @@ http.Join(
 )
 ```
 
-The `func Params(query interface{}) http.Arrow` combinator lifts any flat structure to query parameters.
+The `func Params[T any](query T) http.Arrow` combinator lifts any flat structure to query parameters.
 
 ```go
 type MyParam struct {
@@ -291,6 +267,9 @@ http.Join(
 )
 ```
 
+The combinator supports: `string`, `[]byte`, `io.Reader` and any arbitrary `struct`.
+
+
 ### Reader morphism
 
 Reader morphism focuses on the side-effect of HTTP protocol. It does a pattern matching of HTTP response code, header values and response payload.
@@ -346,7 +325,7 @@ http.Join(
 
 #### Response Payload
 
-The `func Recv(out interface{}) http.Arrow` decodes the response payload to Golang native data structure using Content-Type header as a hint.
+The `func Recv[T any](out *T) http.Arrow` decodes the response payload to Golang native data structure using Content-Type header as a hint.
 
 ```go
 type MyType struct {
@@ -380,16 +359,16 @@ http.Join(
 A pure functional style of development does not have variables or assignment statements. The program is defined by applying type constructors, constants and functions. However, this principle does not closely match current architectures. Programs are implemented using variables such as memory lookups and updates. Any complex real-life networking I/O is not an exception, it requires a global operational state. So far, all examples have used constants and literals but ᵍ🆄🆁🅻 combinators also support dynamic behavior of I/O parameters using pointers to variables.  
 
 ```go
-func dynamic(host, token, lang *string, req, data *T) gurl.Arrow {
-  return http.Join(
+type MyClient http.Stack
+
+func (cli MyClient) Request(host, token string, req T) (*T, error) {
+  return http.IO[T](cat.WithContext(context.TODO()),
     //
     ø.GET.URL("https://%s", host),
-    ø.Authorization.Val(token),
+    ø.Authorization.Is(token),
     ø.Send(req),
     //
     ƒ.Status.OK,
-    ƒ.ContentLanguage.String(lang),
-    ƒ.Recv(data),
   )
 }
 ```
@@ -404,7 +383,7 @@ type T struct {
 }
 
 // a type receiver to assert the value
-func (t *T) CheckValue() error {
+func (t *T) CheckValue(*http.Context) error {
   if t.ID == 0 {
     return fmt.Errorf("...")
   }
@@ -416,8 +395,9 @@ func (t *T) SomeIO() gurl.Arrow {
   return http.Join(
     // ...
     ƒ.Recv(t),
-  // compose the assertion into I/O chain   
-  ).Then(gurl.FMap(t.CheckValue))
+    // compose the assertion into I/O chain
+    t.CheckValue,
+  )
 }
 ```
 
@@ -429,6 +409,7 @@ Ease of the composition is one of major feature in ᵍ🆄🆁🅻 library. It a
 ```go
 // declare a product type to depict IO context
 type HoF struct {
+  http.Stack
   Token AccessToken
   User  User
   Org   Org
@@ -436,38 +417,38 @@ type HoF struct {
 
 // Declare set of independent HTTP I/O.
 // Each operation either reads or writes the context
-func (hof *HoF) FetchAccessToken() gurl.Arrow {
-  return http.Join(
+func (hof *HoF) FetchAccessToken() error {
+  return hof.IO(context.TODO(),
     // ...
     ƒ.Recv(&hof.Token),
   )
 }
 
-func (hof *HoF) FetchUser() gurl.Arrow {
-  return http.Join(
+func (hof *HoF) FetchUser() error {
+  return hof.IO(context.TODO(),
     ø.POST.URL(/* ... */),
-    ø.Authorization().Val(&hof.Token),
+    ø.Authorization().Val(hof.Token),
     // ...
-    ƒ.Recv(&hof.user),
+    ƒ.Recv(&hof.User),
   )
 }
 
-func (hof *HoF) FetchContribution() gurl.Arrow {
-  return http.Join(
+func (hof *HoF) FetchContribution() error {
+  return hof.IO(context.TODO(),
     ø.POST(/* ... */),
-    ø.Authorization().Val(&hof.Token),
+    ø.Authorization().Val(hof.Token),
     // ...
     ƒ.Recv(&hof.Org),
   )
 }
 
 // Combine HTTP I/O to sequential chain of execution 
-api := &HoF{}
-http.Join(
-  api.FetchAccessToken(),
-  api.FetchUser(),
-  api.FetchContribution(),
+api := &HoF{Stack: http.New()}
+err := gurl.Join(
+  api.FetchAccessToken,
+  api.FetchUser,
+  api.FetchContribution,
 )
 ```
 
-See [example](../example) for details about the compositions.
+See [example](../examples) for details about the compositions.

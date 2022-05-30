@@ -231,7 +231,7 @@ func LogResponse() Config {
 }
 
 // LogResponse enables debug logging for requests
-func LogDebug() Config {
+func LogPayload() Config {
 	return func(cat *Protocol) {
 		cat.LogLevel = 3
 	}

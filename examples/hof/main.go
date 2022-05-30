@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/fogfish/gurl"
 	"github.com/fogfish/gurl/http"
 	ƒ "github.com/fogfish/gurl/http/recv"
 	ø "github.com/fogfish/gurl/http/send"
@@ -35,14 +36,15 @@ type tHTTPBin struct {
 }
 
 type tHoF struct {
+	http.Stack
 	tID
 	tHTTPBin
 }
 
 //
 // uuid declares HTTP I/O. Its result is returned via id variable.
-func (hof *tHoF) uuid(cat http.Stack) error {
-	return cat.IO(context.TODO(),
+func (hof *tHoF) uuid() error {
+	return hof.IO(context.TODO(),
 		ø.GET.URL("https://httpbin.org/uuid"),
 		ø.Accept.JSON,
 
@@ -55,8 +57,8 @@ func (hof *tHoF) uuid(cat http.Stack) error {
 //
 // post declares HTTP I/O. The HTTP request requires uuid.
 // Its result is returned via doc variable.
-func (hof *tHoF) post(cat http.Stack) error {
-	return cat.IO(context.TODO(),
+func (hof *tHoF) post() error {
+	return hof.IO(context.TODO(),
 		ø.POST.URL("https://httpbin.org/post"),
 		ø.Accept.JSON,
 		ø.ContentType.JSON,
@@ -77,17 +79,14 @@ func hof(cat http.Stack) (*tHoF, error) {
 	//  * https://httpbin.org/post
 	//
 	// results of HTTP I/O is persisted in the internal state
-	var val tHoF
+	val := tHoF{Stack: cat}
 
-	if err := val.uuid(cat); err != nil {
-		return nil, err
-	}
+	err := gurl.Join(
+		val.uuid,
+		val.post,
+	)
 
-	if err := val.post(cat); err != nil {
-		return nil, err
-	}
-
-	return &val, nil
+	return &val, err
 }
 
 func eval(cat http.Stack) {
@@ -99,7 +98,7 @@ func eval(cat http.Stack) {
 }
 
 func main() {
-	cat := http.New(http.LogDebug())
+	cat := http.New(http.LogPayload())
 
 	for i := 0; i < 3; i++ {
 		eval(cat)
