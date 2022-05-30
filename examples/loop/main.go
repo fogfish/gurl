@@ -24,10 +24,10 @@ lookup(Page) ->
 */
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 
-	"github.com/fogfish/gurl"
 	"github.com/fogfish/gurl/http"
 	ƒ "github.com/fogfish/gurl/http/recv"
 	ø "github.com/fogfish/gurl/http/send"
@@ -42,47 +42,42 @@ type repo struct {
 type seq []repo
 
 // request declares HTTP I/O that fetches a portion (page) from api
-func (s *seq) request(page int) gurl.Arrow {
-	return http.Join(
+func request(cat http.Stack, page int) (*seq, error) {
+	return http.IO[seq](cat.WithContext(context.TODO()),
 		ø.GET.URL("https://api.github.com/users/fogfish/repos"),
 		ø.Params(map[string]string{"type": "all", "page": strconv.Itoa(page)}),
 		ø.Accept.JSON,
 		ƒ.Status.OK,
-		ƒ.Recv(s),
 	)
-}
-
-// untilEOF declares continuation of HTTP I/O until EOF is reached
-func (s *seq) untilEOF(head seq, page int) gurl.Arrow {
-	if len(head) == 0 {
-		return nil
-	}
-
-	// internal state is accumulated and execution of next page is scheduled
-	*s = append(*s, head...)
-	return s.lookup(page + 1)
 }
 
 // HoF recursively composes HTTP I/O until all data is fetched.
 // The request is returned via seq variable.
-func (s *seq) lookup(page int) gurl.Arrow {
+func lookup(cat http.Stack, page int) (seq, error) {
 	// internal state to accumulate results of HTTP I/O
-	var head seq
+	var val seq
 
-	//
-	// HoF combines HTTP requests with a logic that continues evaluation.
-	return gurl.Join(
-		head.request(page),
-		gurl.FlatMap(func() gurl.Arrow { return s.untilEOF(head, page) }),
-	)
+	pid := page
+	for {
+		h, err := request(cat, pid)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(*h) == 0 {
+			return val, nil
+		}
+
+		pid = pid + 1
+		val = append(val, *h...)
+	}
 }
 
 func main() {
-	var val seq
-	req := val.lookup(1)
-	cat := http.DefaultIO(gurl.Logging(3))
+	cat := http.New()
+	val, err := lookup(cat, 1)
 
-	if err := req(cat).Fail; err != nil {
+	if err != nil {
 		fmt.Printf("fail %v\n", err)
 	}
 	fmt.Printf("==> %v\n", val)

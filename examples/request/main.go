@@ -48,8 +48,7 @@ func (bin *tHTTPBin) validate() error {
 
 // basic declarative request
 func request(cat http.Stack) (*tHTTPBin, error) {
-	return http.IO[tHTTPBin](
-		cat.WithContext(context.TODO()),
+	return http.IO[tHTTPBin](cat.WithContext(context.TODO()),
 		// HTTP Request
 		ø.GET.URL("https://httpbin.org/get"),
 		ø.Accept.JSON,

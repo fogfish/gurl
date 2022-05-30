@@ -56,7 +56,7 @@ type Request struct {
 
 /*
 
-IO defines the category of HTTP I/O
+Context defines the category of HTTP I/O
 */
 type Context struct {
 	*Protocol
@@ -67,8 +67,73 @@ type Context struct {
 	*http.Response
 }
 
+// Unsafe evaluates current context of HTTP I/O
+func (ctx *Context) Unsafe() error {
+	eg, err := http.NewRequest(
+		ctx.Request.Method,
+		ctx.Request.URL,
+		ctx.Request.Payload,
+	)
+	if err != nil {
+		return err
+	}
+
+	for head, value := range ctx.Request.Header {
+		eg.Header.Set(head, *value)
+	}
+
+	if ctx.Context != nil {
+		eg = eg.WithContext(ctx.Context)
+	}
+
+	logSend(ctx.LogLevel, eg)
+
+	in, err := ctx.Client.Do(eg)
+	if err != nil {
+		return err
+	}
+
+	ctx.Response = in
+
+	logRecv(ctx.LogLevel, in)
+
+	return nil
+}
+
+// IO executes protocol operations
+func (ctx *Context) IO(arrows ...Arrow) error {
+	for _, f := range arrows {
+		if err := f(ctx); err != nil {
+			return err
+		}
+	}
+
+	if ctx.Response != nil {
+		// Note: due to Golang HTTP pool implementation we need to consume and
+		//       discard body. Otherwise, HTTP connection is not returned to
+		//       to the pool.
+		body := ctx.Response.Body
+		ctx.Response = nil
+
+		_, err := io.Copy(ioutil.Discard, body)
+		if err != nil {
+			return err
+		}
+
+		err = body.Close()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+/*
+
+Protocol is an instance of Stack
+*/
 type Protocol struct {
-	// Instance of HTTP client (stack)
 	*http.Client
 	LogLevel int
 }
@@ -87,39 +152,7 @@ func New(opts ...Config) Stack {
 	return cat
 }
 
-// Unsafe evaluates current context of HTTP I/O
-func (cat *Context) Unsafe() error {
-	eg, err := http.NewRequest(
-		cat.Request.Method,
-		cat.Request.URL,
-		cat.Request.Payload,
-	)
-	if err != nil {
-		return err
-	}
-
-	for head, value := range cat.Request.Header {
-		eg.Header.Set(head, *value)
-	}
-
-	if cat.Context != nil {
-		eg = eg.WithContext(cat.Context)
-	}
-
-	logSend(cat.LogLevel, eg)
-
-	in, err := cat.Client.Do(eg)
-	if err != nil {
-		return err
-	}
-
-	cat.Response = in
-
-	logRecv(cat.LogLevel, in)
-
-	return nil
-}
-
+// WithContext create instance of I/O Context
 func (cat *Protocol) WithContext(ctx context.Context) *Context {
 	return &Context{
 		Protocol: cat,
@@ -129,34 +162,9 @@ func (cat *Protocol) WithContext(ctx context.Context) *Context {
 	}
 }
 
+// IO executes protocol operations
 func (cat *Protocol) IO(ctx context.Context, arrows ...Arrow) error {
-	context := cat.WithContext(ctx)
-
-	for _, f := range arrows {
-		if err := f(context); err != nil {
-			return err
-		}
-	}
-
-	if context.Response != nil {
-		// Note: due to Golang HTTP pool implementation we need to consume and
-		//       discard body. Otherwise, HTTP connection is not returned to
-		//       to the pool.
-		body := context.Response.Body
-		context.Response = nil
-
-		_, err := io.Copy(ioutil.Discard, body)
-		if err != nil {
-			return err
-		}
-
-		err = body.Close()
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return cat.WithContext(ctx).IO(arrows...)
 }
 
 /*
@@ -257,24 +265,10 @@ func CookieJar() Config {
 	}
 }
 
-//
-//
-func logSend(level int, eg *http.Request) {
-	if level >= 1 {
-		if msg, err := httputil.DumpRequest(eg, level == 3); err == nil {
-			logger.Debug(">>>>\n%s\n", msg)
-		}
-	}
-}
+/*
 
-func logRecv(level int, in *http.Response) {
-	if level >= 2 {
-		if msg, err := httputil.DumpResponse(in, level == 3); err == nil {
-			logger.Debug("<<<<\n%s\n", msg)
-		}
-	}
-}
-
+IO executes protocol operations
+*/
 func IO[T any](ctx *Context, arrows ...Arrow) (*T, error) {
 	for _, f := range arrows {
 		if err := f(ctx); err != nil {
@@ -310,6 +304,24 @@ func decode[T any](content string, stream io.ReadCloser, data *T) error {
 		return &gurl.NoMatch{
 			Diff:    fmt.Sprintf("- Content-Type: application/*\n+ Content-Type: %s", content),
 			Payload: map[string]string{"Content-Type": content},
+		}
+	}
+}
+
+//
+//
+func logSend(level int, eg *http.Request) {
+	if level >= 1 {
+		if msg, err := httputil.DumpRequest(eg, level == 3); err == nil {
+			logger.Debug(">>>>\n%s\n", msg)
+		}
+	}
+}
+
+func logRecv(level int, in *http.Response) {
+	if level >= 2 {
+		if msg, err := httputil.DumpResponse(in, level == 3); err == nil {
+			logger.Debug("<<<<\n%s\n", msg)
 		}
 	}
 }
