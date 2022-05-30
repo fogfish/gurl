@@ -15,7 +15,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fogfish/gurl"
 	µ "github.com/fogfish/gurl/http"
 	ƒ "github.com/fogfish/gurl/http/recv"
 	ø "github.com/fogfish/gurl/http/send"
@@ -30,17 +29,17 @@ func TestJoin(t *testing.T) {
 		ø.GET.URL(ts.URL+"/ok"),
 		ƒ.Code(µ.StatusOK),
 	)
-	cat := µ.DefaultIO()
+	cat := µ.New()
 
 	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil)
+		If(cat.IO(nil, req)).Should().Equal(nil)
 }
 
 func TestJoinCats(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
-	req := gurl.Join(
+	req := µ.Join(
 		µ.Join(
 			ø.GET.URL(ts.URL+"/ok"),
 			ƒ.Status.OK,
@@ -50,10 +49,10 @@ func TestJoinCats(t *testing.T) {
 			ƒ.Code(µ.StatusBadRequest),
 		),
 	)
-	cat := µ.DefaultIO()
+	cat := µ.New()
 
 	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil)
+		If(cat.IO(nil, req)).Should().Equal(nil)
 }
 
 func TestIOWithContext(t *testing.T) {
@@ -66,7 +65,7 @@ func TestIOWithContext(t *testing.T) {
 		ƒ.Status.OK,
 	)
 
-	cat := µ.DefaultIO()
+	cat := µ.New()
 	err := cat.IO(ctx, req)
 	it.Ok(t).
 		If(err).ShouldNot().Equal(nil)
@@ -84,7 +83,7 @@ func TestIOWithContextCancel(t *testing.T) {
 		ƒ.Status.OK,
 	)
 
-	cat := µ.DefaultIO()
+	cat := µ.New()
 	cancel()
 	err := cat.IO(ctx, req)
 

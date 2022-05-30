@@ -15,6 +15,7 @@ Example shows a composition of HTTP I/O.
 */
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/fogfish/gurl"
@@ -35,16 +36,18 @@ type tHTTPBin struct {
 }
 
 type tHoF struct {
+	http.Stack
 	tID
 	tHTTPBin
 }
 
 //
 // uuid declares HTTP I/O. Its result is returned via id variable.
-func (hof *tHoF) uuid() gurl.Arrow {
-	return http.Join(
+func (hof *tHoF) uuid() error {
+	return hof.IO(context.TODO(),
 		ø.GET.URL("https://httpbin.org/uuid"),
 		ø.Accept.JSON,
+
 		ƒ.Status.OK,
 		ƒ.ContentType.JSON,
 		ƒ.Recv(&hof.tID),
@@ -54,12 +57,13 @@ func (hof *tHoF) uuid() gurl.Arrow {
 //
 // post declares HTTP I/O. The HTTP request requires uuid.
 // Its result is returned via doc variable.
-func (hof *tHoF) post() gurl.Arrow {
-	return http.Join(
+func (hof *tHoF) post() error {
+	return hof.IO(context.TODO(),
 		ø.POST.URL("https://httpbin.org/post"),
 		ø.Accept.JSON,
 		ø.ContentType.JSON,
-		ø.Send(&hof.tID.UUID),
+		ø.Send(hof.tID.UUID),
+
 		ƒ.Status.OK,
 		ƒ.Recv(&hof.tHTTPBin),
 	)
@@ -68,32 +72,33 @@ func (hof *tHoF) post() gurl.Arrow {
 //
 // hof is a high-order function. It is composed from atomic HTTP I/O into
 // the chain of requests. HoF returns results via val variable
-func hof(api *tHoF) gurl.Arrow {
+func hof(cat http.Stack) (*tHoF, error) {
 	//
 	// HoF combines HTTP requests to
 	//  * https://httpbin.org/uuid
 	//  * https://httpbin.org/post
 	//
 	// results of HTTP I/O is persisted in the internal state
-	return gurl.Join(
-		api.uuid(),
-		api.post(),
+	val := tHoF{Stack: cat}
+
+	err := gurl.Join(
+		val.uuid,
+		val.post,
 	)
+
+	return &val, err
 }
 
-func eval(cat *gurl.IOCat) {
-	var val tHoF
-	req := hof(&val)
-	cat = req(cat)
-
-	if err := cat.Recover(); err != nil {
+func eval(cat http.Stack) {
+	val, err := hof(cat)
+	if err != nil {
 		fmt.Printf("fail %v\n", err)
 	}
 	fmt.Printf("==> %v\n", val)
 }
 
 func main() {
-	cat := http.DefaultIO(gurl.Logging(3))
+	cat := http.New(http.LogPayload())
 
 	for i := 0; i < 3; i++ {
 		eval(cat)

@@ -10,11 +10,11 @@ package send_test
 
 import (
 	"bytes"
+	"context"
 	"io/ioutil"
 	"net/url"
 	"testing"
 
-	"github.com/fogfish/gurl"
 	"github.com/fogfish/gurl/http"
 	ø "github.com/fogfish/gurl/http/send"
 	"github.com/fogfish/it"
@@ -22,77 +22,77 @@ import (
 
 func TestSchemaHTTP(t *testing.T) {
 	req := ø.GET.URL("http://example.com")
-	cat := gurl.IO(http.Default())
+	cat := http.New().WithContext(context.TODO())
 
 	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil)
+		If(cat.IO(req)).Should().Equal(nil)
 }
 
 func TestSchemaHTTPS(t *testing.T) {
 	req := ø.GET.URL("https://example.com")
-	cat := gurl.IO(http.Default())
+	cat := http.New().WithContext(context.TODO())
 
 	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil)
+		If(cat.IO(req)).Should().Equal(nil)
 }
 
 func TestSchemaUnsupported(t *testing.T) {
 	req := ø.GET.URL("other://example.com")
-	cat := gurl.IO(http.Default())
+	cat := http.New().WithContext(context.TODO())
 
 	it.Ok(t).
-		If(req(cat).Fail).ShouldNot().Equal(nil)
+		If(cat.IO(req)).ShouldNot().Equal(nil)
 }
 
 func TestURL(t *testing.T) {
 	req := ø.GET.URL("https://example.com/%s/%v", "a", 1)
-	cat := gurl.IO(http.Default())
+	cat := http.New().WithContext(context.TODO())
 
 	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil).
-		If(cat.HTTP.Send.URL).Should().Equal("https://example.com/a/1")
+		If(cat.IO(req)).Should().Equal(nil).
+		If(cat.Request.URL).Should().Equal("https://example.com/a/1")
 }
 
 func TestURLByRef(t *testing.T) {
 	a := "a"
 	b := 1
 	req := ø.GET.URL("https://example.com/%s/%v", &a, &b)
-	cat := gurl.IO(http.Default())
+	cat := http.New().WithContext(context.TODO())
 
 	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil).
-		If(cat.HTTP.Send.URL).Should().Equal("https://example.com/a/1")
+		If(cat.IO(req)).Should().Equal(nil).
+		If(cat.Request.URL).Should().Equal("https://example.com/a/1")
 }
 
 func TestURLEscape(t *testing.T) {
 	a := "a b"
 	b := 1
 	req := ø.GET.URL("https://example.com/%s/%v", &a, &b)
-	cat := gurl.IO(http.Default())
+	cat := http.New().WithContext(context.TODO())
 
 	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil).
-		If(cat.HTTP.Send.URL).Should().Equal("https://example.com/a%20b/1")
+		If(cat.IO(req)).Should().Equal(nil).
+		If(cat.Request.URL).Should().Equal("https://example.com/a%20b/1")
 }
 
 func TestURLEscapeSkip(t *testing.T) {
 	a := "a/b"
 	req := ø.GET.URL("https://example.com/%s/%s", (*ø.Segment)(&a), ø.Segment(a))
-	cat := gurl.IO(http.Default())
+	cat := http.New().WithContext(context.TODO())
 
 	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil).
-		If(cat.HTTP.Send.URL).Should().Equal("https://example.com/a/b/a/b")
+		If(cat.IO(req)).Should().Equal(nil).
+		If(cat.Request.URL).Should().Equal("https://example.com/a/b/a/b")
 }
 
 func TestURLEscapeAuthority(t *testing.T) {
 	a := "a.b"
 	req := ø.GET.URL("https://%s.%s", ø.Authority(a), (*ø.Authority)(&a))
-	cat := gurl.IO(http.Default())
+	cat := http.New().WithContext(context.TODO())
 
 	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil).
-		If(cat.HTTP.Send.URL).Should().Equal("https://a.b.a.b")
+		If(cat.IO(req)).Should().Equal(nil).
+		If(cat.Request.URL).Should().Equal("https://a.b.a.b")
 }
 
 func TestURLType(t *testing.T) {
@@ -100,22 +100,11 @@ func TestURLType(t *testing.T) {
 	b := 1
 	p, _ := url.Parse("https://example.com")
 	req := ø.GET.URL("%s/%s/%v", p, &a, &b)
-	cat := gurl.IO(http.Default())
+	cat := http.New().WithContext(context.TODO())
 
 	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil).
-		If(cat.HTTP.Send.URL).Should().Equal("https://example.com/a%20b/1")
-}
-
-func TestURLLazyVal(t *testing.T) {
-	a := func() string { return "a" }
-
-	req := ø.GET.URL("https://example.com/%s", a)
-	cat := gurl.IO(http.Default())
-
-	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil).
-		If(cat.HTTP.Send.URL).Should().Equal("https://example.com/a")
+		If(cat.IO(req)).Should().Equal(nil).
+		If(cat.Request.URL).Should().Equal("https://example.com/a%20b/1")
 }
 
 func TestHeaders(t *testing.T) {
@@ -125,18 +114,18 @@ func TestHeaders(t *testing.T) {
 	for val, arr := range map[*[]string]http.Arrow{
 		//
 		{"accept", "text/plain"}:                        ø.Header("Accept").Is("text/plain"),
-		{"accept", "text/plain"}:                        ø.Header("Accept").Val(&defAccept),
+		{"accept", "text/plain"}:                        ø.Header("Accept").Is(defAccept),
 		{"accept", "text/plain"}:                        ø.Accept.Text,
 		{"accept", "application/json"}:                  ø.Accept.JSON,
 		{"accept", "application/x-www-form-urlencoded"}: ø.Accept.Form,
 
 		{"accept", "text/plain"}: ø.Accept.Is("text/plain"),
-		{"accept", "text/plain"}: ø.Accept.Val(&defAccept),
+		{"accept", "text/plain"}: ø.Accept.Is(defAccept),
 		//
 		{"connection", "keep-alive"}: ø.Connection.KeepAlive,
 		{"connection", "close"}:      ø.Connection.Close,
 		{"connection", "close"}:      ø.Connection.Is("close"),
-		{"connection", "close"}:      ø.Connection.Val(&defClose),
+		{"connection", "close"}:      ø.Connection.Is(defClose),
 		//
 		{"authorization", "foo bar"}: ø.Authorization.Is("foo bar"),
 	} {
@@ -144,11 +133,11 @@ func TestHeaders(t *testing.T) {
 			ø.GET.URL("http://example.com"),
 			arr,
 		)
-		cat := gurl.IO(http.Default())
+		cat := http.New().WithContext(context.TODO())
 
 		it.Ok(t).
-			If(req(cat).Fail).Should().Equal(nil).
-			If(*cat.HTTP.Send.Header[(*val)[0]]).Equal((*val)[1])
+			If(cat.IO(req)).Should().Equal(nil).
+			If(*cat.Request.Header[(*val)[0]]).Equal((*val)[1])
 	}
 }
 
@@ -162,11 +151,11 @@ func TestParams(t *testing.T) {
 		ø.GET.URL("https://example.com"),
 		ø.Params(Site{"host", "site"}),
 	)
-	cat := gurl.IO(http.Default())
+	cat := http.New().WithContext(context.TODO())
 
 	it.Ok(t).
-		If(req(cat).Fail).Should().Equal(nil).
-		If(cat.HTTP.Send.URL).Should().Equal("https://example.com?host=site&site=host")
+		If(cat.IO(req)).Should().Equal(nil).
+		If(cat.Request.URL).Should().Equal("https://example.com?host=site&site=host")
 }
 
 func TestParamsInvalidFormat(t *testing.T) {
@@ -179,10 +168,10 @@ func TestParamsInvalidFormat(t *testing.T) {
 		ø.GET.URL("https://example.com"),
 		ø.Params(Site{"host", 100}),
 	)
-	cat := gurl.IO(http.Default())
+	cat := http.New().WithContext(context.TODO())
 
 	it.Ok(t).
-		If(req(cat).Fail).ShouldNot().Equal(nil)
+		If(cat.IO(req)).ShouldNot().Equal(nil)
 }
 
 func TestSendJSON(t *testing.T) {
@@ -196,11 +185,12 @@ func TestSendJSON(t *testing.T) {
 		ø.Header("Content-Type").Is("application/json"),
 		ø.Send(Site{"host", "site"}),
 	)
-	cat := req(http.DefaultIO())
-	buf, _ := ioutil.ReadAll(cat.HTTP.Send.Payload)
+	cat := http.New().WithContext(context.TODO())
+	err := cat.IO(req)
+	buf, _ := ioutil.ReadAll(cat.Request.Payload)
 
 	it.Ok(t).
-		If(cat.Fail).Should().Equal(nil).
+		If(err).Should().Equal(nil).
 		If(string(buf)).Should().Equal("{\"site\":\"host\",\"host\":\"site\"}")
 }
 
@@ -215,11 +205,12 @@ func TestSendForm(t *testing.T) {
 		ø.Header("Content-Type").Is("application/x-www-form-urlencoded"),
 		ø.Send(Site{"host", "site"}),
 	)
-	cat := req(http.DefaultIO())
-	buf, _ := ioutil.ReadAll(cat.HTTP.Send.Payload)
+	cat := http.New().WithContext(context.TODO())
+	err := cat.IO(req)
+	buf, _ := ioutil.ReadAll(cat.Request.Payload)
 
 	it.Ok(t).
-		If(cat.Fail).Should().Equal(nil).
+		If(err).Should().Equal(nil).
 		If(string(buf)).Should().Equal("host=site&site=host")
 }
 
@@ -238,11 +229,12 @@ func TestSendBytes(t *testing.T) {
 				content,
 				ø.Send(val),
 			)
-			cat := req(http.DefaultIO())
-			buf, _ := ioutil.ReadAll(cat.HTTP.Send.Payload)
+			cat := http.New().WithContext(context.TODO())
+			err := cat.IO(req)
+			buf, _ := ioutil.ReadAll(cat.Request.Payload)
 
 			it.Ok(t).
-				If(cat.Fail).Should().Equal(nil).
+				If(err).Should().Equal(nil).
 				If(string(buf)).Should().Equal("host=site")
 		}
 	}
@@ -258,10 +250,10 @@ func TestSendUnknown(t *testing.T) {
 		ø.GET.URL("https://example.com"),
 		ø.Send(Site{"host", "site"}),
 	)
-	cat := gurl.IO(http.Default())
+	cat := http.New().WithContext(context.TODO())
 
 	it.Ok(t).
-		If(req(cat).Fail).ShouldNot().Equal(nil)
+		If(cat.IO(req)).ShouldNot().Equal(nil)
 }
 
 func TestSendNotSupported(t *testing.T) {
@@ -272,13 +264,13 @@ func TestSendNotSupported(t *testing.T) {
 
 	req := http.Join(
 		ø.GET.URL("https://example.com"),
-		ø.Header("Content-Type").Is("foo/bar"),
+		ø.ContentType.Is("foo/bar"),
 		ø.Send(Site{"host", "site"}),
 	)
-	cat := gurl.IO(http.Default())
+	cat := http.New().WithContext(context.TODO())
 
 	it.Ok(t).
-		If(req(cat).Fail).ShouldNot().Equal(nil)
+		If(cat.IO(req)).ShouldNot().Equal(nil)
 }
 
 func TestAliasesURL(t *testing.T) {
@@ -290,11 +282,11 @@ func TestAliasesURL(t *testing.T) {
 		"PATCH":  ø.PATCH.URL,
 	} {
 		req := f("https://example.com/%s/%v", "a", 1)
-		cat := gurl.IO(http.Default())
+		cat := http.New().WithContext(context.TODO())
 
 		it.Ok(t).
-			If(req(cat).Fail).Should().Equal(nil).
-			If(cat.HTTP.Send.URL).Should().Equal("https://example.com/a/1").
-			If(cat.HTTP.Send.Method).Should().Equal(mthd)
+			If(cat.IO(req)).Should().Equal(nil).
+			If(cat.Request.URL).Should().Equal("https://example.com/a/1").
+			If(cat.Request.Method).Should().Equal(mthd)
 	}
 }

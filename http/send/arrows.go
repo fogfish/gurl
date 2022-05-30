@@ -59,25 +59,22 @@ HTTP method and destination URL, use Params arrow if you
 need to supply URL query params.
 */
 func (method Method) URL(uri string, args ...interface{}) http.Arrow {
-	return func(cat *gurl.IOCat) *gurl.IOCat {
+	return func(cat *http.Context) error {
 		addr := mkURL(uri, args...)
-
-		if cat.HTTP == nil {
-			cat.HTTP = &gurl.IOCatHTTP{}
-		}
 
 		switch {
 		case strings.HasPrefix(addr, "http"):
-			cat.HTTP.Send = &gurl.UpStreamHTTP{
+			cat.Request = &http.Request{
 				Method:  string(method),
 				URL:     addr,
 				Header:  make(map[string]*string),
 				Payload: bytes.NewBuffer(nil),
 			}
 		default:
-			cat.Fail = &gurl.NotSupported{URL: addr}
+			return &gurl.NotSupported{URL: addr}
 		}
-		return cat
+
+		return nil
 	}
 }
 
@@ -96,8 +93,6 @@ func mkURL(uri string, args ...interface{}) string {
 			opts = append(opts, *v)
 		case Authority:
 			opts = append(opts, v)
-		case func() string:
-			opts = append(opts, url.PathEscape(v()))
 		default:
 			opts = append(opts, url.PathEscape(urlSegment(x)))
 		}
@@ -121,9 +116,9 @@ func urlSegment(arg interface{}) string {
 Header defines HTTP headers to the request, use combinator
 to define multiple header values.
 
-  http.Join(
-		ø.Header("Accept").Is(...),
-		ø.Header("Content-Type").Is(...),
+  http.Do(
+		ø.Header("User-Agent").Is("gurl"),
+		ø.Header("Content-Type").Is(content),
 	)
 */
 type Header string
@@ -159,52 +154,57 @@ const (
 	Upgrade           = Header("Upgrade")
 )
 
-func (header Header) name() string {
-	return strings.ToLower(string(header))
-}
-
-// Is sets a literval value of HTTP header
+// Is sets value of HTTP header
 func (header Header) Is(value string) http.Arrow {
-	return func(cat *gurl.IOCat) *gurl.IOCat {
-		cat.HTTP.Send.Header[header.name()] = &value
-		return cat
-	}
-}
-
-// Val sets a value of HTTP header from variable
-func (header Header) Val(value *string) http.Arrow {
-	return func(cat *gurl.IOCat) *gurl.IOCat {
-		cat.HTTP.Send.Header[header.name()] = value
-		return cat
+	return func(cat *http.Context) error {
+		h := strings.ToLower(string(header))
+		cat.Request.Header[h] = &value
+		return nil
 	}
 }
 
 // Set is combinator to define HTTP header into request
-func (header Header) Set(cat *gurl.IOCat, value string) *gurl.IOCat {
-	cat.HTTP.Send.Header[header.name()] = &value
-	return cat
+func (header Header) Set(cat *http.Context, value string) error {
+	h := strings.ToLower(string(header))
+	cat.Request.Header[h] = &value
+	return nil
 }
 
 // Content defines headers for content negotiation
 type Content Header
 
+// ApplicationJSON defines header `???: application/json`
+func (h Content) ApplicationJSON(cat *http.Context) error {
+	return Header(h).Set(cat, "application/json")
+}
+
 // JSON defines header `???: application/json`
-func (h Content) JSON(cat *gurl.IOCat) *gurl.IOCat {
+func (h Content) JSON(cat *http.Context) error {
 	return Header(h).Set(cat, "application/json")
 }
 
 // Form defined Header `???: application/x-www-form-urlencoded`
-func (h Content) Form(cat *gurl.IOCat) *gurl.IOCat {
+func (h Content) Form(cat *http.Context) error {
 	return Header(h).Set(cat, "application/x-www-form-urlencoded")
 }
 
-// Text defined Header `???: text/plain`
-func (h Content) Text(cat *gurl.IOCat) *gurl.IOCat {
+// TextPlain defined Header `???: text/plain`
+func (h Content) TextPlain(cat *http.Context) error {
 	return Header(h).Set(cat, "text/plain")
 }
 
+// Text defined Header `???: text/plain`
+func (h Content) Text(cat *http.Context) error {
+	return Header(h).Set(cat, "text/plain")
+}
+
+// TextHTML defined Header `???: text/html`
+func (h Content) TextHTML(cat *http.Context) error {
+	return Header(h).Set(cat, "text/html")
+}
+
 // HTML defined Header `???: text/html`
-func (h Content) HTML(cat *gurl.IOCat) *gurl.IOCat {
+func (h Content) HTML(cat *http.Context) error {
 	return Header(h).Set(cat, "text/html")
 }
 
@@ -213,21 +213,16 @@ func (h Content) Is(value string) http.Arrow {
 	return Header(h).Is(value)
 }
 
-// Val sets a value of HTTP header from variable
-func (h Content) Val(value *string) http.Arrow {
-	return Header(h).Val(value)
-}
-
 // Lifecycle defines headers for connection management
 type Lifecycle Header
 
 // KeepAlive defines header `???: keep-alive`
-func (h Lifecycle) KeepAlive(cat *gurl.IOCat) *gurl.IOCat {
+func (h Lifecycle) KeepAlive(cat *http.Context) error {
 	return Header(h).Set(cat, "keep-alive")
 }
 
 // Close defines header `???: close`
-func (h Lifecycle) Close(cat *gurl.IOCat) *gurl.IOCat {
+func (h Lifecycle) Close(cat *http.Context) error {
 	return Header(h).Set(cat, "close")
 }
 
@@ -236,36 +231,28 @@ func (h Lifecycle) Is(value string) http.Arrow {
 	return Header(h).Is(value)
 }
 
-// Val sets a value of HTTP header from variable
-func (h Lifecycle) Val(value *string) http.Arrow {
-	return Header(h).Val(value)
-}
-
 /*
 
 Params appends query params to request URL. The arrow takes a struct and
 converts it to map[string]string. The function fails if input is not convertable
 to map of strings (e.g. nested struct).
 */
-func Params(query interface{}) http.Arrow {
-	return func(cat *gurl.IOCat) *gurl.IOCat {
+func Params[T any](query T) http.Arrow {
+	return func(cat *http.Context) error {
 		bytes, err := json.Marshal(query)
 		if err != nil {
-			cat.Fail = err
-			return cat
+			return err
 		}
 
 		var req map[string]string
 		err = json.Unmarshal(bytes, &req)
 		if err != nil {
-			cat.Fail = err
-			return cat
+			return err
 		}
 
-		uri, err := url.Parse(cat.HTTP.Send.URL)
+		uri, err := url.Parse(cat.Request.URL)
 		if err != nil {
-			cat.Fail = err
-			return cat
+			return err
 		}
 
 		q := uri.Query()
@@ -273,9 +260,9 @@ func Params(query interface{}) http.Arrow {
 			q.Add(k, v)
 		}
 		uri.RawQuery = q.Encode()
-		cat.HTTP.Send.URL = uri.String()
+		cat.Request.URL = uri.String()
 
-		return cat
+		return nil
 	}
 }
 
@@ -290,24 +277,27 @@ The function accept a "classical" data container such as string, []bytes or
 io.Reader interfaces.
 */
 func Send(data interface{}) http.Arrow {
-	return func(cat *gurl.IOCat) *gurl.IOCat {
-		content, ok := cat.HTTP.Send.Header["content-type"]
+	return func(cat *http.Context) error {
+		content, ok := cat.Request.Header["content-type"]
 		if !ok {
-			cat.Fail = fmt.Errorf("unknown Content-Type")
-			return cat
+			return fmt.Errorf("unknown Content-Type")
 		}
 
 		switch stream := data.(type) {
 		case string:
-			cat.HTTP.Send.Payload = bytes.NewBuffer([]byte(stream))
+			cat.Request.Payload = bytes.NewBuffer([]byte(stream))
 		case []byte:
-			cat.HTTP.Send.Payload = bytes.NewBuffer(stream)
+			cat.Request.Payload = bytes.NewBuffer(stream)
 		case io.Reader:
-			cat.HTTP.Send.Payload = stream
+			cat.Request.Payload = stream
 		default:
-			cat.HTTP.Send.Payload, cat.Fail = encode(*content, data)
+			pkt, err := encode(*content, data)
+			if err != nil {
+				return err
+			}
+			cat.Request.Payload = pkt
 		}
-		return cat
+		return nil
 	}
 }
 

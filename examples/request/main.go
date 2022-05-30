@@ -15,9 +15,9 @@ Example shows a basic usage of HTTP I/O.
 */
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/fogfish/gurl"
 	"github.com/fogfish/gurl/http"
 	ƒ "github.com/fogfish/gurl/http/recv"
 	ø "github.com/fogfish/gurl/http/send"
@@ -34,7 +34,7 @@ type tHTTPBin struct {
 	Headers tHeaders `json:"headers,omitempty"`
 }
 
-func (bin *tHTTPBin) validate() error {
+func (bin *tHTTPBin) validate(*http.Context) error {
 	if bin.Headers.UserAgent == "" {
 		return fmt.Errorf("User-Agent is not defined")
 	}
@@ -47,26 +47,34 @@ func (bin *tHTTPBin) validate() error {
 }
 
 // basic declarative request
-func request(val *tHTTPBin) gurl.Arrow {
-	return http.Join(
+func request(cat http.Stack) (*tHTTPBin, error) {
+	var data tHTTPBin
+
+	err := cat.IO(context.TODO(),
 		// HTTP Request
 		ø.GET.URL("https://httpbin.org/get"),
 		ø.Accept.JSON,
 		ø.UserAgent.Is("gurl"),
-		// HTTP Response and its validation
+
+		// HTTP Response
 		ƒ.Status.OK,
 		ƒ.ContentType.JSON,
-		ƒ.Recv(val),
-	).Then(gurl.FMap(val.validate))
+		ƒ.Recv(&data),
+
+		// asserts
+		data.validate,
+	)
+
+	return &data, err
 }
 
 func main() {
-	var val tHTTPBin
-	req := request(&val)
-	cat := http.DefaultIO(gurl.Logging(3))
+	cat := http.New(http.LogPayload())
 
-	if err := req(cat).Fail; err != nil {
+	val, err := request(cat)
+	if err != nil {
 		fmt.Printf("fail %v\n", err)
 	}
+
 	fmt.Printf("==> %v\n", val)
 }
