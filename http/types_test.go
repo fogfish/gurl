@@ -30,9 +30,10 @@ func TestJoin(t *testing.T) {
 		ƒ.Code(µ.StatusOK),
 	)
 	cat := µ.New()
+	err := cat.IO(context.Background(), req)
 
 	it.Ok(t).
-		If(cat.IO(nil, req)).Should().Equal(nil)
+		If(err).Should().Equal(nil)
 }
 
 func TestJoinCats(t *testing.T) {
@@ -50,9 +51,10 @@ func TestJoinCats(t *testing.T) {
 		),
 	)
 	cat := µ.New()
+	err := cat.IO(context.Background(), req)
 
 	it.Ok(t).
-		If(cat.IO(nil, req)).Should().Equal(nil)
+		If(err).Should().Equal(nil)
 }
 
 func TestIOWithContext(t *testing.T) {
@@ -91,7 +93,6 @@ func TestIOWithContextCancel(t *testing.T) {
 		If(err).ShouldNot().Equal(nil)
 }
 
-//
 func mock() *httptest.Server {
 	return httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

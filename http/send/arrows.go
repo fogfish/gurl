@@ -23,13 +23,11 @@ import (
 )
 
 /*
-
 Method is base type for HTTP methods
 */
 type Method string
 
 /*
-
 List of supported built-in method constants
 */
 const (
@@ -41,19 +39,36 @@ const (
 )
 
 /*
-
 Authority is part of URL, use the type to prevent escaping
 */
 type Authority string
 
 /*
-
 Segment is part of URL, use the type to prevent path escaping
 */
 type Segment string
 
-/*
+// URL defines a mandatory parameters to the request such as
+// HTTP method and destination URI
+func (method Method) URI(addr string) http.Arrow {
+	return func(cat *http.Context) error {
+		switch {
+		case strings.HasPrefix(addr, "http"):
+			cat.Request = &http.Request{
+				Method:  string(method),
+				URL:     addr,
+				Header:  make(map[string]*string),
+				Payload: bytes.NewBuffer(nil),
+			}
+		default:
+			return &gurl.NotSupported{URL: addr}
+		}
 
+		return nil
+	}
+}
+
+/*
 URL defines a mandatory parameters to the request such as
 HTTP method and destination URL, use Params arrow if you
 need to supply URL query params.
@@ -112,19 +127,17 @@ func urlSegment(arg interface{}) string {
 }
 
 /*
-
 Header defines HTTP headers to the request, use combinator
 to define multiple header values.
 
-  http.Do(
-		ø.Header("User-Agent").Is("gurl"),
-		ø.Header("Content-Type").Is(content),
-	)
+	  http.Do(
+			ø.Header("User-Agent").Is("gurl"),
+			ø.Header("Content-Type").Is(content),
+		)
 */
 type Header string
 
 /*
-
 List of supported HTTP header constants
 https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Request_fields
 */
@@ -232,7 +245,6 @@ func (h Lifecycle) Is(value string) http.Arrow {
 }
 
 /*
-
 Params appends query params to request URL. The arrow takes a struct and
 converts it to map[string]string. The function fails if input is not convertable
 to map of strings (e.g. nested struct).
@@ -267,7 +279,6 @@ func Params[T any](query T) http.Arrow {
 }
 
 /*
-
 Send payload to destination URL. You can also use native Go data types
 (e.g. maps, struct, etc) as egress payload. The library implicitly encodes
 input structures to binary using Content-Type as a hint. The function fails

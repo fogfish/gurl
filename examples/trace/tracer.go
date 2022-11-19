@@ -28,7 +28,7 @@ func (t *tracer) DNSStart(dnsInfo httptrace.DNSStartInfo) {
 }
 
 func (t *tracer) DNSDone(dnsInfo httptrace.DNSDoneInfo) {
-	t.dDNS = time.Now().Sub(t.tDNS)
+	t.dDNS = time.Since(t.tDNS)
 	fmt.Printf("dns : %s\n", t.dDNS)
 }
 
@@ -37,7 +37,7 @@ func (t *tracer) ConnectStart(network, addr string) {
 }
 
 func (t *tracer) ConnectDone(network, addr string, err error) {
-	t.dTCP = time.Now().Sub(t.tTCP)
+	t.dTCP = time.Since(t.tTCP)
 	fmt.Printf("tcp : %s\n", t.dTCP)
 }
 
@@ -46,7 +46,7 @@ func (t *tracer) TLSHandshakeStart() {
 }
 
 func (t *tracer) TLSHandshakeDone(info tls.ConnectionState, err error) {
-	t.dTLS = time.Now().Sub(t.tTLS)
+	t.dTLS = time.Since(t.tTLS)
 	fmt.Printf("tls : %s\n", t.dTCP)
 }
 
@@ -55,7 +55,7 @@ func (t *tracer) GotConn(connInfo httptrace.GotConnInfo) {
 }
 
 func (t *tracer) GotFirstResponseByte() {
-	t.dHTTP = time.Now().Sub(t.tHTTP)
+	t.dHTTP = time.Since(t.tHTTP)
 	fmt.Printf("htt : %s\n", t.dHTTP)
 }
 

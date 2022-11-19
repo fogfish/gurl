@@ -13,7 +13,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"strings"
 
 	"github.com/ajg/form"
@@ -27,12 +26,9 @@ import (
 //
 //-------------------------------------------------------------------
 
-/*
-
-Code is a mandatory statement to match expected HTTP Status Code against
-received one. The execution fails StatusCode error if service responds
-with other value then specified one.
-*/
+// Code is a mandatory statement to match expected HTTP Status Code against
+// received one. The execution fails StatusCode error if service responds
+// with other value then specified one.
 func Code(code ...http.StatusCode) http.Arrow {
 	return func(cat *http.Context) error {
 		if err := cat.Unsafe(); err != nil {
@@ -57,19 +53,18 @@ func hasCode(s []http.StatusCode, e int) bool {
 }
 
 /*
-
 StatusCode is a warpper type over http.StatusCode
 
-  http.Join(
-		...
-		ƒ.Code(http.StatusOK),
-	)
+	  http.Join(
+			...
+			ƒ.Code(http.StatusOK),
+		)
 
-	so that response code is matched using constant
-	http.Join(
-		...
-		ƒ.Status.OK,
-	)
+		so that response code is matched using constant
+		http.Join(
+			...
+			ƒ.Status.OK,
+		)
 */
 type StatusCode int
 
@@ -307,24 +302,18 @@ TODO:
 	NetworkAuthenticationRequired
 */
 
-/*
-
-Header matches presence of header in the response or match its entire content.
-The execution fails with BadMatchHead if the matched value do not meet expectations.
-
-  http.Join(
-		...
-		ƒ.ContentType.JSON,
-		ƒ.ContentEncoding.Is(...),
-	)
-*/
+// Header matches presence of header in the response or match its entire content.
+// The execution fails with BadMatchHead if the matched value do not meet expectations.
+//
+//	  http.Join(
+//			...
+//			ƒ.ContentType.JSON,
+//			ƒ.ContentEncoding.Is(...),
+//		)
 type Header string
 
-/*
-
-List of supported HTTP header constants
-https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Response_fields
-*/
+// List of supported HTTP header constants
+// https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Response_fields
 const (
 	CacheControl     = Header("Cache-Control")
 	Connection       = Header("Connection")
@@ -444,12 +433,9 @@ func (h Content) To(value *string) http.Arrow {
 	return Header(h).To(value)
 }
 
-/*
-
-Recv applies auto decoders for response and returns either binary or
-native Go data structure. The Content-Type header give a hint to decoder.
-Supply the pointer to data target data structure.
-*/
+// Recv applies auto decoders for response and returns either binary or
+// native Go data structure. The Content-Type header give a hint to decoder.
+// Supply the pointer to data target data structure.
 func Recv[T any](out *T) http.Arrow {
 	return func(cat *http.Context) (err error) {
 		err = decode(
@@ -459,7 +445,7 @@ func Recv[T any](out *T) http.Arrow {
 		)
 		cat.Response.Body.Close()
 		cat.Response = nil
-		return nil
+		return
 	}
 }
 
@@ -477,15 +463,12 @@ func decode[T any](content string, stream io.ReadCloser, data *T) error {
 	}
 }
 
-/*
-
-Bytes receive raw binary from HTTP response
-*/
+// Bytes receive raw binary from HTTP response
 func Bytes(val *[]byte) http.Arrow {
 	return func(cat *http.Context) (err error) {
-		*val, err = ioutil.ReadAll(cat.Response.Body)
+		*val, err = io.ReadAll(cat.Response.Body)
 		cat.Response.Body.Close()
 		cat.Response = nil
-		return nil
+		return
 	}
 }
