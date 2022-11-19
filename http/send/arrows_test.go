@@ -11,7 +11,7 @@ package send_test
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
+	"io"
 	"net/url"
 	"testing"
 
@@ -42,6 +42,15 @@ func TestSchemaUnsupported(t *testing.T) {
 
 	it.Ok(t).
 		If(cat.IO(req)).ShouldNot().Equal(nil)
+}
+
+func TestURI(t *testing.T) {
+	req := ø.GET.URI("https://example.com/a/1")
+	cat := http.New().WithContext(context.TODO())
+
+	it.Ok(t).
+		If(cat.IO(req)).Should().Equal(nil).
+		If(cat.Request.URL).Should().Equal("https://example.com/a/1")
 }
 
 func TestURL(t *testing.T) {
@@ -187,7 +196,7 @@ func TestSendJSON(t *testing.T) {
 	)
 	cat := http.New().WithContext(context.TODO())
 	err := cat.IO(req)
-	buf, _ := ioutil.ReadAll(cat.Request.Payload)
+	buf, _ := io.ReadAll(cat.Request.Payload)
 
 	it.Ok(t).
 		If(err).Should().Equal(nil).
@@ -207,7 +216,7 @@ func TestSendForm(t *testing.T) {
 	)
 	cat := http.New().WithContext(context.TODO())
 	err := cat.IO(req)
-	buf, _ := ioutil.ReadAll(cat.Request.Payload)
+	buf, _ := io.ReadAll(cat.Request.Payload)
 
 	it.Ok(t).
 		If(err).Should().Equal(nil).
@@ -231,7 +240,7 @@ func TestSendBytes(t *testing.T) {
 			)
 			cat := http.New().WithContext(context.TODO())
 			err := cat.IO(req)
-			buf, _ := ioutil.ReadAll(cat.Request.Payload)
+			buf, _ := io.ReadAll(cat.Request.Payload)
 
 			it.Ok(t).
 				If(err).Should().Equal(nil).

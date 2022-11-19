@@ -9,6 +9,7 @@
 package recv_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -31,9 +32,10 @@ func TestCodeOk(t *testing.T) {
 		ƒ.Code(µ.StatusOK),
 	)
 	cat := µ.New()
+	err := cat.IO(context.Background(), req)
 
 	it.Ok(t).
-		If(cat.IO(nil, req)).Should().Equal(nil)
+		If(err).Should().Equal(nil)
 }
 
 func TestCodeNoMatch(t *testing.T) {
@@ -46,9 +48,10 @@ func TestCodeNoMatch(t *testing.T) {
 		ƒ.Status.OK,
 	)
 	cat := µ.New()
+	err := cat.IO(context.Background(), req)
 
 	it.Ok(t).
-		If(cat.IO(nil, req)).Should().Be().Like(µ.StatusBadRequest)
+		If(err).Should().Be().Like(µ.StatusBadRequest)
 }
 
 func TestStatusCodes(t *testing.T) {
@@ -100,8 +103,10 @@ func TestStatusCodes(t *testing.T) {
 			check,
 		)
 		cat := µ.New()
+		err := cat.IO(context.Background(), req)
+
 		it.Ok(t).
-			If(cat.IO(nil, req)).Should().Equal(nil)
+			If(err).Should().Equal(nil)
 	}
 }
 
@@ -116,9 +121,10 @@ func TestHeaderOk(t *testing.T) {
 		ƒ.ContentType.JSON,
 	)
 	cat := µ.New()
+	err := cat.IO(context.Background(), req)
 
 	it.Ok(t).
-		If(cat.IO(nil, req)).Should().Equal(nil)
+		If(err).Should().Equal(nil)
 }
 
 func TestHeaderAny(t *testing.T) {
@@ -133,9 +139,10 @@ func TestHeaderAny(t *testing.T) {
 		ƒ.Header("Content-Type").Any,
 	)
 	cat := µ.New()
+	err := cat.IO(context.Background(), req)
 
 	it.Ok(t).
-		If(cat.IO(nil, req)).Should().Equal(nil)
+		If(err).Should().Equal(nil)
 }
 
 func TestHeaderVal(t *testing.T) {
@@ -150,9 +157,10 @@ func TestHeaderVal(t *testing.T) {
 		ƒ.ContentType.To(&content),
 	)
 	cat := µ.New()
+	err := cat.IO(context.Background(), req)
 
 	it.Ok(t).
-		If(cat.IO(nil, req)).Should().Equal(nil).
+		If(err).Should().Equal(nil).
 		If(content).Should().Equal("application/json")
 }
 
@@ -167,9 +175,10 @@ func TestHeaderMismatch(t *testing.T) {
 		ƒ.ContentType.Is("foo/bar"),
 	)
 	cat := µ.New()
+	err := cat.IO(context.Background(), req)
 
 	it.Ok(t).
-		If(cat.IO(nil, req)).ShouldNot().Equal(nil)
+		If(err).ShouldNot().Equal(nil)
 }
 
 func TestHeaderUndefinedWithLit(t *testing.T) {
@@ -183,9 +192,10 @@ func TestHeaderUndefinedWithLit(t *testing.T) {
 		ƒ.Header("x-content-type").Is("foo/bar"),
 	)
 	cat := µ.New()
+	err := cat.IO(context.Background(), req)
 
 	it.Ok(t).
-		If(cat.IO(nil, req)).ShouldNot().Equal(nil)
+		If(err).ShouldNot().Equal(nil)
 }
 
 func TestHeaderUndefinedWithVal(t *testing.T) {
@@ -200,9 +210,10 @@ func TestHeaderUndefinedWithVal(t *testing.T) {
 		ƒ.Header("x-content-type").To(&val),
 	)
 	cat := µ.New()
+	err := cat.IO(context.Background(), req)
 
 	it.Ok(t).
-		If(cat.IO(nil, req)).ShouldNot().Equal(nil)
+		If(err).ShouldNot().Equal(nil)
 }
 
 func TestRecvJSON(t *testing.T) {
@@ -221,9 +232,10 @@ func TestRecvJSON(t *testing.T) {
 		ƒ.Recv(&site),
 	)
 	cat := µ.New()
+	err := cat.IO(context.Background(), req)
 
 	it.Ok(t).
-		If(cat.IO(nil, req)).Should().Equal(nil).
+		If(err).Should().Equal(nil).
 		If(site.Site).Should().Equal("example.com")
 }
 
@@ -243,9 +255,10 @@ func TestRecvForm(t *testing.T) {
 		ƒ.Recv(&site),
 	)
 	cat := µ.New()
+	err := cat.IO(context.Background(), req)
 
 	it.Ok(t).
-		If(cat.IO(nil, req)).Should().Equal(nil).
+		If(err).Should().Equal(nil).
 		If(site.Site).Should().Equal("example.com")
 }
 
@@ -266,14 +279,14 @@ func TestRecvBytes(t *testing.T) {
 			ƒ.Bytes(&data),
 		)
 		cat := µ.New()
+		err := cat.IO(context.Background(), req)
 
 		it.Ok(t).
-			If(cat.IO(nil, req)).Should().Equal(nil).
+			If(err).Should().Equal(nil).
 			If(string(data)).Should().Equal("site=example.com")
 	}
 }
 
-//
 func mock() *httptest.Server {
 	return httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -14,7 +14,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"net/http/cookiejar"
@@ -24,18 +24,15 @@ import (
 
 	"github.com/ajg/form"
 	"github.com/fogfish/gurl"
-	"github.com/fogfish/logger"
 	"golang.org/x/net/publicsuffix"
 )
 
 /*
-
 Arrow is a morphism applied to HTTP protocol stack
 */
 type Arrow func(*Context) error
 
 /*
-
 Stack is HTTP protocol stack
 */
 type Stack interface {
@@ -44,7 +41,6 @@ type Stack interface {
 }
 
 /*
-
 Request specify parameters for HTTP requests
 */
 type Request struct {
@@ -55,7 +51,6 @@ type Request struct {
 }
 
 /*
-
 Context defines the category of HTTP I/O
 */
 type Context struct {
@@ -115,7 +110,7 @@ func (ctx *Context) IO(arrows ...Arrow) error {
 		body := ctx.Response.Body
 		ctx.Response = nil
 
-		_, err := io.Copy(ioutil.Discard, body)
+		_, err := io.Copy(io.Discard, body)
 		if err != nil {
 			return err
 		}
@@ -130,7 +125,6 @@ func (ctx *Context) IO(arrows ...Arrow) error {
 }
 
 /*
-
 Protocol is an instance of Stack
 */
 type Protocol struct {
@@ -139,7 +133,6 @@ type Protocol struct {
 }
 
 /*
-
 New instantiates category of HTTP I/O
 */
 func New(opts ...Config) Stack {
@@ -168,7 +161,6 @@ func (cat *Protocol) IO(ctx context.Context, arrows ...Arrow) error {
 }
 
 /*
-
 Join composes HTTP arrows to high-order function
 (a ⟼ b, b ⟼ c, c ⟼ d) ⤇ a ⟼ d
 */
@@ -188,7 +180,6 @@ func Join(arrows ...Arrow) Arrow {
 type Config func(*Protocol)
 
 /*
-
 Client Default HTTP client
 */
 func Client() *http.Client {
@@ -247,7 +238,7 @@ func InsecureTLS() Config {
 			}
 			t.TLSClientConfig.InsecureSkipVerify = true
 		default:
-			panic(fmt.Errorf("Unsupported transport type %T", t))
+			panic(fmt.Errorf("unsupported transport type %T", t))
 		}
 	}
 }
@@ -266,7 +257,6 @@ func CookieJar() Config {
 }
 
 /*
-
 IO executes protocol operations
 */
 func IO[T any](ctx *Context, arrows ...Arrow) (*T, error) {
@@ -308,12 +298,10 @@ func decode[T any](content string, stream io.ReadCloser, data *T) error {
 	}
 }
 
-//
-//
 func logSend(level int, eg *http.Request) {
 	if level >= 1 {
 		if msg, err := httputil.DumpRequest(eg, level == 3); err == nil {
-			logger.Debug(">>>>\n%s\n", msg)
+			log.Printf(">>>>\n%s\n", msg)
 		}
 	}
 }
@@ -321,7 +309,7 @@ func logSend(level int, eg *http.Request) {
 func logRecv(level int, in *http.Response) {
 	if level >= 2 {
 		if msg, err := httputil.DumpResponse(in, level == 3); err == nil {
-			logger.Debug("<<<<\n%s\n", msg)
+			log.Printf("<<<<\n%s\n", msg)
 		}
 	}
 }
