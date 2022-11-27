@@ -314,47 +314,47 @@ func Send(data interface{}) http.Arrow {
 		switch stream := data.(type) {
 		case string:
 			cat.Request.Body = io.NopCloser(bytes.NewBuffer([]byte(stream)))
-			cat.Request.GetBody = func() (io.ReadCloser, error) {
-				return io.NopCloser(bytes.NewBuffer([]byte(stream))), nil
-			}
-			if !chunked && cat.Request.ContentLength != 0 {
+			// cat.Request.GetBody = func() (io.ReadCloser, error) {
+			// 	return io.NopCloser(bytes.NewBuffer([]byte(stream))), nil
+			// }
+			if !chunked && cat.Request.ContentLength == 0 {
 				cat.Request.ContentLength = int64(len(stream))
 			}
 		case *strings.Reader:
 			cat.Request.Body = io.NopCloser(stream)
-			snapshot := *stream
-			cat.Request.GetBody = func() (io.ReadCloser, error) {
-				r := snapshot
-				return io.NopCloser(&r), nil
-			}
-			if !chunked && cat.Request.ContentLength != 0 {
+			// snapshot := *stream
+			// cat.Request.GetBody = func() (io.ReadCloser, error) {
+			// 	r := snapshot
+			// 	return io.NopCloser(&r), nil
+			// }
+			if !chunked && cat.Request.ContentLength == 0 {
 				cat.Request.ContentLength = int64(stream.Len())
 			}
 		case []byte:
 			cat.Request.Body = io.NopCloser(bytes.NewBuffer(stream))
-			cat.Request.GetBody = func() (io.ReadCloser, error) {
-				return io.NopCloser(bytes.NewBuffer(stream)), nil
-			}
-			if !chunked && cat.Request.ContentLength != 0 {
+			// cat.Request.GetBody = func() (io.ReadCloser, error) {
+			// 	return io.NopCloser(bytes.NewBuffer(stream)), nil
+			// }
+			if !chunked && cat.Request.ContentLength == 0 {
 				cat.Request.ContentLength = int64(len(stream))
 			}
 		case *bytes.Buffer:
 			cat.Request.Body = io.NopCloser(stream)
-			snapshot := stream.Bytes()
-			cat.Request.GetBody = func() (io.ReadCloser, error) {
-				return io.NopCloser(bytes.NewBuffer(snapshot)), nil
-			}
-			if !chunked && cat.Request.ContentLength != 0 {
+			// snapshot := stream.Bytes()
+			// cat.Request.GetBody = func() (io.ReadCloser, error) {
+			// 	return io.NopCloser(bytes.NewBuffer(snapshot)), nil
+			// }
+			if !chunked && cat.Request.ContentLength == 0 {
 				cat.Request.ContentLength = int64(stream.Len())
 			}
 		case *bytes.Reader:
 			cat.Request.Body = io.NopCloser(stream)
-			snapshot := *stream
-			cat.Request.GetBody = func() (io.ReadCloser, error) {
-				r := snapshot
-				return io.NopCloser(&r), nil
-			}
-			if !chunked && cat.Request.ContentLength != 0 {
+			// snapshot := *stream
+			// cat.Request.GetBody = func() (io.ReadCloser, error) {
+			// 	r := snapshot
+			// 	return io.NopCloser(&r), nil
+			// }
+			if !chunked && cat.Request.ContentLength == 0 {
 				cat.Request.ContentLength = int64(stream.Len())
 			}
 		case io.Reader:
@@ -373,7 +373,7 @@ func Send(data interface{}) http.Arrow {
 			cat.Request.GetBody = func() (io.ReadCloser, error) {
 				return io.NopCloser(bytes.NewBuffer(snapshot)), nil
 			}
-			if !chunked && cat.Request.ContentLength != 0 {
+			if !chunked && cat.Request.ContentLength == 0 {
 				cat.Request.ContentLength = int64(pkt.Len())
 			}
 		}
