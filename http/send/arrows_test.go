@@ -119,13 +119,16 @@ func TestURLType(t *testing.T) {
 
 func TestHeaders(t *testing.T) {
 	defAccept := "text/plain"
-	// defClose := "close"
 
 	for val, arr := range map[*[]string]http.Arrow{
 		//
 		{"accept", "text/plain"}:                        ø.Header("Accept").Is("text/plain"),
 		{"accept", "text/plain"}:                        ø.Header("Accept").Is(defAccept),
 		{"accept", "text/plain"}:                        ø.Accept.Text,
+		{"accept", "text/plain"}:                        ø.Accept.TextPlain,
+		{"accept", "text/html"}:                         ø.Accept.HTML,
+		{"accept", "text/html"}:                         ø.Accept.TextHTML,
+		{"accept", "application/json"}:                  ø.Accept.ApplicationJSON,
 		{"accept", "application/json"}:                  ø.Accept.JSON,
 		{"accept", "application/x-www-form-urlencoded"}: ø.Accept.Form,
 
