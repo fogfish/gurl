@@ -22,14 +22,10 @@ import (
 	"github.com/fogfish/gurl/http"
 )
 
-/*
-Method is base type for HTTP methods
-*/
+// Method is base type for HTTP methods
 type Method string
 
-/*
-List of supported built-in method constants
-*/
+// List of supported built-in method constants
 const (
 	GET    = Method("GET")
 	POST   = Method("POST")
@@ -38,14 +34,10 @@ const (
 	PATCH  = Method("PATCH")
 )
 
-/*
-Authority is part of URL, use the type to prevent escaping
-*/
+// Authority is part of URL, use the type to prevent escaping
 type Authority string
 
-/*
-Segment is part of URL, use the type to prevent path escaping
-*/
+// Segment is part of URL, use the type to prevent path escaping
 type Segment string
 
 // URL defines a mandatory parameters to the request such as
@@ -54,12 +46,12 @@ func (method Method) URI(addr string) http.Arrow {
 	return func(cat *http.Context) error {
 		switch {
 		case strings.HasPrefix(addr, "http"):
-			cat.Request = &http.Request{
-				Method:  string(method),
-				URL:     addr,
-				Header:  make(map[string]*string),
-				Payload: bytes.NewBuffer(nil),
+			req, err := http.NewRequest(string(method), addr)
+			if err != nil {
+				return err
 			}
+
+			cat.Request = req
 		default:
 			return &gurl.NotSupported{URL: addr}
 		}
@@ -68,23 +60,21 @@ func (method Method) URI(addr string) http.Arrow {
 	}
 }
 
-/*
-URL defines a mandatory parameters to the request such as
-HTTP method and destination URL, use Params arrow if you
-need to supply URL query params.
-*/
+// URL defines a mandatory parameters to the request such as
+// HTTP method and destination URL, use Params arrow if you
+// need to supply URL query params.
 func (method Method) URL(uri string, args ...interface{}) http.Arrow {
 	return func(cat *http.Context) error {
 		addr := mkURL(uri, args...)
 
 		switch {
 		case strings.HasPrefix(addr, "http"):
-			cat.Request = &http.Request{
-				Method:  string(method),
-				URL:     addr,
-				Header:  make(map[string]*string),
-				Payload: bytes.NewBuffer(nil),
+			req, err := http.NewRequest(string(method), addr)
+			if err != nil {
+				return err
 			}
+
+			cat.Request = req
 		default:
 			return &gurl.NotSupported{URL: addr}
 		}
@@ -142,16 +132,16 @@ List of supported HTTP header constants
 https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Request_fields
 */
 const (
-	Accept            = Content("Accept")
+	Accept            = HeaderContent("Accept")
 	AcceptCharset     = Header("Accept-Charset")
 	AcceptEncoding    = Header("Accept-Encoding")
 	AcceptLanguage    = Header("Accept-Language")
 	Authorization     = Header("Authorization")
 	CacheControl      = Header("Cache-Control")
-	Connection        = Lifecycle("Connection")
+	Connection        = HeaderConnection("Connection")
 	ContentEncoding   = Header("Content-Encoding")
-	ContentLength     = Header("Content-Length")
-	ContentType       = Content("Content-Type")
+	ContentLength     = HeaderContentLength("Content-Length")
+	ContentType       = HeaderContent("Content-Type")
 	Cookie            = Header("Cookie")
 	Date              = Header("Date")
 	Host              = Header("Host")
@@ -162,7 +152,7 @@ const (
 	IfUnmodifiedSince = Header("If-Unmodified-Since")
 	Origin            = Header("Origin")
 	Range             = Header("Range")
-	TransferEncoding  = Header("Transfer-Encoding")
+	TransferEncoding  = HeaderTransferEncoding("Transfer-Encoding")
 	UserAgent         = Header("User-Agent")
 	Upgrade           = Header("Upgrade")
 )
@@ -170,85 +160,115 @@ const (
 // Is sets value of HTTP header
 func (header Header) Is(value string) http.Arrow {
 	return func(cat *http.Context) error {
-		h := strings.ToLower(string(header))
-		cat.Request.Header[h] = &value
+		cat.Request.Header.Add(string(header), value)
 		return nil
 	}
 }
 
-// Set is combinator to define HTTP header into request
-func (header Header) Set(cat *http.Context, value string) error {
-	h := strings.ToLower(string(header))
-	cat.Request.Header[h] = &value
+// Content defines headers for content negotiation
+type HeaderContent Header
+
+// ApplicationJSON defines header `???: application/json`
+func (h HeaderContent) ApplicationJSON(cat *http.Context) error {
+	cat.Request.Header.Add(string(h), "application/json")
 	return nil
 }
 
-// Content defines headers for content negotiation
-type Content Header
-
-// ApplicationJSON defines header `???: application/json`
-func (h Content) ApplicationJSON(cat *http.Context) error {
-	return Header(h).Set(cat, "application/json")
-}
-
 // JSON defines header `???: application/json`
-func (h Content) JSON(cat *http.Context) error {
-	return Header(h).Set(cat, "application/json")
+func (h HeaderContent) JSON(cat *http.Context) error {
+	cat.Request.Header.Add(string(h), "application/json")
+	return nil
 }
 
 // Form defined Header `???: application/x-www-form-urlencoded`
-func (h Content) Form(cat *http.Context) error {
-	return Header(h).Set(cat, "application/x-www-form-urlencoded")
+func (h HeaderContent) Form(cat *http.Context) error {
+	cat.Request.Header.Add(string(h), "application/x-www-form-urlencoded")
+	return nil
 }
 
 // TextPlain defined Header `???: text/plain`
-func (h Content) TextPlain(cat *http.Context) error {
-	return Header(h).Set(cat, "text/plain")
+func (h HeaderContent) TextPlain(cat *http.Context) error {
+	cat.Request.Header.Add(string(h), "text/plain")
+	return nil
 }
 
 // Text defined Header `???: text/plain`
-func (h Content) Text(cat *http.Context) error {
-	return Header(h).Set(cat, "text/plain")
+func (h HeaderContent) Text(cat *http.Context) error {
+	cat.Request.Header.Add(string(h), "text/plain")
+	return nil
 }
 
 // TextHTML defined Header `???: text/html`
-func (h Content) TextHTML(cat *http.Context) error {
-	return Header(h).Set(cat, "text/html")
+func (h HeaderContent) TextHTML(cat *http.Context) error {
+	cat.Request.Header.Add(string(h), "text/html")
+	return nil
 }
 
 // HTML defined Header `???: text/html`
-func (h Content) HTML(cat *http.Context) error {
-	return Header(h).Set(cat, "text/html")
+func (h HeaderContent) HTML(cat *http.Context) error {
+	cat.Request.Header.Add(string(h), "text/html")
+	return nil
 }
 
 // Is sets a literval value of HTTP header
-func (h Content) Is(value string) http.Arrow {
+func (h HeaderContent) Is(value string) http.Arrow {
 	return Header(h).Is(value)
 }
 
 // Lifecycle defines headers for connection management
-type Lifecycle Header
+type HeaderConnection Header
 
 // KeepAlive defines header `???: keep-alive`
-func (h Lifecycle) KeepAlive(cat *http.Context) error {
-	return Header(h).Set(cat, "keep-alive")
+func (h HeaderConnection) KeepAlive(cat *http.Context) error {
+	cat.Request.Header.Add(string(h), "keep-alive")
+	cat.Request.Close = false
+	return nil
 }
 
 // Close defines header `???: close`
-func (h Lifecycle) Close(cat *http.Context) error {
-	return Header(h).Set(cat, "close")
+func (h HeaderConnection) Close(cat *http.Context) error {
+	cat.Request.Header.Add(string(h), "close")
+	cat.Request.Close = true
+	return nil
+}
+
+// Header TransferEncoding
+type HeaderTransferEncoding Header
+
+// Chunked defines header `Transfer-Encoding: chunked`
+func (h HeaderTransferEncoding) Chunked(cat *http.Context) error {
+	cat.Request.TransferEncoding = []string{"chunked"}
+	return nil
+}
+
+// Identity defines header `Transfer-Encoding: identity`
+func (h HeaderTransferEncoding) Identity(cat *http.Context) error {
+	cat.Request.TransferEncoding = []string{"identity"}
+	return nil
 }
 
 // Is sets a literval value of HTTP header
-func (h Lifecycle) Is(value string) http.Arrow {
-	return Header(h).Is(value)
+func (h HeaderTransferEncoding) Is(value string) http.Arrow {
+	return func(cat *http.Context) error {
+		cat.Request.TransferEncoding = strings.Split(value, ",")
+		return nil
+	}
 }
 
-/*
-Params appends query params to request URL. The arrow takes a struct and
-converts it to map[string]string. The function fails if input is not convertable
-to map of strings (e.g. nested struct).
-*/
+// Header Content-Length
+type HeaderContentLength Header
+
+// Is sets a literval value of HTTP header
+func (h HeaderContentLength) Is(value int64) http.Arrow {
+	return func(cat *http.Context) error {
+		cat.Request.ContentLength = value
+		return nil
+	}
+}
+
+// Params appends query params to request URL. The arrow takes a struct and
+// converts it to map[string]string. The function fails if input is not convertable
+// to map of strings (e.g. nested struct).
 func Params[T any](query T) http.Arrow {
 	return func(cat *http.Context) error {
 		bytes, err := json.Marshal(query)
@@ -261,18 +281,14 @@ func Params[T any](query T) http.Arrow {
 		if err != nil {
 			return err
 		}
-
-		uri, err := url.Parse(cat.Request.URL)
-		if err != nil {
-			return err
-		}
+		uri := cat.Request.URL
 
 		q := uri.Query()
 		for k, v := range req {
 			q.Add(k, v)
 		}
 		uri.RawQuery = q.Encode()
-		cat.Request.URL = uri.String()
+		cat.Request.URL = uri
 
 		return nil
 	}
@@ -289,24 +305,77 @@ io.Reader interfaces.
 */
 func Send(data interface{}) http.Arrow {
 	return func(cat *http.Context) error {
-		content, ok := cat.Request.Header["content-type"]
-		if !ok {
+		chunked := cat.Request.Header.Get(string(TransferEncoding)) == "chunked"
+		content := cat.Request.Header.Get(string(ContentType))
+		if content == "" {
 			return fmt.Errorf("unknown Content-Type")
 		}
 
 		switch stream := data.(type) {
 		case string:
-			cat.Request.Payload = bytes.NewBuffer([]byte(stream))
+			cat.Request.Body = io.NopCloser(bytes.NewBuffer([]byte(stream)))
+			// cat.Request.GetBody = func() (io.ReadCloser, error) {
+			// 	return io.NopCloser(bytes.NewBuffer([]byte(stream))), nil
+			// }
+			if !chunked && cat.Request.ContentLength == 0 {
+				cat.Request.ContentLength = int64(len(stream))
+			}
+		case *strings.Reader:
+			cat.Request.Body = io.NopCloser(stream)
+			// snapshot := *stream
+			// cat.Request.GetBody = func() (io.ReadCloser, error) {
+			// 	r := snapshot
+			// 	return io.NopCloser(&r), nil
+			// }
+			if !chunked && cat.Request.ContentLength == 0 {
+				cat.Request.ContentLength = int64(stream.Len())
+			}
 		case []byte:
-			cat.Request.Payload = bytes.NewBuffer(stream)
+			cat.Request.Body = io.NopCloser(bytes.NewBuffer(stream))
+			// cat.Request.GetBody = func() (io.ReadCloser, error) {
+			// 	return io.NopCloser(bytes.NewBuffer(stream)), nil
+			// }
+			if !chunked && cat.Request.ContentLength == 0 {
+				cat.Request.ContentLength = int64(len(stream))
+			}
+		case *bytes.Buffer:
+			cat.Request.Body = io.NopCloser(stream)
+			// snapshot := stream.Bytes()
+			// cat.Request.GetBody = func() (io.ReadCloser, error) {
+			// 	return io.NopCloser(bytes.NewBuffer(snapshot)), nil
+			// }
+			if !chunked && cat.Request.ContentLength == 0 {
+				cat.Request.ContentLength = int64(stream.Len())
+			}
+		case *bytes.Reader:
+			cat.Request.Body = io.NopCloser(stream)
+			// snapshot := *stream
+			// cat.Request.GetBody = func() (io.ReadCloser, error) {
+			// 	r := snapshot
+			// 	return io.NopCloser(&r), nil
+			// }
+			if !chunked && cat.Request.ContentLength == 0 {
+				cat.Request.ContentLength = int64(stream.Len())
+			}
 		case io.Reader:
-			cat.Request.Payload = stream
+			rc, ok := stream.(io.ReadCloser)
+			if !ok {
+				rc = io.NopCloser(stream)
+			}
+			cat.Request.Body = rc
 		default:
-			pkt, err := encode(*content, data)
+			pkt, err := encode(content, data)
 			if err != nil {
 				return err
 			}
-			cat.Request.Payload = pkt
+			cat.Request.Body = io.NopCloser(pkt)
+			snapshot := pkt.Bytes()
+			cat.Request.GetBody = func() (io.ReadCloser, error) {
+				return io.NopCloser(bytes.NewBuffer(snapshot)), nil
+			}
+			if !chunked && cat.Request.ContentLength == 0 {
+				cat.Request.ContentLength = int64(pkt.Len())
+			}
 		}
 		return nil
 	}

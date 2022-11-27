@@ -27,55 +27,32 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
-/*
-Arrow is a morphism applied to HTTP protocol stack
-*/
+// Arrow is a morphism applied to HTTP protocol stack
 type Arrow func(*Context) error
 
-/*
-Stack is HTTP protocol stack
-*/
+// Stack is HTTP protocol stack
 type Stack interface {
 	WithContext(context.Context) *Context
 	IO(context.Context, ...Arrow) error
 }
 
-/*
-Request specify parameters for HTTP requests
-*/
-type Request struct {
-	Method  string
-	URL     string
-	Header  map[string]*string
-	Payload io.Reader
-}
-
-/*
-Context defines the category of HTTP I/O
-*/
+// Context defines the category of HTTP I/O
 type Context struct {
 	*Protocol
 
 	// Context of Request / Response
 	context.Context
-	*Request
+	*http.Request
 	*http.Response
+}
+
+func NewRequest(method, url string) (*http.Request, error) {
+	return http.NewRequest(method, url, nil)
 }
 
 // Unsafe evaluates current context of HTTP I/O
 func (ctx *Context) Unsafe() error {
-	eg, err := http.NewRequest(
-		ctx.Request.Method,
-		ctx.Request.URL,
-		ctx.Request.Payload,
-	)
-	if err != nil {
-		return err
-	}
-
-	for head, value := range ctx.Request.Header {
-		eg.Header.Set(head, *value)
-	}
+	eg := ctx.Request
 
 	if ctx.Context != nil {
 		eg = eg.WithContext(ctx.Context)
