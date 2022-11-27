@@ -134,8 +134,6 @@ func TestHeaders(t *testing.T) {
 		//
 		{"connection", "keep-alive"}: ø.Connection.KeepAlive,
 		{"connection", "close"}:      ø.Connection.Close,
-		// {"connection", "close"}:      ø.Connection.Is("close"),
-		// {"connection", "close"}:      ø.Connection.Is(defClose),
 		//
 		{"authorization", "foo bar"}: ø.Authorization.Is("foo bar"),
 	} {
@@ -149,6 +147,37 @@ func TestHeaders(t *testing.T) {
 			If(cat.IO(req)).Should().Equal(nil).
 			If(cat.Request.Header.Get((*val)[0])).Equal((*val)[1])
 	}
+}
+
+func TestHeaderContentLength(t *testing.T) {
+	req := http.Join(
+		ø.GET.URL("http://example.com"),
+		ø.ContentLength.Is(10),
+	)
+	cat := http.New().WithContext(context.TODO())
+
+	it.Ok(t).
+		If(cat.IO(req)).Should().Equal(nil).
+		If(cat.Request.ContentLength).Equal(int64(10))
+}
+
+func TestHeaderTransferEncoding(t *testing.T) {
+	for val, arr := range map[*[]string]http.Arrow{
+		{"chunked"}:  ø.TransferEncoding.Chunked,
+		{"identity"}: ø.TransferEncoding.Identity,
+		{"gzip"}:     ø.TransferEncoding.Is("gzip"),
+	} {
+		req := http.Join(
+			ø.GET.URL("http://example.com"),
+			arr,
+		)
+		cat := http.New().WithContext(context.TODO())
+
+		it.Ok(t).
+			If(cat.IO(req)).Should().Equal(nil).
+			If(cat.Request.TransferEncoding).Equal((*val))
+	}
+
 }
 
 func TestParams(t *testing.T) {
