@@ -13,6 +13,7 @@ import (
 	"context"
 	"io"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/fogfish/gurl/http"
@@ -230,8 +231,11 @@ func TestSendBytes(t *testing.T) {
 	} {
 		for _, val := range []interface{}{
 			"host=site",
+			strings.NewReader("host=site"),
 			[]byte("host=site"),
 			bytes.NewBuffer([]byte("host=site")),
+			bytes.NewReader([]byte("host=site")),
+			io.NopCloser(bytes.NewBuffer([]byte("host=site"))),
 		} {
 			req := http.Join(
 				ø.GET.URL("https://example.com"),
