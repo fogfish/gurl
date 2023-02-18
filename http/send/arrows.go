@@ -16,88 +16,74 @@ import (
 	"io"
 	"net/url"
 	"reflect"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/fogfish/gurl"
 	"github.com/fogfish/gurl/http"
 )
 
-// Method is base type for HTTP methods
-type Method string
-
-// List of supported built-in method constants
-const (
-	GET    = Method("GET")
-	POST   = Method("POST")
-	PUT    = Method("PUT")
-	DELETE = Method("DELETE")
-	PATCH  = Method("PATCH")
-)
+// Method defines HTTP Method/Verb to the request
+func Method(verb string) http.Arrow {
+	return func(ctx *http.Context) error {
+		ctx.Method = verb
+		return nil
+	}
+}
 
 // Authority is part of URL, use the type to prevent escaping
 type Authority string
 
-// Segment is part of URL, use the type to prevent path escaping
-type Segment string
+// Path is part of URL, use the type to prevent path escaping
+type Path string
 
-// URL defines a mandatory parameters to the request such as
-// HTTP method and destination URI
-func (method Method) URI(addr string) http.Arrow {
-	return func(cat *http.Context) error {
-		switch {
-		case strings.HasPrefix(addr, "http"):
-			req, err := http.NewRequest(string(method), addr)
-			if err != nil {
-				return err
-			}
-
-			cat.Request = req
-		default:
-			return &gurl.NotSupported{URL: addr}
+// URI defines destination URI
+// use Params arrow if you need to supply URL query params.
+func URI(url string, args ...any) http.Arrow {
+	return func(ctx *http.Context) error {
+		if len(args) != 0 {
+			url = mkURI(url, args)
 		}
+
+		if !strings.HasPrefix(url, "http") {
+			return &gurl.NotSupported{URL: url}
+		}
+
+		req, err := http.NewRequest(ctx.Method, url)
+		if err != nil {
+			return err
+		}
+
+		ctx.Request = req
 
 		return nil
 	}
 }
 
-// URL defines a mandatory parameters to the request such as
-// HTTP method and destination URL, use Params arrow if you
-// need to supply URL query params.
-func (method Method) URL(uri string, args ...interface{}) http.Arrow {
-	return func(cat *http.Context) error {
-		addr := mkURL(uri, args...)
-
-		switch {
-		case strings.HasPrefix(addr, "http"):
-			req, err := http.NewRequest(string(method), addr)
-			if err != nil {
-				return err
-			}
-
-			cat.Request = req
-		default:
-			return &gurl.NotSupported{URL: addr}
-		}
-
-		return nil
-	}
-}
-
-func mkURL(uri string, args ...interface{}) string {
-	opts := []interface{}{}
+func mkURI(uri string, args []any) string {
+	opts := []any{}
 	for _, x := range args {
 		switch v := x.(type) {
 		case *url.URL:
 			v.Path = strings.TrimSuffix(v.Path, "/")
 			opts = append(opts, v.String())
-		case *Segment:
+		case *Path:
 			opts = append(opts, *v)
-		case Segment:
+		case Path:
 			opts = append(opts, v)
 		case *Authority:
 			opts = append(opts, *v)
 		case Authority:
 			opts = append(opts, v)
+		case string:
+			opts = append(opts, url.PathEscape(v))
+		case *string:
+			opts = append(opts, url.PathEscape(*v))
+		case int:
+			opts = append(opts, v)
+		case *int:
+			opts = append(opts, *v)
 		default:
 			opts = append(opts, url.PathEscape(urlSegment(x)))
 		}
@@ -106,7 +92,7 @@ func mkURL(uri string, args ...interface{}) string {
 	return fmt.Sprintf(uri, opts...)
 }
 
-func urlSegment(arg interface{}) string {
+func urlSegment(arg any) string {
 	val := reflect.ValueOf(arg)
 
 	if val.Kind() == reflect.Ptr {
@@ -116,159 +102,9 @@ func urlSegment(arg interface{}) string {
 	return fmt.Sprintf("%v", val)
 }
 
-/*
-Header defines HTTP headers to the request, use combinator
-to define multiple header values.
-
-	  http.Do(
-			ø.Header("User-Agent").Is("gurl"),
-			ø.Header("Content-Type").Is(content),
-		)
-*/
-type Header string
-
-/*
-List of supported HTTP header constants
-https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Request_fields
-*/
-const (
-	Accept            = HeaderContent("Accept")
-	AcceptCharset     = Header("Accept-Charset")
-	AcceptEncoding    = Header("Accept-Encoding")
-	AcceptLanguage    = Header("Accept-Language")
-	Authorization     = Header("Authorization")
-	CacheControl      = Header("Cache-Control")
-	Connection        = HeaderConnection("Connection")
-	ContentEncoding   = Header("Content-Encoding")
-	ContentLength     = HeaderContentLength("Content-Length")
-	ContentType       = HeaderContent("Content-Type")
-	Cookie            = Header("Cookie")
-	Date              = Header("Date")
-	Host              = Header("Host")
-	IfMatch           = Header("If-Match")
-	IfModifiedSince   = Header("If-Modified-Since")
-	IfNoneMatch       = Header("If-None-Match")
-	IfRange           = Header("If-Range")
-	IfUnmodifiedSince = Header("If-Unmodified-Since")
-	Origin            = Header("Origin")
-	Range             = Header("Range")
-	TransferEncoding  = HeaderTransferEncoding("Transfer-Encoding")
-	UserAgent         = Header("User-Agent")
-	Upgrade           = Header("Upgrade")
-)
-
-// Is sets value of HTTP header
-func (header Header) Is(value string) http.Arrow {
-	return func(cat *http.Context) error {
-		cat.Request.Header.Add(string(header), value)
-		return nil
-	}
-}
-
-// Content defines headers for content negotiation
-type HeaderContent Header
-
-// ApplicationJSON defines header `???: application/json`
-func (h HeaderContent) ApplicationJSON(cat *http.Context) error {
-	cat.Request.Header.Add(string(h), "application/json")
-	return nil
-}
-
-// JSON defines header `???: application/json`
-func (h HeaderContent) JSON(cat *http.Context) error {
-	cat.Request.Header.Add(string(h), "application/json")
-	return nil
-}
-
-// Form defined Header `???: application/x-www-form-urlencoded`
-func (h HeaderContent) Form(cat *http.Context) error {
-	cat.Request.Header.Add(string(h), "application/x-www-form-urlencoded")
-	return nil
-}
-
-// TextPlain defined Header `???: text/plain`
-func (h HeaderContent) TextPlain(cat *http.Context) error {
-	cat.Request.Header.Add(string(h), "text/plain")
-	return nil
-}
-
-// Text defined Header `???: text/plain`
-func (h HeaderContent) Text(cat *http.Context) error {
-	cat.Request.Header.Add(string(h), "text/plain")
-	return nil
-}
-
-// TextHTML defined Header `???: text/html`
-func (h HeaderContent) TextHTML(cat *http.Context) error {
-	cat.Request.Header.Add(string(h), "text/html")
-	return nil
-}
-
-// HTML defined Header `???: text/html`
-func (h HeaderContent) HTML(cat *http.Context) error {
-	cat.Request.Header.Add(string(h), "text/html")
-	return nil
-}
-
-// Is sets a literval value of HTTP header
-func (h HeaderContent) Is(value string) http.Arrow {
-	return Header(h).Is(value)
-}
-
-// Lifecycle defines headers for connection management
-type HeaderConnection Header
-
-// KeepAlive defines header `???: keep-alive`
-func (h HeaderConnection) KeepAlive(cat *http.Context) error {
-	cat.Request.Header.Add(string(h), "keep-alive")
-	cat.Request.Close = false
-	return nil
-}
-
-// Close defines header `???: close`
-func (h HeaderConnection) Close(cat *http.Context) error {
-	cat.Request.Header.Add(string(h), "close")
-	cat.Request.Close = true
-	return nil
-}
-
-// Header TransferEncoding
-type HeaderTransferEncoding Header
-
-// Chunked defines header `Transfer-Encoding: chunked`
-func (h HeaderTransferEncoding) Chunked(cat *http.Context) error {
-	cat.Request.TransferEncoding = []string{"chunked"}
-	return nil
-}
-
-// Identity defines header `Transfer-Encoding: identity`
-func (h HeaderTransferEncoding) Identity(cat *http.Context) error {
-	cat.Request.TransferEncoding = []string{"identity"}
-	return nil
-}
-
-// Is sets a literval value of HTTP header
-func (h HeaderTransferEncoding) Is(value string) http.Arrow {
-	return func(cat *http.Context) error {
-		cat.Request.TransferEncoding = strings.Split(value, ",")
-		return nil
-	}
-}
-
-// Header Content-Length
-type HeaderContentLength Header
-
-// Is sets a literval value of HTTP header
-func (h HeaderContentLength) Is(value int64) http.Arrow {
-	return func(cat *http.Context) error {
-		cat.Request.ContentLength = value
-		return nil
-	}
-}
-
 // Params appends query params to request URL. The arrow takes a struct and
 // converts it to map[string]string. The function fails if input is not convertable
-// to map of strings (e.g. nested struct).
+// to map of strings (e.g. contains nested struct).
 func Params[T any](query T) http.Arrow {
 	return func(cat *http.Context) error {
 		bytes, err := json.Marshal(query)
@@ -294,15 +130,216 @@ func Params[T any](query T) http.Arrow {
 	}
 }
 
-/*
-Send payload to destination URL. You can also use native Go data types
-(e.g. maps, struct, etc) as egress payload. The library implicitly encodes
-input structures to binary using Content-Type as a hint. The function fails
-if content type is not supported by the library.
+// Param appends query params to request URL.
+func Param(key string, val string) http.Arrow {
+	return func(ctx *http.Context) error {
+		uri := ctx.Request.URL
+		q := uri.Query()
+		q.Add(key, val)
+		uri.RawQuery = q.Encode()
+		ctx.Request.URL = uri
 
-The function accept a "classical" data container such as string, []bytes or
-io.Reader interfaces.
-*/
+		return nil
+	}
+}
+
+// Header defines HTTP headers to the request
+//
+//	ø.Header("User-Agent", "gurl"),
+func Header[T http.ReadableHeaderValues](header string, value T) http.Arrow {
+	return HeaderOf[T](header).Set(value)
+}
+
+// Type of HTTP Header
+//
+//	const Host = HeaderOf[string]("Host")
+//	ø.Host.Set("example.com")
+type HeaderOf[T http.ReadableHeaderValues] string
+
+// Sets value of HTTP header
+func (h HeaderOf[T]) Set(value T) http.Arrow {
+	switch v := any(value).(type) {
+	case string:
+		return func(cat *http.Context) error {
+			cat.Request.Header.Add(string(h), v)
+			return nil
+		}
+	case int:
+		return func(cat *http.Context) error {
+			cat.Request.Header.Add(string(h), strconv.Itoa(v))
+			return nil
+		}
+	case time.Time:
+		return func(cat *http.Context) error {
+			cat.Request.Header.Add(string(h), v.UTC().Format(time.RFC1123))
+			return nil
+		}
+	default:
+		panic("invalid type")
+	}
+}
+
+// Type of HTTP Header, Content-Type enumeration
+//
+//	const ContentType = HeaderEnumContent("Content-Type")
+//	ø.ContentType.JSON
+type HeaderEnumContent string
+
+// Sets value of HTTP header
+func (h HeaderEnumContent) Set(value string) http.Arrow {
+	return func(cat *http.Context) error {
+		cat.Request.Header.Add(string(h), value)
+		return nil
+	}
+}
+
+// ApplicationJSON defines header `???: application/json`
+func (h HeaderEnumContent) ApplicationJSON(cat *http.Context) error {
+	cat.Request.Header.Add(string(h), "application/json")
+	return nil
+}
+
+// JSON defines header `???: application/json`
+func (h HeaderEnumContent) JSON(cat *http.Context) error {
+	cat.Request.Header.Add(string(h), "application/json")
+	return nil
+}
+
+// Form defined Header `???: application/x-www-form-urlencoded`
+func (h HeaderEnumContent) Form(cat *http.Context) error {
+	cat.Request.Header.Add(string(h), "application/x-www-form-urlencoded")
+	return nil
+}
+
+// TextPlain defined Header `???: text/plain`
+func (h HeaderEnumContent) TextPlain(cat *http.Context) error {
+	cat.Request.Header.Add(string(h), "text/plain")
+	return nil
+}
+
+// Text defined Header `???: text/plain`
+func (h HeaderEnumContent) Text(cat *http.Context) error {
+	cat.Request.Header.Add(string(h), "text/plain")
+	return nil
+}
+
+// TextHTML defined Header `???: text/html`
+func (h HeaderEnumContent) TextHTML(cat *http.Context) error {
+	cat.Request.Header.Add(string(h), "text/html")
+	return nil
+}
+
+// HTML defined Header `???: text/html`
+func (h HeaderEnumContent) HTML(cat *http.Context) error {
+	cat.Request.Header.Add(string(h), "text/html")
+	return nil
+}
+
+// Type of HTTP Header, Connection enumeration
+//
+//	const Connection = HeaderEnumConnection("Connection")
+//	ø.Connection.KeepAlive
+type HeaderEnumConnection string
+
+// Sets value of HTTP header
+func (h HeaderEnumConnection) Set(value string) http.Arrow {
+	return func(cat *http.Context) error {
+		cat.Request.Header.Add(string(h), value)
+		return nil
+	}
+}
+
+// KeepAlive defines header `???: keep-alive`
+func (h HeaderEnumConnection) KeepAlive(cat *http.Context) error {
+	cat.Request.Header.Add(string(h), "keep-alive")
+	cat.Request.Close = false
+	return nil
+}
+
+// Close defines header `???: close`
+func (h HeaderEnumConnection) Close(cat *http.Context) error {
+	cat.Request.Header.Add(string(h), "close")
+	cat.Request.Close = true
+	return nil
+}
+
+// Type of HTTP Header, Transfer-Encoding enumeration
+//
+//	const TransferEncoding = HeaderEnumTransferEncoding("Transfer-Encoding")
+//	ø.TransferEncoding.Chunked
+type HeaderEnumTransferEncoding string
+
+// Sets value of HTTP header
+func (h HeaderEnumTransferEncoding) Set(value string) http.Arrow {
+	return func(cat *http.Context) error {
+		cat.Request.TransferEncoding = strings.Split(value, ",")
+		return nil
+	}
+}
+
+// Chunked defines header `Transfer-Encoding: chunked`
+func (h HeaderEnumTransferEncoding) Chunked(cat *http.Context) error {
+	cat.Request.TransferEncoding = []string{"chunked"}
+	return nil
+}
+
+// Identity defines header `Transfer-Encoding: identity`
+func (h HeaderEnumTransferEncoding) Identity(cat *http.Context) error {
+	cat.Request.TransferEncoding = []string{"identity"}
+	return nil
+}
+
+// Header Content-Length
+//
+//	const ContentLength = HeaderEnumContentLength("Content-Length")
+//	ø.ContentLength.Set(1024)
+type HeaderEnumContentLength string
+
+// Is sets a literal value of HTTP header
+func (h HeaderEnumContentLength) Set(value int64) http.Arrow {
+	return func(cat *http.Context) error {
+		cat.Request.ContentLength = value
+		return nil
+	}
+}
+
+// List of supported HTTP header constants
+// https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Request_fields
+const (
+	Accept            = HeaderEnumContent("Accept")
+	AcceptCharset     = HeaderOf[string]("Accept-Charset")
+	AcceptEncoding    = HeaderOf[string]("Accept-Encoding")
+	AcceptLanguage    = HeaderOf[string]("Accept-Language")
+	Authorization     = HeaderOf[string]("Authorization")
+	CacheControl      = HeaderOf[string]("Cache-Control")
+	Connection        = HeaderEnumConnection("Connection")
+	ContentEncoding   = HeaderOf[string]("Content-Encoding")
+	ContentLength     = HeaderEnumContentLength("Content-Length")
+	ContentType       = HeaderEnumContent("Content-Type")
+	Cookie            = HeaderOf[string]("Cookie")
+	Date              = HeaderOf[time.Time]("Date")
+	From              = HeaderOf[string]("From")
+	Host              = HeaderOf[string]("Host")
+	IfMatch           = HeaderOf[string]("If-Match")
+	IfModifiedSince   = HeaderOf[time.Time]("If-Modified-Since")
+	IfNoneMatch       = HeaderOf[string]("If-None-Match")
+	IfRange           = HeaderOf[string]("If-Range")
+	IfUnmodifiedSince = HeaderOf[time.Time]("If-Unmodified-Since")
+	Origin            = HeaderOf[string]("Origin")
+	Range             = HeaderOf[string]("Range")
+	Referer           = HeaderOf[string]("Referer")
+	TransferEncoding  = HeaderEnumTransferEncoding("Transfer-Encoding")
+	UserAgent         = HeaderOf[string]("User-Agent")
+	Upgrade           = HeaderOf[string]("Upgrade")
+)
+
+// Send payload to destination URL. You can also use native Go data types
+// (e.g. maps, struct, etc) as egress payload. The library implicitly encodes
+// input structures to binary using Content-Type as a hint. The function fails
+// if content type is not supported by the library.
+//
+// The function accept a "classical" data container such as string, []bytes or
+// io.Reader interfaces.
 func Send(data interface{}) http.Arrow {
 	return func(cat *http.Context) error {
 		chunked := cat.Request.Header.Get(string(TransferEncoding)) == "chunked"

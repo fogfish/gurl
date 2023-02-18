@@ -13,7 +13,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ajg/form"
 	"github.com/fogfish/gurl"
@@ -45,30 +47,32 @@ func Code(code ...http.StatusCode) http.Arrow {
 
 func hasCode(s []http.StatusCode, e int) bool {
 	for _, a := range s {
-		if a.Value() == e {
+		if a.StatusCode() == e {
 			return true
 		}
 	}
 	return false
 }
 
-/*
-StatusCode is a warpper type over http.StatusCode
-
-	  http.Join(
-			...
-			ƒ.Code(http.StatusOK),
-		)
-
-		so that response code is matched using constant
-		http.Join(
-			...
-			ƒ.Status.OK,
-		)
-*/
+// StatusCode is a warpper type over http.StatusCode
+//
+//	http.Join(
+//		...
+//		ƒ.Code(http.StatusOK),
+//	)
+//
+// so that response code is matched using constant
+//
+//	http.Join(
+//		...
+//		ƒ.Status.OK,
+//	)
 type StatusCode int
 
 // Status is collection of constants for HTTP Status Code checks
+//
+//	ƒ.Status.OK
+//	ƒ.Status.NotFound
 const Status = StatusCode(0)
 
 func (StatusCode) eval(code http.StatusCode, cat *http.Context) error {
@@ -302,62 +306,9 @@ TODO:
 	NetworkAuthenticationRequired
 */
 
-// Header matches presence of header in the response or match its entire content.
-// The execution fails with BadMatchHead if the matched value do not meet expectations.
-//
-//	  http.Join(
-//			...
-//			ƒ.ContentType.JSON,
-//			ƒ.ContentEncoding.Is(...),
-//		)
-type Header string
-
-// List of supported HTTP header constants
-// https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Response_fields
-const (
-	CacheControl     = Header("Cache-Control")
-	Connection       = Header("Connection")
-	ContentEncoding  = Header("Content-Encoding")
-	ContentLanguage  = Header("Content-Language")
-	ContentLength    = Header("Content-Length")
-	ContentType      = Content("Content-Type")
-	Date             = Header("Date")
-	ETag             = Header("ETag")
-	Expires          = Header("Expires")
-	LastModified     = Header("Last-Modified")
-	Link             = Header("Link")
-	Location         = Header("Location")
-	Server           = Header("Server")
-	SetCookie        = Header("Set-Cookie")
-	TransferEncoding = Header("Transfer-Encoding")
-)
-
-// Is matches value of HTTP header, Use wildcard string ("*") to match any header value
-func (header Header) Is(value string) http.Arrow {
-	return func(cat *http.Context) error {
-		return header.Match(cat, value)
-	}
-}
-
-// To matches a header value to closed variable of string type.
-func (header Header) To(value *string) http.Arrow {
-	return func(cat *http.Context) error {
-		val := cat.Response.Header.Get(string(header))
-		if val == "" {
-			return &gurl.NoMatch{
-				Diff:    fmt.Sprintf("- %s: *", string(header)),
-				Payload: nil,
-			}
-		}
-
-		*value = val
-		return nil
-	}
-}
-
-// Match is combinator to check HTTP header value
-func (header Header) Match(cat *http.Context, value string) error {
-	h := cat.Response.Header.Get(string(header))
+// helper function to match HTTP header to value
+func match(ctx *http.Context, header string, value string) error {
+	h := ctx.Response.Header.Get(string(header))
 	if h == "" {
 		return &gurl.NoMatch{
 			Diff:    fmt.Sprintf("- %s: %s", string(header), value),
@@ -375,63 +326,265 @@ func (header Header) Match(cat *http.Context, value string) error {
 	return nil
 }
 
-// Any matches a header value, syntax sugar of Header(...).Is("*")
-func (header Header) Any(cat *http.Context) error {
-	return header.Match(cat, "*")
+// helper function to lift header value to string
+func liftString(ctx *http.Context, header string, value *string) error {
+	val := ctx.Response.Header.Get(string(header))
+	if val == "" {
+		return &gurl.NoMatch{
+			Diff:    fmt.Sprintf("- %s: *", string(header)),
+			Payload: nil,
+		}
+	}
+
+	*value = val
+	return nil
 }
 
-// Content defines headers for content negotiation
-type Content Header
+func liftInt(ctx *http.Context, header string, value *int) error {
+	val := ctx.Response.Header.Get(string(header))
+	if val == "" {
+		return &gurl.NoMatch{
+			Diff:    fmt.Sprintf("- %s: *", string(header)),
+			Payload: nil,
+		}
+	}
 
-// ApplicationJSON matches header `???: application/json`
-func (h Content) ApplicationJSON(cat *http.Context) error {
-	return Header(h).Match(cat, "application/json")
+	num, err := strconv.Atoi(val)
+	if err != nil {
+		return err
+	}
+
+	*value = num
+	return nil
 }
 
-// JSON matches header `???: application/json`
-func (h Content) JSON(cat *http.Context) error {
-	return Header(h).Match(cat, "application/json")
+func liftTime(ctx *http.Context, header string, value *time.Time) error {
+	val := ctx.Response.Header.Get(string(header))
+	if val == "" {
+		return &gurl.NoMatch{
+			Diff:    fmt.Sprintf("- %s: *", string(header)),
+			Payload: nil,
+		}
+	}
+
+	t, err := time.Parse(time.RFC1123, val)
+	if err != nil {
+		return err
+	}
+
+	*value = t
+	return nil
 }
 
-// Form matches Header `???: application/x-www-form-urlencoded`
-func (h Content) Form(cat *http.Context) error {
-	return Header(h).Match(cat, "application/x-www-form-urlencoded")
+func Header[T http.MatchableHeaderValues](header string, value T) http.Arrow {
+	switch v := any(value).(type) {
+	case string:
+		return HeaderOf[string](header).Is(v)
+	case int:
+		return HeaderOf[int](header).Is(v)
+	case time.Time:
+		return HeaderOf[time.Time](header).Is(v)
+	case *string:
+		return HeaderOf[string](header).To(v)
+	case *int:
+		return HeaderOf[int](header).To(v)
+	case *time.Time:
+		return HeaderOf[time.Time](header).To(v)
+	default:
+		panic("invalid type")
+	}
 }
 
-// TextPlain matches Header `???: text/plain`
-func (h Content) TextPlain(cat *http.Context) error {
-	return Header(h).Match(cat, "text/plain")
+// Header matches presence of header in the response or match its entire content.
+// The execution fails with BadMatchHead if the matched value do not meet expectations.
+//
+//	  http.Join(
+//			...
+//			ƒ.ContentType.JSON,
+//			ƒ.ContentEncoding.Is(...),
+//		)
+type HeaderOf[T http.ReadableHeaderValues] string
+
+// Sets value of HTTP header
+func (h HeaderOf[T]) Is(value T) http.Arrow {
+	switch v := any(value).(type) {
+	case string:
+		return func(ctx *http.Context) error {
+			return match(ctx, string(h), v)
+		}
+	case int:
+		return func(ctx *http.Context) error {
+			return match(ctx, string(h), strconv.Itoa(v))
+		}
+	case time.Time:
+		return func(ctx *http.Context) error {
+			return match(ctx, string(h), v.UTC().Format(time.RFC1123))
+		}
+	default:
+		panic("invalid type")
+	}
 }
 
-// Text matches Header `???: text/plain`
-func (h Content) Text(cat *http.Context) error {
-	return Header(h).Match(cat, "text/plain")
+// Sets value of HTTP header
+func (h HeaderOf[T]) To(value *T) http.Arrow {
+	switch v := any(value).(type) {
+	case *string:
+		return func(ctx *http.Context) error {
+			return liftString(ctx, string(h), v)
+		}
+	case *int:
+		return func(ctx *http.Context) error {
+			return liftInt(ctx, string(h), v)
+		}
+	case *time.Time:
+		return func(ctx *http.Context) error {
+			return liftTime(ctx, string(h), v)
+		}
+	default:
+		panic("invalid type")
+	}
 }
 
-// TextHTML matches Header `???: text/html`
-func (h Content) TextHTML(cat *http.Context) error {
-	return Header(h).Match(cat, "text/html")
+// Type of HTTP Header, Content-Type enumeration
+//
+//	const ContentType = HeaderEnumContent("Content-Type")
+//	ƒ.ContentType.JSON
+type HeaderEnumContent string
+
+// Matches value of HTTP header
+func (h HeaderEnumContent) Is(value string) http.Arrow {
+	return func(ctx *http.Context) error {
+		return match(ctx, string(h), value)
+	}
 }
 
-// HTML matches Header `???: text/html`
-func (h Content) HTML(cat *http.Context) error {
-	return Header(h).Match(cat, "text/html")
+// Matches value of HTTP header
+func (h HeaderEnumContent) To(value *string) http.Arrow {
+	return func(ctx *http.Context) error {
+		return liftString(ctx, string(h), value)
+	}
 }
 
-// Any matches a header value `???: *`
-func (h Content) Any(cat *http.Context) error {
-	return Header(h).Match(cat, "*")
+// ApplicationJSON defines header `???: application/json`
+func (h HeaderEnumContent) ApplicationJSON(ctx *http.Context) error {
+	return match(ctx, string(h), "application/json")
 }
 
-// Is matches value of HTTP header, Use wildcard string ("*") to match any header value
-func (h Content) Is(value string) http.Arrow {
-	return Header(h).Is(value)
+// JSON defines header `???: application/json`
+func (h HeaderEnumContent) JSON(ctx *http.Context) error {
+	return match(ctx, string(h), "application/json")
 }
 
-// String matches a header value to closed variable of string type.
-func (h Content) To(value *string) http.Arrow {
-	return Header(h).To(value)
+// Form defined Header `???: application/x-www-form-urlencoded`
+func (h HeaderEnumContent) Form(ctx *http.Context) error {
+	return match(ctx, string(h), "application/x-www-form-urlencoded")
 }
+
+// TextPlain defined Header `???: text/plain`
+func (h HeaderEnumContent) TextPlain(ctx *http.Context) error {
+	return match(ctx, string(h), "text/plain")
+}
+
+// Text defined Header `???: text/plain`
+func (h HeaderEnumContent) Text(ctx *http.Context) error {
+	return match(ctx, string(h), "text/plain")
+}
+
+// TextHTML defined Header `???: text/html`
+func (h HeaderEnumContent) TextHTML(ctx *http.Context) error {
+	return match(ctx, string(h), "text/html")
+}
+
+// HTML defined Header `???: text/html`
+func (h HeaderEnumContent) HTML(ctx *http.Context) error {
+	return match(ctx, string(h), "text/html")
+}
+
+// Type of HTTP Header, Connection enumeration
+//
+//	const Connection = HeaderEnumConnection("Connection")
+//	ƒ.Connection.KeepAlive
+type HeaderEnumConnection string
+
+// Matches value of HTTP header
+func (h HeaderEnumConnection) Is(value string) http.Arrow {
+	return func(ctx *http.Context) error {
+		return match(ctx, string(h), value)
+	}
+}
+
+// Matches value of HTTP header
+func (h HeaderEnumConnection) To(value *string) http.Arrow {
+	return func(ctx *http.Context) error {
+		return liftString(ctx, string(h), value)
+	}
+}
+
+// KeepAlive defines header `???: keep-alive`
+func (h HeaderEnumConnection) KeepAlive(ctx *http.Context) error {
+	return match(ctx, string(h), "keep-alive")
+}
+
+// Close defines header `???: close`
+func (h HeaderEnumConnection) Close(ctx *http.Context) error {
+	return match(ctx, string(h), "close")
+}
+
+// Type of HTTP Header, Transfer-Encoding enumeration
+//
+//	const TransferEncoding = HeaderEnumTransferEncoding("Transfer-Encoding")
+//	ƒ.TransferEncoding.Chunked
+type HeaderEnumTransferEncoding string
+
+// Matches value of HTTP header
+func (h HeaderEnumTransferEncoding) Is(value string) http.Arrow {
+	return func(ctx *http.Context) error {
+		return match(ctx, string(h), value)
+	}
+}
+
+// Matches value of HTTP header
+func (h HeaderEnumTransferEncoding) To(value *string) http.Arrow {
+	return func(ctx *http.Context) error {
+		return liftString(ctx, string(h), value)
+	}
+}
+
+// Chunked defines header `Transfer-Encoding: chunked`
+func (h HeaderEnumTransferEncoding) Chunked(ctx *http.Context) error {
+	return match(ctx, string(h), "chunked")
+}
+
+// Identity defines header `Transfer-Encoding: identity`
+func (h HeaderEnumTransferEncoding) Identity(ctx *http.Context) error {
+	return match(ctx, string(h), "identity")
+}
+
+// List of supported HTTP header constants
+// https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Response_fields
+const (
+	Age              = HeaderOf[int]("Age")
+	CacheControl     = HeaderOf[string]("Cache-Control")
+	Connection       = HeaderEnumConnection("Connection")
+	ContentEncoding  = HeaderOf[string]("Content-Encoding")
+	ContentLanguage  = HeaderOf[string]("Content-Language")
+	ContentLength    = HeaderOf[int]("Content-Length")
+	ContentLocation  = HeaderOf[string]("Content-Location")
+	ContentMD5       = HeaderOf[string]("Content-MD5")
+	ContentRange     = HeaderOf[string]("Content-Range")
+	ContentType      = HeaderEnumContent("Content-Type")
+	Date             = HeaderOf[time.Time]("Date")
+	ETag             = HeaderOf[string]("ETag")
+	Expires          = HeaderOf[time.Time]("Expires")
+	LastModified     = HeaderOf[time.Time]("Last-Modified")
+	Link             = HeaderOf[string]("Link")
+	Location         = HeaderOf[string]("Location")
+	RetryAfter       = HeaderOf[time.Time]("Retry-After")
+	Server           = HeaderOf[string]("Server")
+	SetCookie        = HeaderOf[string]("Set-Cookie")
+	TransferEncoding = HeaderEnumTransferEncoding("Transfer-Encoding")
+	Via              = HeaderOf[string]("Via")
+)
 
 // Recv applies auto decoders for response and returns either binary or
 // native Go data structure. The Content-Type header give a hint to decoder.

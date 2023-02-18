@@ -18,22 +18,23 @@ import (
 	µ "github.com/fogfish/gurl/http"
 	ƒ "github.com/fogfish/gurl/http/recv"
 	ø "github.com/fogfish/gurl/http/send"
-	"github.com/fogfish/it"
+	"github.com/fogfish/it/v2"
 )
 
 func TestJoin(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/ok"),
+	req := µ.GET(
+		ø.URI("%s/ok", ø.Authority(ts.URL)),
 		ƒ.Code(µ.StatusOK),
 	)
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
 
-	it.Ok(t).
-		If(err).Should().Equal(nil)
+	it.Then(t).Should(
+		it.Nil(err),
+	)
 }
 
 func TestJoinCats(t *testing.T) {
@@ -41,20 +42,21 @@ func TestJoinCats(t *testing.T) {
 	defer ts.Close()
 
 	req := µ.Join(
-		µ.Join(
-			ø.GET.URL(ts.URL+"/ok"),
+		µ.GET(
+			ø.URI("%s/ok", ø.Authority(ts.URL)),
 			ƒ.Status.OK,
 		),
-		µ.Join(
-			ø.GET.URL(ts.URL),
+		µ.GET(
+			ø.URI(ts.URL),
 			ƒ.Code(µ.StatusBadRequest),
 		),
 	)
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
 
-	it.Ok(t).
-		If(err).Should().Equal(nil)
+	it.Then(t).Should(
+		it.Nil(err),
+	)
 }
 
 func TestIOWithContext(t *testing.T) {
@@ -62,15 +64,17 @@ func TestIOWithContext(t *testing.T) {
 	defer ts.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/ok"),
+	req := µ.GET(
+		ø.URI("%s/ok", ø.Authority(ts.URL)),
 		ƒ.Status.OK,
 	)
 
 	cat := µ.New()
 	err := cat.IO(ctx, req)
-	it.Ok(t).
-		If(err).ShouldNot().Equal(nil)
+
+	it.Then(t).ShouldNot(
+		it.Nil(err),
+	)
 
 	cancel()
 }
@@ -80,8 +84,8 @@ func TestIOWithContextCancel(t *testing.T) {
 	defer ts.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Nanosecond)
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/ok"),
+	req := µ.GET(
+		ø.URI("%s/ok", ø.Authority(ts.URL)),
 		ƒ.Status.OK,
 	)
 
@@ -89,8 +93,9 @@ func TestIOWithContextCancel(t *testing.T) {
 	cancel()
 	err := cat.IO(ctx, req)
 
-	it.Ok(t).
-		If(err).ShouldNot().Equal(nil)
+	it.Then(t).ShouldNot(
+		it.Nil(err),
+	)
 }
 
 func mock() *httptest.Server {

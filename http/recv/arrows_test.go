@@ -19,39 +19,43 @@ import (
 	µ "github.com/fogfish/gurl/http"
 	ƒ "github.com/fogfish/gurl/http/recv"
 	ø "github.com/fogfish/gurl/http/send"
-	"github.com/fogfish/it"
+	"github.com/fogfish/it/v2"
 )
 
 func TestCodeOk(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/json"),
+	req := µ.GET(
+		ø.URI("%s/json", ø.Authority(ts.URL)),
 		ø.Accept.JSON,
 		ƒ.Code(µ.StatusOK),
 	)
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
 
-	it.Ok(t).
-		If(err).Should().Equal(nil)
+	it.Then(t).Should(
+		it.Nil(err),
+	)
 }
 
 func TestCodeNoMatch(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/other"),
+	req := µ.GET(
+		ø.URI("%s/other", ø.Authority(ts.URL)),
 		ø.Accept.JSON,
 		ƒ.Status.OK,
 	)
 	cat := µ.New()
-	err := cat.IO(context.Background(), req)
+	var err interface{ StatusCode() int }
+	f := func() error { return cat.IO(context.Background(), req) }
 
-	it.Ok(t).
-		If(err).Should().Be().Like(µ.StatusBadRequest)
+	it.Then(t).Should(
+		it.Fail(f).With(&err),
+		it.Equal(err.(µ.StatusCode).StatusCode(), µ.StatusBadRequest.StatusCode()),
+	)
 }
 
 func TestStatusCodes(t *testing.T) {
@@ -98,15 +102,16 @@ func TestStatusCodes(t *testing.T) {
 		µ.StatusGatewayTimeout:          ƒ.Status.GatewayTimeout,
 		µ.StatusHTTPVersionNotSupported: ƒ.Status.HTTPVersionNotSupported,
 	} {
-		req := µ.Join(
-			ø.GET.URL("%s/code/%s", ø.Authority(ts.URL), code.Value()),
+		req := µ.GET(
+			ø.URI("%s/code/%d", ø.Authority(ts.URL), code.StatusCode()),
 			check,
 		)
 		cat := µ.New()
 		err := cat.IO(context.Background(), req)
 
-		it.Ok(t).
-			If(err).Should().Equal(nil)
+		it.Then(t).Should(
+			it.Nil(err),
+		)
 	}
 }
 
@@ -114,8 +119,8 @@ func TestHeaderOk(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/json"),
+	req := µ.GET(
+		ø.URI("%s/json", ø.Authority(ts.URL)),
 		ø.Accept.JSON,
 		ƒ.Status.OK,
 		ƒ.ContentType.JSON,
@@ -123,26 +128,28 @@ func TestHeaderOk(t *testing.T) {
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
 
-	it.Ok(t).
-		If(err).Should().Equal(nil)
+	it.Then(t).Should(
+		it.Nil(err),
+	)
 }
 
 func TestHeaderAny(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/json"),
+	req := µ.GET(
+		ø.URI("%s/json", ø.Authority(ts.URL)),
 		ø.Accept.JSON,
 		ƒ.Status.OK,
 		ƒ.ContentType.Is("*"),
-		ƒ.Header("Content-Type").Any,
+		ƒ.Header("Content-Type", "*"),
 	)
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
 
-	it.Ok(t).
-		If(err).Should().Equal(nil)
+	it.Then(t).Should(
+		it.Nil(err),
+	)
 }
 
 func TestHeaderVal(t *testing.T) {
@@ -150,8 +157,8 @@ func TestHeaderVal(t *testing.T) {
 	defer ts.Close()
 
 	var content string
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/json"),
+	req := µ.GET(
+		ø.URI("%s/json", ø.Authority(ts.URL)),
 		ø.Accept.JSON,
 		ƒ.Status.OK,
 		ƒ.ContentType.To(&content),
@@ -159,17 +166,18 @@ func TestHeaderVal(t *testing.T) {
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
 
-	it.Ok(t).
-		If(err).Should().Equal(nil).
-		If(content).Should().Equal("application/json")
+	it.Then(t).Should(
+		it.Nil(err),
+		it.Equal(content, "application/json"),
+	)
 }
 
 func TestHeaderMismatch(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/json"),
+	req := µ.GET(
+		ø.URI("%s/json", ø.Authority(ts.URL)),
 		ø.Accept.JSON,
 		ƒ.Status.OK,
 		ƒ.ContentType.Is("foo/bar"),
@@ -177,25 +185,27 @@ func TestHeaderMismatch(t *testing.T) {
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
 
-	it.Ok(t).
-		If(err).ShouldNot().Equal(nil)
+	it.Then(t).ShouldNot(
+		it.Nil(err),
+	)
 }
 
 func TestHeaderUndefinedWithLit(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/json"),
+	req := µ.GET(
+		ø.URI("%s/json", ø.Authority(ts.URL)),
 		ø.Accept.JSON,
 		ƒ.Status.OK,
-		ƒ.Header("x-content-type").Is("foo/bar"),
+		ƒ.Header("x-content-type", "foo/bar"),
 	)
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
 
-	it.Ok(t).
-		If(err).ShouldNot().Equal(nil)
+	it.Then(t).ShouldNot(
+		it.Nil(err),
+	)
 }
 
 func TestHeaderUndefinedWithVal(t *testing.T) {
@@ -203,17 +213,18 @@ func TestHeaderUndefinedWithVal(t *testing.T) {
 	defer ts.Close()
 
 	var val string
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/json"),
+	req := µ.GET(
+		ø.URI("%s/json", ø.Authority(ts.URL)),
 		ø.Accept.JSON,
 		ƒ.Status.OK,
-		ƒ.Header("x-content-type").To(&val),
+		ƒ.Header("x-content-type", &val),
 	)
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
 
-	it.Ok(t).
-		If(err).ShouldNot().Equal(nil)
+	it.Then(t).ShouldNot(
+		it.Nil(err),
+	)
 }
 
 func TestRecvJSON(t *testing.T) {
@@ -225,8 +236,8 @@ func TestRecvJSON(t *testing.T) {
 	defer ts.Close()
 
 	var site Site
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/json"),
+	req := µ.GET(
+		ø.URI("%s/json", ø.Authority(ts.URL)),
 		ƒ.Status.OK,
 		ƒ.ContentType.JSON,
 		ƒ.Recv(&site),
@@ -234,9 +245,10 @@ func TestRecvJSON(t *testing.T) {
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
 
-	it.Ok(t).
-		If(err).Should().Equal(nil).
-		If(site.Site).Should().Equal("example.com")
+	it.Then(t).Should(
+		it.Nil(err),
+		it.Equal(site.Site, "example.com"),
+	)
 }
 
 func TestRecvForm(t *testing.T) {
@@ -248,8 +260,8 @@ func TestRecvForm(t *testing.T) {
 	defer ts.Close()
 
 	var site Site
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/form"),
+	req := µ.GET(
+		ø.URI("%s/form", ø.Authority(ts.URL)),
 		ƒ.Status.OK,
 		ƒ.ContentType.Form,
 		ƒ.Recv(&site),
@@ -257,9 +269,10 @@ func TestRecvForm(t *testing.T) {
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
 
-	it.Ok(t).
-		If(err).Should().Equal(nil).
-		If(site.Site).Should().Equal("example.com")
+	it.Then(t).Should(
+		it.Nil(err),
+		it.Equal(site.Site, "example.com"),
+	)
 }
 
 func TestRecvBytes(t *testing.T) {
@@ -272,8 +285,8 @@ func TestRecvBytes(t *testing.T) {
 	} {
 
 		var data []byte
-		req := µ.Join(
-			ø.GET.URL(ts.URL+path),
+		req := µ.GET(
+			ø.URI(ts.URL+path),
 			ƒ.Status.OK,
 			content,
 			ƒ.Bytes(&data),
@@ -281,9 +294,10 @@ func TestRecvBytes(t *testing.T) {
 		cat := µ.New()
 		err := cat.IO(context.Background(), req)
 
-		it.Ok(t).
-			If(err).Should().Equal(nil).
-			If(string(data)).Should().Equal("site=example.com")
+		it.Then(t).Should(
+			it.Nil(err),
+			it.Equal(string(data), "site=example.com"),
+		)
 	}
 }
 
