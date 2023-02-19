@@ -43,6 +43,25 @@ func TestMethod(t *testing.T) {
 	}
 }
 
+func TestStackOptions(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	req := µ.GET(
+		ø.URI("%s/ok", ø.Authority(ts.URL)),
+		ƒ.Code(µ.StatusOK),
+	)
+	cat := µ.New(
+		µ.CookieJar(),
+		µ.InsecureTLS(),
+	)
+	err := cat.IO(context.Background(), req)
+
+	it.Then(t).Should(
+		it.Nil(err),
+	)
+}
+
 func TestJoin(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
