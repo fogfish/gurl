@@ -21,6 +21,28 @@ import (
 	"github.com/fogfish/it/v2"
 )
 
+func TestMethod(t *testing.T) {
+	cat := µ.New()
+
+	for expect, method := range map[string]func(arrows ...µ.Arrow) µ.Arrow{
+		"GET":     µ.GET,
+		"HEAD":    µ.HEAD,
+		"POST":    µ.POST,
+		"PUT":     µ.PUT,
+		"DELETE":  µ.DELETE,
+		"PATCH":   µ.PATCH,
+		"OPTIONS": func(arrows ...µ.Arrow) µ.Arrow { return µ.Join(ø.Method("OPTIONS"), µ.Join(arrows...)) },
+	} {
+		cat := cat.WithContext(context.Background())
+		err := cat.IO(method(ø.URI("https://example.com")))
+		it.Then(t).Should(
+			it.Nil(err),
+			it.Equal(cat.Method, expect),
+			it.Equal(cat.Request.Method, expect),
+		)
+	}
+}
+
 func TestJoin(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
