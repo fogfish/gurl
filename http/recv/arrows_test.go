@@ -263,6 +263,7 @@ func TestRecvJSON(t *testing.T) {
 	req := µ.GET(
 		ø.URI("%s/json", ø.Authority(ts.URL)),
 		ƒ.Status.OK,
+		ƒ.ContentType.ApplicationJSON,
 		ƒ.ContentType.JSON,
 		ƒ.Recv(&site),
 	)
@@ -304,8 +305,10 @@ func TestRecvBytes(t *testing.T) {
 	defer ts.Close()
 
 	for path, content := range map[string]µ.Arrow{
-		"/text": ƒ.ContentType.Text,
-		"/html": ƒ.ContentType.HTML,
+		"/text":   ƒ.ContentType.Text,
+		"/text/1": ƒ.ContentType.TextPlain,
+		"/html":   ƒ.ContentType.HTML,
+		"/html/2": ƒ.ContentType.TextHTML,
 	} {
 
 		var data []byte
@@ -329,18 +332,18 @@ func mock() *httptest.Server {
 	return httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch {
-			case r.URL.Path == "/json":
+			case strings.HasPrefix(r.URL.Path, "/json"):
 				w.Header().Add("Content-Type", "application/json")
 				w.Header().Add("Date", "Wed, 01 Feb 2023 10:20:30 UTC")
 				w.Header().Add("X-Value", "1024")
 				w.Write([]byte(`{"site": "example.com"}`))
-			case r.URL.Path == "/form":
+			case strings.HasPrefix(r.URL.Path, "/form"):
 				w.Header().Add("Content-Type", "application/x-www-form-urlencoded")
 				w.Write([]byte("site=example.com"))
-			case r.URL.Path == "/text":
+			case strings.HasPrefix(r.URL.Path, "/text"):
 				w.Header().Add("Content-Type", "text/plain")
 				w.Write([]byte("site=example.com"))
-			case r.URL.Path == "/html":
+			case strings.HasPrefix(r.URL.Path, "/html"):
 				w.Header().Add("Content-Type", "text/html")
 				w.Write([]byte("site=example.com"))
 			case r.URL.Path == "/code/301":
