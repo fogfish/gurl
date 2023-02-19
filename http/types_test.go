@@ -98,10 +98,54 @@ func TestIOWithContextCancel(t *testing.T) {
 	)
 }
 
+func TestIO(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	type Site struct {
+		Site string `json:"site"`
+	}
+
+	cat := µ.New()
+
+	t.Run("JSON", func(t *testing.T) {
+		val, err := µ.IO[Site](cat.WithContext(context.Background()),
+			µ.GET(
+				ø.URI("%s/json", ø.Authority(ts.URL)),
+				ƒ.Status.OK,
+			),
+		)
+		it.Then(t).Should(
+			it.Nil(err),
+			it.Equal(val.Site, "example.com"),
+		)
+	})
+
+	t.Run("Form", func(t *testing.T) {
+		val, err := µ.IO[Site](cat.WithContext(context.Background()),
+			µ.GET(
+				ø.URI("%s/form", ø.Authority(ts.URL)),
+				ƒ.Status.OK,
+			),
+		)
+		it.Then(t).Should(
+			it.Nil(err),
+			it.Equal(val.Site, "example.com"),
+		)
+	})
+
+}
+
 func mock() *httptest.Server {
 	return httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch {
+			case r.URL.Path == "/json":
+				w.Header().Add("Content-Type", "application/json")
+				w.Write([]byte(`{"site": "example.com"}`))
+			case r.URL.Path == "/form":
+				w.Header().Add("Content-Type", "application/x-www-form-urlencoded")
+				w.Write([]byte("site=example.com"))
 			case r.URL.Path == "/ok":
 				w.WriteHeader(http.StatusOK)
 			default:

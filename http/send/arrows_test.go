@@ -47,6 +47,28 @@ func TestSchema(t *testing.T) {
 	})
 }
 
+func TestMethod(t *testing.T) {
+	cat := http.New()
+
+	for expect, method := range map[string]func(arrows ...http.Arrow) http.Arrow{
+		"GET":     http.GET,
+		"HEAD":    http.HEAD,
+		"POST":    http.POST,
+		"PUT":     http.PUT,
+		"DELETE":  http.DELETE,
+		"PATCH":   http.PATCH,
+		"OPTIONS": func(arrows ...http.Arrow) http.Arrow { return http.Join(ø.Method("OPTIONS"), http.Join(arrows...)) },
+	} {
+		cat := cat.WithContext(context.Background())
+		err := cat.IO(method(ø.URI("https://example.com")))
+		it.Then(t).Should(
+			it.Nil(err),
+			it.Equal(cat.Method, expect),
+			it.Equal(cat.Request.Method, expect),
+		)
+	}
+}
+
 func TestURI(t *testing.T) {
 	cat := http.New()
 
