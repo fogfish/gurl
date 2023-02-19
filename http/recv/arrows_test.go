@@ -196,8 +196,8 @@ func TestHeaderMismatch(t *testing.T) {
 
 	for _, header := range []µ.Arrow{
 		ƒ.ContentType.Is("foo/bar"),
-		ƒ.Header("X-FOO", value),
-		ƒ.Header("X-FOO", date),
+		ƒ.Header("X-FOO", &value),
+		ƒ.Header("X-FOO", &date),
 	} {
 		req := µ.GET(
 			ø.URI("%s/json", ø.Authority(ts.URL)),
