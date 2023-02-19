@@ -35,7 +35,7 @@
 The library implements a **pure functional style** to express communication behavior by hiding the networking complexity using combinators. This construction decorates http i/o pipeline(s) with "programmable commas", allowing to make http requests with few interesting properties such as composition and laziness.
 
 [User Guide](./doc/user-guide.md) |
-[Playground](https://play.golang.org/p/hPTgNhoJM2-) |
+[Playground](https://goplay.tools/snippet/RLxmdLZ49SC) |
 [Examples](./example/) |
 [API Specification](http://godoc.org/github.com/fogfish/gurl)
 
