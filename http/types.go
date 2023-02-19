@@ -9,138 +9,34 @@
 package http
 
 import (
-	"context"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
-	"net"
 	"net/http"
-	"net/http/cookiejar"
-	"net/http/httputil"
 	"strings"
 	"time"
 
 	"github.com/ajg/form"
-	"github.com/fogfish/gurl"
-	"golang.org/x/net/publicsuffix"
+	"github.com/fogfish/gurl/v2"
 )
 
 // Arrow is a morphism applied to HTTP protocol stack
 type Arrow func(*Context) error
 
-// Stack is HTTP protocol stack
-type Stack interface {
-	WithContext(context.Context) *Context
-	IO(context.Context, ...Arrow) error
+type ReadableHeaderValues interface {
+	int | string | time.Time
 }
 
-// Context defines the category of HTTP I/O
-type Context struct {
-	*Protocol
-
-	// Context of Request / Response
-	context.Context
-	*http.Request
-	*http.Response
+type WriteableHeaderValues interface {
+	*int | *string | *time.Time
 }
 
-func NewRequest(method, url string) (*http.Request, error) {
-	return http.NewRequest(method, url, nil)
+type MatchableHeaderValues interface {
+	ReadableHeaderValues | WriteableHeaderValues
 }
 
-// Unsafe evaluates current context of HTTP I/O
-func (ctx *Context) Unsafe() error {
-	eg := ctx.Request
-
-	if ctx.Context != nil {
-		eg = eg.WithContext(ctx.Context)
-	}
-
-	logSend(ctx.LogLevel, eg)
-
-	in, err := ctx.Client.Do(eg)
-	if err != nil {
-		return err
-	}
-
-	ctx.Response = in
-
-	logRecv(ctx.LogLevel, in)
-
-	return nil
-}
-
-// IO executes protocol operations
-func (ctx *Context) IO(arrows ...Arrow) error {
-	for _, f := range arrows {
-		if err := f(ctx); err != nil {
-			return err
-		}
-	}
-
-	if ctx.Response != nil {
-		// Note: due to Golang HTTP pool implementation we need to consume and
-		//       discard body. Otherwise, HTTP connection is not returned to
-		//       to the pool.
-		body := ctx.Response.Body
-		ctx.Response = nil
-
-		_, err := io.Copy(io.Discard, body)
-		if err != nil {
-			return err
-		}
-
-		err = body.Close()
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-/*
-Protocol is an instance of Stack
-*/
-type Protocol struct {
-	*http.Client
-	LogLevel int
-}
-
-/*
-New instantiates category of HTTP I/O
-*/
-func New(opts ...Config) Stack {
-	cat := &Protocol{Client: Client()}
-
-	for _, opt := range opts {
-		opt(cat)
-	}
-
-	return cat
-}
-
-// WithContext create instance of I/O Context
-func (cat *Protocol) WithContext(ctx context.Context) *Context {
-	return &Context{
-		Protocol: cat,
-		Context:  ctx,
-		Request:  nil,
-		Response: nil,
-	}
-}
-
-// IO executes protocol operations
-func (cat *Protocol) IO(ctx context.Context, arrows ...Arrow) error {
-	return cat.WithContext(ctx).IO(arrows...)
-}
-
-/*
-Join composes HTTP arrows to high-order function
-(a ⟼ b, b ⟼ c, c ⟼ d) ⤇ a ⟼ d
-*/
+// Join composes HTTP arrows to high-order function
+// (a ⟼ b, b ⟼ c, c ⟼ d) ⤇ a ⟼ d
 func Join(arrows ...Arrow) Arrow {
 	return func(cat *Context) error {
 		for _, f := range arrows {
@@ -153,89 +49,44 @@ func Join(arrows ...Arrow) Arrow {
 	}
 }
 
-// Config for HTTP client
-type Config func(*Protocol)
+// GET composes HTTP arrows to high-order function for HTTP GET request
+// (a ⟼ b, b ⟼ c, c ⟼ d) ⤇ a ⟼ d
+func GET(arrows ...Arrow) Arrow { return method(http.MethodGet, arrows) }
 
-/*
-Client Default HTTP client
-*/
-func Client() *http.Client {
-	return &http.Client{
-		Timeout: 60 * time.Second,
-		Transport: &http.Transport{
-			ReadBufferSize: 128 * 1024,
-			DialContext: (&net.Dialer{
-				Timeout: 10 * time.Second,
-			}).DialContext,
-			// TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
-			MaxIdleConns:        100,
-			MaxIdleConnsPerHost: 100,
-		},
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-	}
-}
+// HEAD composes HTTP arrows to high-order function for HTTP HEAD request
+// (a ⟼ b, b ⟼ c, c ⟼ d) ⤇ a ⟼ d
+func HEAD(arrows ...Arrow) Arrow { return method(http.MethodHead, arrows) }
 
-// WithClient replaces default client with custom instance
-func WithClient(client *http.Client) Config {
-	return func(cat *Protocol) {
-		cat.Client = client
-	}
-}
+// POST composes HTTP arrows to high-order function for HTTP POST request
+// (a ⟼ b, b ⟼ c, c ⟼ d) ⤇ a ⟼ d
+func POST(arrows ...Arrow) Arrow { return method(http.MethodPost, arrows) }
 
-// LogRequest enables debug logging for requests
-func LogRequest() Config {
-	return func(cat *Protocol) {
-		cat.LogLevel = 1
-	}
-}
+// PUT composes HTTP arrows to high-order function for HTTP PUT request
+// (a ⟼ b, b ⟼ c, c ⟼ d) ⤇ a ⟼ d
+func PUT(arrows ...Arrow) Arrow { return method(http.MethodPut, arrows) }
 
-// LogResponse enables debug logging for requests
-func LogResponse() Config {
-	return func(cat *Protocol) {
-		cat.LogLevel = 2
-	}
-}
+// DELETE composes HTTP arrows to high-order function for HTTP DELETE request
+// (a ⟼ b, b ⟼ c, c ⟼ d) ⤇ a ⟼ d
+func DELETE(arrows ...Arrow) Arrow { return method(http.MethodDelete, arrows) }
 
-// LogResponse enables debug logging for requests
-func LogPayload() Config {
-	return func(cat *Protocol) {
-		cat.LogLevel = 3
-	}
-}
+// PATCH composes HTTP arrows to high-order function for HTTP PATCH request
+// (a ⟼ b, b ⟼ c, c ⟼ d) ⤇ a ⟼ d
+func PATCH(arrows ...Arrow) Arrow { return method(http.MethodPatch, arrows) }
 
-// InsecureTLS disables certificates validation
-func InsecureTLS() Config {
-	return func(cat *Protocol) {
-		switch t := cat.Client.Transport.(type) {
-		case *http.Transport:
-			if t.TLSClientConfig == nil {
-				t.TLSClientConfig = &tls.Config{}
+func method(verb string, arrows []Arrow) Arrow {
+	return func(ctx *Context) error {
+		ctx.Method = verb
+		for _, f := range arrows {
+			if err := f(ctx); err != nil {
+				return err
 			}
-			t.TLSClientConfig.InsecureSkipVerify = true
-		default:
-			panic(fmt.Errorf("unsupported transport type %T", t))
 		}
+
+		return nil
 	}
 }
 
-// CookieJar enables cookie handlings
-func CookieJar() Config {
-	return func(cat *Protocol) {
-		jar, err := cookiejar.New(&cookiejar.Options{
-			PublicSuffixList: publicsuffix.List,
-		})
-		if err != nil {
-			panic(err)
-		}
-		cat.Client.Jar = jar
-	}
-}
-
-/*
-IO executes protocol operations
-*/
+// Executes protocol operation
 func IO[T any](ctx *Context, arrows ...Arrow) (*T, error) {
 	for _, f := range arrows {
 		if err := f(ctx); err != nil {
@@ -271,22 +122,6 @@ func decode[T any](content string, stream io.ReadCloser, data *T) error {
 		return &gurl.NoMatch{
 			Diff:    fmt.Sprintf("- Content-Type: application/*\n+ Content-Type: %s", content),
 			Payload: map[string]string{"Content-Type": content},
-		}
-	}
-}
-
-func logSend(level int, eg *http.Request) {
-	if level >= 1 {
-		if msg, err := httputil.DumpRequest(eg, level == 3); err == nil {
-			log.Printf(">>>>\n%s\n", msg)
-		}
-	}
-}
-
-func logRecv(level int, in *http.Response) {
-	if level >= 2 {
-		if msg, err := httputil.DumpResponse(in, level == 3); err == nil {
-			log.Printf("<<<<\n%s\n", msg)
 		}
 	}
 }

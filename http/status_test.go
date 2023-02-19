@@ -14,8 +14,8 @@ import (
 	"net/http"
 	"testing"
 
-	gurl "github.com/fogfish/gurl/http"
-	"github.com/fogfish/it"
+	gurl "github.com/fogfish/gurl/v2/http"
+	"github.com/fogfish/it/v2"
 )
 
 var httpStatusCode = map[int]gurl.StatusCode{
@@ -91,26 +91,32 @@ var httpStatusCode = map[int]gurl.StatusCode{
 func TestStatusCodeCodec(t *testing.T) {
 	for code, val := range httpStatusCode {
 		status := gurl.NewStatusCode(code, gurl.StatusOK)
-		it.Ok(t).
-			If(code).Should().Equal(val.Value()).
-			If(status.Value()).Should().Equal(code).
-			If(status.Value()).Should().Equal(val.Value()).
-			If(errors.Is(status, val)).Should().Equal(true).
-			If(fmt.Sprintf("%T", status)).Should().Equal(fmt.Sprintf("%T", val))
+		it.Then(t).Should(
+			it.Equal(code, val.StatusCode()),
+			it.Equal(status.StatusCode(), code),
+			it.Equal(status.StatusCode(), val.StatusCode()),
+			it.True(errors.Is(status, val)),
+			it.Equal(fmt.Sprintf("%T", status), fmt.Sprintf("%T", val)),
+		)
 	}
 }
 
 func TestStatusCodeRequired(t *testing.T) {
 	var code error = gurl.NewStatusCode(200, 201)
-	it.Ok(t).
-		If(code.Error()).Should().Equal("HTTP Status `200 OK`, required `201 Created`.")
+	it.Then(t).Should(
+		it.Equal(code.Error(), "HTTP Status `200 OK`, required `201 Created`."),
+	)
 }
 
 func TestStatusCodeText(t *testing.T) {
 	var code error = gurl.NewStatusCode(200)
-	it.Ok(t).
-		If(code.Error()).Should().Equal("HTTP 200 OK").
-		If(errors.Is(code, gurl.StatusOK)).Should().Equal(true).
-		If(errors.Is(code, gurl.StatusCreated)).Should().Equal(false).
-		If(errors.Is(code, fmt.Errorf("some error"))).Should().Equal(false)
+	it.Then(t).
+		Should(
+			it.Equal(code.Error(), "HTTP 200 OK"),
+			it.True(errors.Is(code, gurl.StatusOK)),
+		).
+		ShouldNot(
+			it.True(errors.Is(code, gurl.StatusCreated)),
+			it.True(errors.Is(code, fmt.Errorf("some error"))),
+		)
 }

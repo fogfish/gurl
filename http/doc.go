@@ -7,16 +7,15 @@
 //
 
 /*
-
 Package http defines category of HTTP I/O, "do"-notation becomes
 
-  http.Join(
-    ø...,
-    ø...,
+	http.Join(
+	  ø...,
+	  ø...,
 
-    ƒ...,
-    ƒ...,
-  )
+	  ƒ...,
+	  ƒ...,
+	)
 
 Symbol `ø` (option + o) is an convenient alias to module gurl/http/send, which
 defines writer morphism that focuses inside and reshapes HTTP protocol request.
@@ -33,63 +32,62 @@ Let's look on step-by-step usage of the category.
 
 **Method and URL** are mandatory. It has to be a first element in the construction.
 
-  http.Join(
-    ø.GET("http://example.com"),
-    ...
-  )
+	http.GET(
+	  ø.URI("http://example.com"),
+	  ...
+	)
 
 Definition of **request headers** is an optional. You can list as many headers as
 needed. Either using string literals or variables. Some frequently used headers
 implements aliases (e.g. ø.ContentJSON(), ...)
 
-  http.Join(
-    ...
-    ø.Header("Accept").Is("application/json"),
-    ø.Header("Authorization").Val(&token),
-    ...
-  )
+	http.GET(
+	  ...
+	  ø.Header("Accept", "application/json"),
+	  ø.Header("Authorization", &token),
+	  ...
+	)
 
 The **request payload** is also an optional. You can also use native Golang data types
 as egress payload. The library implicitly encodes input structures to binary
 using Content-Type as a hint.
 
-  http.Join(
-    ...
-    ø.Send(MyType{Hello: "World"}),
-    ...
-  )
+	http.GET(
+	  ...
+	  ø.Send(MyType{Hello: "World"}),
+	  ...
+	)
 
 The declaration of expected response is always starts with mandatory HTTP **status
 code**. The execution fails if peer responds with other than specified value.
 
-  http.Join(
-    ...
-    ƒ.Code(http.StatusCodeOK),
-    ...
-  )
+	http.GET(
+	  ...
+	  ƒ.Code(http.StatusCodeOK),
+	  ...
+	)
 
 It is possible to match presence of header in the response, match its entire
 content or lift the header value to a variable. The execution fails if HTTP
 response do not match the expectation.
 
-  http.Join(
-    ...
-    ƒ.Header("Content-Type").Is("application/json"),
-    ...
-  )
+	http.GET(
+	  ...
+	  ƒ.Header("Content-Type", "application/json"),
+	  ...
+	)
 
 The library is able to **decode payload** into Golang native data structure
 using Content-Type header as a hint.
 
-  var data MyType
-  http.Join(
-    ...
-    ƒ.Recv(&data)
-    ...
-  )
+	var data MyType
+	http.GET(
+	  ...
+	  ƒ.Recv(&data)
+	  ...
+	)
 
 Please note, the library implements lenses to inline assert of decoded content.
 See the documentation of gurl/http/recv module.
-
 */
 package http

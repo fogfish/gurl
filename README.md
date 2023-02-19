@@ -32,7 +32,7 @@
 
 ---
 
-A pure functional style to express communication behavior by hiding the networking complexity using combinators. This construction decorates http i/o pipeline(s) with "programmable commas", allowing to make http requests with few interesting properties such as composition and laziness.
+The library implements a **pure functional style** to express communication behavior by hiding the networking complexity using combinators. This construction decorates http i/o pipeline(s) with "programmable commas", allowing to make http requests with few interesting properties such as composition and laziness.
 
 [User Guide](./doc/user-guide.md) |
 [Playground](https://play.golang.org/p/hPTgNhoJM2-) |
@@ -41,9 +41,9 @@ A pure functional style to express communication behavior by hiding the networki
 
 ## Inspiration
 
-Microservices have become a design style to evolve system architecture in parallel, implement stable and consistent interfaces. An expressive language is required to design the variety of network communication use-cases. Pure functional languages fit very well to express communication behavior. These languages give rich abstractions to hide the networking complexity and help us to compose a chain of network operations and represent them as pure computation, building new things from small reusable elements. This library is implemented after Erlang's [m_http](https://github.com/fogfish/m_http)
+Microservices have become a design style to evolve system architecture in parallel, implement stable and consistent interfaces. An expressive language is required to design the variety of network communication use-cases. Pure functional languages fit very well to express intent of communication behavior. These languages give rich abstractions to hide the networking complexity and help us to compose a chain of network operations and represent them as pure computation, building new things from small reusable elements. This library is implemented after Erlang's [m_http](https://github.com/fogfish/m_http)
 
-The library attempts to adapt a human-friendly logging syntax of HTTP I/O used by curl and Behavior as a Code paradigm. It connects cause-and-effect (Given/When/Then) with the networking (Input/Process/Output).
+The library attempts to adapt a human-friendly logging syntax of HTTP I/O used by curl and Behavior as a Code paradigm, which connects cause-and-effect (Given/When/Then) with the networking (Input/Process/Output).
 
 ```
 > GET / HTTP/1.1
@@ -57,7 +57,7 @@ The library attempts to adapt a human-friendly logging syntax of HTTP I/O used b
 < ...
 ```
 
-This semantic provides an intuitive approach to specify HTTP requests and expected responses. Adoption of this syntax as Go native code provides a rich capabilities for network programming.
+Given semantic provides an intuitive approach to specify HTTP requests and expected responses. Adoption of this syntax as Go native code provides a rich capabilities for network programming.
 
 
 ## Key features
@@ -75,42 +75,53 @@ Standard Golang packages implement a low-level HTTP interface, which requires kn
 
 The library requires **Go 1.18** or later 
 
-The latest version of the library is available at its `master` branch. All development, including new features and bug fixes, take place on the `master` branch using forking and pull requests as described in contribution guidelines.
+The latest version of the library is available at its `main` branch. All development, including new features and bug fixes, take place on the `main` branch using forking and pull requests as described in contribution guidelines. The stable version is available via Golang modules.
 
-The following code snippet demonstrates a typical usage scenario. See runnable [http request example](examples/request/main.go).
+Use `go get` to retrieve the library and add it as dependency to your application.
+
+```bash
+go get -u github.com/fogfish/gurl
+```
+
+### Quick Example
+
+The following code snippet demonstrates a typical usage scenario. See runnable [http request example](examples/http-request/main.go).
 
 ```go
 import (
   "context"
 
-  "github.com/fogfish/gurl/http"
-  ø "github.com/fogfish/gurl/http/send"
-  ƒ "github.com/fogfish/gurl/http/recv"
+  "github.com/fogfish/gurl/v2/http"
+  ø "github.com/fogfish/gurl/v2/http/send"
+  ƒ "github.com/fogfish/gurl/v2/http/recv"
 )
 
-// You can declare any types and use them as part of networking I/O.
+// Declare the type, used for networking I/O.
 type Payload struct {
   Origin string `json:"origin"`
   Url    string `json:"url"`
 }
 
-// the variable holds results of network I/O
+// Define the variable holds results of network I/O
 var data Payload
 
-// instance of http client
-cat := http.New()
-
-// lazy HTTP I/O specification
-err := cat.IO(context.TODO(),
-  // HTTP request
+// Declare HTTP I/O specification
+lazy := http.GET(
+  // specify HTTP request
   ø.GET.URL("http://httpbin.org/get"),
   ø.Accept.JSON,
 
-  // HTTP response and "recv" JSON to the variable
+  // assert HTTP response and "recv" JSON to the variable
   ƒ.Status.OK,
   ƒ.ContentType.JSON,
   ƒ.Recv(&data),
 )
+
+// instance of HTTP stack
+stack := http.New()
+
+// evaluate HTTP I/O specification
+err := stack.IO(context.Background(), lazy)
 ```
 
 ## Next steps

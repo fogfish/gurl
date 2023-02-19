@@ -15,43 +15,48 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
-	µ "github.com/fogfish/gurl/http"
-	ƒ "github.com/fogfish/gurl/http/recv"
-	ø "github.com/fogfish/gurl/http/send"
-	"github.com/fogfish/it"
+	µ "github.com/fogfish/gurl/v2/http"
+	ƒ "github.com/fogfish/gurl/v2/http/recv"
+	ø "github.com/fogfish/gurl/v2/http/send"
+	"github.com/fogfish/it/v2"
 )
 
 func TestCodeOk(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/json"),
+	req := µ.GET(
+		ø.URI("%s/json", ø.Authority(ts.URL)),
 		ø.Accept.JSON,
 		ƒ.Code(µ.StatusOK),
 	)
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
 
-	it.Ok(t).
-		If(err).Should().Equal(nil)
+	it.Then(t).Should(
+		it.Nil(err),
+	)
 }
 
 func TestCodeNoMatch(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/other"),
+	req := µ.GET(
+		ø.URI("%s/other", ø.Authority(ts.URL)),
 		ø.Accept.JSON,
 		ƒ.Status.OK,
 	)
 	cat := µ.New()
-	err := cat.IO(context.Background(), req)
+	var err interface{ StatusCode() int }
+	f := func() error { return cat.IO(context.Background(), req) }
 
-	it.Ok(t).
-		If(err).Should().Be().Like(µ.StatusBadRequest)
+	it.Then(t).Should(
+		it.Fail(f).With(&err),
+		it.Equal(err.(µ.StatusCode).StatusCode(), µ.StatusBadRequest.StatusCode()),
+	)
 }
 
 func TestStatusCodes(t *testing.T) {
@@ -98,15 +103,16 @@ func TestStatusCodes(t *testing.T) {
 		µ.StatusGatewayTimeout:          ƒ.Status.GatewayTimeout,
 		µ.StatusHTTPVersionNotSupported: ƒ.Status.HTTPVersionNotSupported,
 	} {
-		req := µ.Join(
-			ø.GET.URL("%s/code/%s", ø.Authority(ts.URL), code.Value()),
+		req := µ.GET(
+			ø.URI("%s/code/%d", ø.Authority(ts.URL), code.StatusCode()),
 			check,
 		)
 		cat := µ.New()
 		err := cat.IO(context.Background(), req)
 
-		it.Ok(t).
-			If(err).Should().Equal(nil)
+		it.Then(t).Should(
+			it.Nil(err),
+		)
 	}
 }
 
@@ -114,88 +120,116 @@ func TestHeaderOk(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/json"),
+	req := µ.GET(
+		ø.URI("%s/json", ø.Authority(ts.URL)),
 		ø.Accept.JSON,
 		ƒ.Status.OK,
 		ƒ.ContentType.JSON,
+		ƒ.Header("Date", time.Date(2023, 02, 01, 10, 20, 30, 0, time.UTC)),
+		ƒ.Header("X-Value", 1024),
 	)
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
 
-	it.Ok(t).
-		If(err).Should().Equal(nil)
+	it.Then(t).Should(
+		it.Nil(err),
+	)
 }
 
 func TestHeaderAny(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/json"),
+	req := µ.GET(
+		ø.URI("%s/json", ø.Authority(ts.URL)),
 		ø.Accept.JSON,
 		ƒ.Status.OK,
 		ƒ.ContentType.Is("*"),
-		ƒ.Header("Content-Type").Any,
+		ƒ.ContentType.Any,
+		ƒ.Header("Content-Type", "*"),
+		ƒ.HeaderOf[string]("Content-Type").Any,
 	)
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
 
-	it.Ok(t).
-		If(err).Should().Equal(nil)
+	it.Then(t).Should(
+		it.Nil(err),
+	)
 }
 
 func TestHeaderVal(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
-	var content string
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/json"),
+	var (
+		date    time.Time
+		content string
+		value   int
+	)
+	req := µ.GET(
+		ø.URI("%s/json", ø.Authority(ts.URL)),
 		ø.Accept.JSON,
 		ƒ.Status.OK,
 		ƒ.ContentType.To(&content),
+		ƒ.Header("Date", &date),
+		ƒ.Header("X-Value", &value),
 	)
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
 
-	it.Ok(t).
-		If(err).Should().Equal(nil).
-		If(content).Should().Equal("application/json")
+	it.Then(t).Should(
+		it.Nil(err),
+		it.Equal(content, "application/json"),
+		it.Equal(date.Format(time.RFC1123), "Wed, 01 Feb 2023 10:20:30 UTC"),
+		it.Equal(value, 1024),
+	)
 }
 
 func TestHeaderMismatch(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/json"),
-		ø.Accept.JSON,
-		ƒ.Status.OK,
-		ƒ.ContentType.Is("foo/bar"),
+	var (
+		date  time.Time
+		value int
 	)
-	cat := µ.New()
-	err := cat.IO(context.Background(), req)
 
-	it.Ok(t).
-		If(err).ShouldNot().Equal(nil)
+	for _, header := range []µ.Arrow{
+		ƒ.ContentType.Is("foo/bar"),
+		ƒ.Header("X-FOO", &value),
+		ƒ.Header("X-FOO", &date),
+	} {
+		req := µ.GET(
+			ø.URI("%s/json", ø.Authority(ts.URL)),
+			ø.Accept.JSON,
+			ƒ.Status.OK,
+			header,
+		)
+		cat := µ.New()
+		err := cat.IO(context.Background(), req)
+
+		it.Then(t).ShouldNot(
+			it.Nil(err),
+		)
+	}
 }
 
 func TestHeaderUndefinedWithLit(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/json"),
+	req := µ.GET(
+		ø.URI("%s/json", ø.Authority(ts.URL)),
 		ø.Accept.JSON,
 		ƒ.Status.OK,
-		ƒ.Header("x-content-type").Is("foo/bar"),
+		ƒ.Header("x-content-type", "foo/bar"),
 	)
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
 
-	it.Ok(t).
-		If(err).ShouldNot().Equal(nil)
+	it.Then(t).ShouldNot(
+		it.Nil(err),
+	)
 }
 
 func TestHeaderUndefinedWithVal(t *testing.T) {
@@ -203,17 +237,18 @@ func TestHeaderUndefinedWithVal(t *testing.T) {
 	defer ts.Close()
 
 	var val string
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/json"),
+	req := µ.GET(
+		ø.URI("%s/json", ø.Authority(ts.URL)),
 		ø.Accept.JSON,
 		ƒ.Status.OK,
-		ƒ.Header("x-content-type").To(&val),
+		ƒ.Header("x-content-type", &val),
 	)
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
 
-	it.Ok(t).
-		If(err).ShouldNot().Equal(nil)
+	it.Then(t).ShouldNot(
+		it.Nil(err),
+	)
 }
 
 func TestRecvJSON(t *testing.T) {
@@ -225,18 +260,20 @@ func TestRecvJSON(t *testing.T) {
 	defer ts.Close()
 
 	var site Site
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/json"),
+	req := µ.GET(
+		ø.URI("%s/json", ø.Authority(ts.URL)),
 		ƒ.Status.OK,
+		ƒ.ContentType.ApplicationJSON,
 		ƒ.ContentType.JSON,
 		ƒ.Recv(&site),
 	)
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
 
-	it.Ok(t).
-		If(err).Should().Equal(nil).
-		If(site.Site).Should().Equal("example.com")
+	it.Then(t).Should(
+		it.Nil(err),
+		it.Equal(site.Site, "example.com"),
+	)
 }
 
 func TestRecvForm(t *testing.T) {
@@ -248,8 +285,8 @@ func TestRecvForm(t *testing.T) {
 	defer ts.Close()
 
 	var site Site
-	req := µ.Join(
-		ø.GET.URL(ts.URL+"/form"),
+	req := µ.GET(
+		ø.URI("%s/form", ø.Authority(ts.URL)),
 		ƒ.Status.OK,
 		ƒ.ContentType.Form,
 		ƒ.Recv(&site),
@@ -257,9 +294,10 @@ func TestRecvForm(t *testing.T) {
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
 
-	it.Ok(t).
-		If(err).Should().Equal(nil).
-		If(site.Site).Should().Equal("example.com")
+	it.Then(t).Should(
+		it.Nil(err),
+		it.Equal(site.Site, "example.com"),
+	)
 }
 
 func TestRecvBytes(t *testing.T) {
@@ -267,13 +305,15 @@ func TestRecvBytes(t *testing.T) {
 	defer ts.Close()
 
 	for path, content := range map[string]µ.Arrow{
-		"/text": ƒ.ContentType.Text,
-		"/html": ƒ.ContentType.HTML,
+		"/text":   ƒ.ContentType.Text,
+		"/text/1": ƒ.ContentType.TextPlain,
+		"/html":   ƒ.ContentType.HTML,
+		"/html/2": ƒ.ContentType.TextHTML,
 	} {
 
 		var data []byte
-		req := µ.Join(
-			ø.GET.URL(ts.URL+path),
+		req := µ.GET(
+			ø.URI(ts.URL+path),
 			ƒ.Status.OK,
 			content,
 			ƒ.Bytes(&data),
@@ -281,9 +321,10 @@ func TestRecvBytes(t *testing.T) {
 		cat := µ.New()
 		err := cat.IO(context.Background(), req)
 
-		it.Ok(t).
-			If(err).Should().Equal(nil).
-			If(string(data)).Should().Equal("site=example.com")
+		it.Then(t).Should(
+			it.Nil(err),
+			it.Equal(string(data), "site=example.com"),
+		)
 	}
 }
 
@@ -291,16 +332,18 @@ func mock() *httptest.Server {
 	return httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch {
-			case r.URL.Path == "/json":
+			case strings.HasPrefix(r.URL.Path, "/json"):
 				w.Header().Add("Content-Type", "application/json")
+				w.Header().Add("Date", "Wed, 01 Feb 2023 10:20:30 UTC")
+				w.Header().Add("X-Value", "1024")
 				w.Write([]byte(`{"site": "example.com"}`))
-			case r.URL.Path == "/form":
+			case strings.HasPrefix(r.URL.Path, "/form"):
 				w.Header().Add("Content-Type", "application/x-www-form-urlencoded")
 				w.Write([]byte("site=example.com"))
-			case r.URL.Path == "/text":
+			case strings.HasPrefix(r.URL.Path, "/text"):
 				w.Header().Add("Content-Type", "text/plain")
 				w.Write([]byte("site=example.com"))
-			case r.URL.Path == "/html":
+			case strings.HasPrefix(r.URL.Path, "/html"):
 				w.Header().Add("Content-Type", "text/html")
 				w.Write([]byte("site=example.com"))
 			case r.URL.Path == "/code/301":

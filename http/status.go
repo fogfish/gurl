@@ -1,3 +1,11 @@
+//
+// Copyright (C) 2019 Dmitry Kolesnikov
+//
+// This file may be modified and distributed under the terms
+// of the MIT license.  See the LICENSE file for details.
+// https://github.com/fogfish/gurl
+//
+
 package http
 
 import (
@@ -6,7 +14,6 @@ import (
 )
 
 /*
-
 StatusCode is a base type for typesafe HTTP status codes. The library advertises
 a usage of "pattern-matching" on HTTP status handling, which helps developers to
 catch mismatch of HTTP statuses along with other side-effect failures.
@@ -17,32 +24,31 @@ within IO category. Use final type instances in the error handling routines.
 
 Use type switch for error handling "branches"
 
-  switch err := cat.Fail.(type) {
-  case nil:
-    // Nothing
-  case StatusCode:
-    switch err {
-    case http.StatusOK:
-      // HTTP 200 OK
-    case http.StatusNotFound:
-      // HTTP 404 NotFound
-    default:
-      // any other HTTP errors
-    }
-  default:
-    // any other errors
-  }
+	switch err := cat.Fail.(type) {
+	case nil:
+	  // Nothing
+	case StatusCode:
+	  switch err {
+	  case http.StatusOK:
+	    // HTTP 200 OK
+	  case http.StatusNotFound:
+	    // HTTP 404 NotFound
+	  default:
+	    // any other HTTP errors
+	  }
+	default:
+	  // any other errors
+	}
 
 Conditional error handling on expected HTTP Status
 
-  if errors.Is(cat.Fail, http.StatusNotFound) {
-  }
+	if errors.Is(cat.Fail, http.StatusNotFound) {
+	}
 
 Conditional error handling on any HTTP Status
 
-  if _, ok := cat.Fail.(gurl.StatusCode); ok {
-  }
-
+	if _, ok := cat.Fail.(gurl.StatusCode); ok {
+	}
 */
 type StatusCode int
 
@@ -50,14 +56,14 @@ type StatusCode int
 func NewStatusCode(code int, required ...StatusCode) StatusCode {
 	req := 0
 	if len(required) > 0 {
-		req = required[0].Value()
+		req = required[0].StatusCode()
 	}
 	return StatusCode((req << 16) | code)
 }
 
 // Error makes StatusCode to be error
 func (e StatusCode) Error() string {
-	status := e.Value()
+	status := e.StatusCode()
 	if req := e.Required(); req != 0 {
 		return fmt.Sprintf("HTTP Status `%d %s`, required `%d %s`.",
 			status, http.StatusText(status), req, http.StatusText(req))
@@ -68,13 +74,13 @@ func (e StatusCode) Error() string {
 // Is compares wrapped errors
 func (e StatusCode) Is(err error) bool {
 	if code, ok := err.(StatusCode); ok {
-		return e.Value() == code.Value()
+		return e.StatusCode() == code.StatusCode()
 	}
 	return false
 }
 
 // Value transforms StatusCode type to integer value: StatusCode ⟼ int
-func (e StatusCode) Value() int {
+func (e StatusCode) StatusCode() int {
 	return int(e) & 0xffff
 }
 
@@ -83,7 +89,6 @@ func (e StatusCode) Required() int {
 	return int(e) >> 16
 }
 
-//
 const (
 	//
 	StatusContinue           = StatusCode(http.StatusContinue)

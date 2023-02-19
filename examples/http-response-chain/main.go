@@ -18,89 +18,82 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/fogfish/gurl"
-	"github.com/fogfish/gurl/http"
-	ƒ "github.com/fogfish/gurl/http/recv"
-	ø "github.com/fogfish/gurl/http/send"
+	"github.com/fogfish/gurl/v2/http"
+	ƒ "github.com/fogfish/gurl/v2/http/recv"
+	ø "github.com/fogfish/gurl/v2/http/send"
 )
 
 // id implements payload for https://httpbin.org/uuid
-type tID struct {
+type ID struct {
 	UUID string `json:"uuid,omitempty"`
 }
 
 // httpbin implements payload for https://httpbin.org/post
-type tHTTPBin struct {
+type HTTPBin struct {
 	URL  string `json:"url,omitempty"`
 	Data string `json:"data,omitempty"`
 }
 
-type tHoF struct {
-	http.Stack
-	tID
-	tHTTPBin
+// context for HTTP I/O
+type Heap struct {
+	ID
+	HTTPBin
 }
 
-//
 // uuid declares HTTP I/O. Its result is returned via id variable.
-func (hof *tHoF) uuid() error {
-	return hof.IO(context.TODO(),
-		ø.GET.URL("https://httpbin.org/uuid"),
+func (hof *Heap) uuid() http.Arrow {
+	return http.GET(
+		ø.URI("https://httpbin.org/uuid"),
 		ø.Accept.JSON,
 
 		ƒ.Status.OK,
 		ƒ.ContentType.JSON,
-		ƒ.Recv(&hof.tID),
+		ƒ.Recv(&hof.ID),
 	)
 }
 
-//
 // post declares HTTP I/O. The HTTP request requires uuid.
 // Its result is returned via doc variable.
-func (hof *tHoF) post() error {
-	return hof.IO(context.TODO(),
-		ø.POST.URL("https://httpbin.org/post"),
+func (hof *Heap) post() http.Arrow {
+	return http.POST(
+		ø.URI("https://httpbin.org/post"),
 		ø.Accept.JSON,
 		ø.ContentType.JSON,
-		ø.Send(hof.tID.UUID),
+		ø.Send(&hof.ID.UUID),
 
 		ƒ.Status.OK,
-		ƒ.Recv(&hof.tHTTPBin),
+		ƒ.Recv(&hof.HTTPBin),
 	)
 }
 
-//
-// hof is a high-order function. It is composed from atomic HTTP I/O into
-// the chain of requests. HoF returns results via val variable
-func hof(cat http.Stack) (*tHoF, error) {
+// request is a high-order function. It is composed from atomic HTTP I/O into
+// the chain of requests.
+func request() (*Heap, http.Arrow) {
+	var heap Heap
+
 	//
 	// HoF combines HTTP requests to
 	//  * https://httpbin.org/uuid
 	//  * https://httpbin.org/post
 	//
 	// results of HTTP I/O is persisted in the internal state
-	val := tHoF{Stack: cat}
-
-	err := gurl.Join(
-		val.uuid,
-		val.post,
+	return &heap, http.Join(
+		heap.uuid(),
+		heap.post(),
 	)
-
-	return &val, err
-}
-
-func eval(cat http.Stack) {
-	val, err := hof(cat)
-	if err != nil {
-		fmt.Printf("fail %v\n", err)
-	}
-	fmt.Printf("==> %v\n", val)
 }
 
 func main() {
-	cat := http.New(http.LogPayload())
+	// instance of http stack
+	stack := http.New(http.LogPayload())
 
-	for i := 0; i < 3; i++ {
-		eval(cat)
+	data, lazy := request()
+
+	// executes http I/O
+	err := stack.IO(context.Background(), lazy)
+	if err != nil {
+		panic(err)
 	}
+
+	fmt.Printf("==> %+v\n", data)
 }
