@@ -407,10 +407,8 @@ func Header[T http.MatchableHeaderValues](header string, value T) http.Arrow {
 type HeaderOf[T http.ReadableHeaderValues] string
 
 // Matches header to any value
-func (h HeaderOf[T]) Any() http.Arrow {
-	return func(ctx *http.Context) error {
-		return match(ctx, string(h), "*")
-	}
+func (h HeaderOf[T]) Any(ctx *http.Context) error {
+	return match(ctx, string(h), "*")
 }
 
 // Matches value of HTTP header
@@ -460,10 +458,8 @@ func (h HeaderOf[T]) To(value *T) http.Arrow {
 type HeaderEnumContent string
 
 // Matches header to any value
-func (h HeaderEnumContent) Any() http.Arrow {
-	return func(ctx *http.Context) error {
-		return match(ctx, string(h), "*")
-	}
+func (h HeaderEnumContent) Any(ctx *http.Context) error {
+	return match(ctx, string(h), "*")
 }
 
 // Matches value of HTTP header
@@ -522,10 +518,8 @@ func (h HeaderEnumContent) HTML(ctx *http.Context) error {
 type HeaderEnumConnection string
 
 // Matches header to any value
-func (h HeaderEnumConnection) Any() http.Arrow {
-	return func(ctx *http.Context) error {
-		return match(ctx, string(h), "*")
-	}
+func (h HeaderEnumConnection) Any(ctx *http.Context) error {
+	return match(ctx, string(h), "*")
 }
 
 // Matches value of HTTP header
@@ -559,10 +553,8 @@ func (h HeaderEnumConnection) Close(ctx *http.Context) error {
 type HeaderEnumTransferEncoding string
 
 // Matches header to any value
-func (h HeaderEnumTransferEncoding) Any() http.Arrow {
-	return func(ctx *http.Context) error {
-		return match(ctx, string(h), "*")
-	}
+func (h HeaderEnumTransferEncoding) Any(ctx *http.Context) error {
+	return match(ctx, string(h), "*")
 }
 
 // Matches value of HTTP header

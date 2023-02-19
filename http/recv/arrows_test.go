@@ -125,6 +125,8 @@ func TestHeaderOk(t *testing.T) {
 		ø.Accept.JSON,
 		ƒ.Status.OK,
 		ƒ.ContentType.JSON,
+		ƒ.Header("Date", time.Date(2023, 02, 01, 10, 20, 30, 0, time.UTC)),
+		ƒ.Header("X-Value", 1024),
 	)
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
@@ -143,7 +145,9 @@ func TestHeaderAny(t *testing.T) {
 		ø.Accept.JSON,
 		ƒ.Status.OK,
 		ƒ.ContentType.Is("*"),
+		ƒ.ContentType.Any,
 		ƒ.Header("Content-Type", "*"),
+		ƒ.HeaderOf[string]("Content-Type").Any,
 	)
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
@@ -167,7 +171,7 @@ func TestHeaderVal(t *testing.T) {
 		ø.Accept.JSON,
 		ƒ.Status.OK,
 		ƒ.ContentType.To(&content),
-		ƒ.Date.To(&date),
+		ƒ.Header("Date", &date),
 		ƒ.Header("X-Value", &value),
 	)
 	cat := µ.New()
@@ -185,18 +189,29 @@ func TestHeaderMismatch(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
-	req := µ.GET(
-		ø.URI("%s/json", ø.Authority(ts.URL)),
-		ø.Accept.JSON,
-		ƒ.Status.OK,
-		ƒ.ContentType.Is("foo/bar"),
+	var (
+		date  time.Time
+		value int
 	)
-	cat := µ.New()
-	err := cat.IO(context.Background(), req)
 
-	it.Then(t).ShouldNot(
-		it.Nil(err),
-	)
+	for _, header := range []µ.Arrow{
+		ƒ.ContentType.Is("foo/bar"),
+		ƒ.Header("X-FOO", value),
+		ƒ.Header("X-FOO", date),
+	} {
+		req := µ.GET(
+			ø.URI("%s/json", ø.Authority(ts.URL)),
+			ø.Accept.JSON,
+			ƒ.Status.OK,
+			header,
+		)
+		cat := µ.New()
+		err := cat.IO(context.Background(), req)
+
+		it.Then(t).ShouldNot(
+			it.Nil(err),
+		)
+	}
 }
 
 func TestHeaderUndefinedWithLit(t *testing.T) {
