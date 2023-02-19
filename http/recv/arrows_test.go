@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	µ "github.com/fogfish/gurl/v2/http"
 	ƒ "github.com/fogfish/gurl/v2/http/recv"
@@ -156,12 +157,18 @@ func TestHeaderVal(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
-	var content string
+	var (
+		date    time.Time
+		content string
+		value   int
+	)
 	req := µ.GET(
 		ø.URI("%s/json", ø.Authority(ts.URL)),
 		ø.Accept.JSON,
 		ƒ.Status.OK,
 		ƒ.ContentType.To(&content),
+		ƒ.Date.To(&date),
+		ƒ.Header("X-Value", &value),
 	)
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
@@ -169,6 +176,8 @@ func TestHeaderVal(t *testing.T) {
 	it.Then(t).Should(
 		it.Nil(err),
 		it.Equal(content, "application/json"),
+		it.Equal(date.Format(time.RFC1123), "Wed, 01 Feb 2023 10:20:30 UTC"),
+		it.Equal(value, 1024),
 	)
 }
 
@@ -307,6 +316,8 @@ func mock() *httptest.Server {
 			switch {
 			case r.URL.Path == "/json":
 				w.Header().Add("Content-Type", "application/json")
+				w.Header().Add("Date", "Wed, 01 Feb 2023 10:20:30 UTC")
+				w.Header().Add("X-Value", "1024")
 				w.Write([]byte(`{"site": "example.com"}`))
 			case r.URL.Path == "/form":
 				w.Header().Add("Content-Type", "application/x-www-form-urlencoded")
