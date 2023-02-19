@@ -9,7 +9,7 @@
     </a>
     <!-- Build Status  -->
     <a href="https://github.com/fogfish/gurl/actions/">
-      <img src="https://github.com/fogfish/gurl/workflows/Go/badge.svg" />
+      <img src="https://github.com/fogfish/gurl/workflows/build/badge.svg" />
     </a>
     <!-- GitHub -->
     <a href="http://github.com/fogfish/gurl">
