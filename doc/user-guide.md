@@ -28,19 +28,16 @@
 
 ᵍ🆄🆁🅻 is a "combinator" library for network I/O. Combinators open up an opportunity to depict computation problems in terms of fundamental elements like physics talks about universe in terms of particles. The only definite purpose of combinators are building blocks for composition of "atomic" functions into computational structures. ᵍ🆄🆁🅻 combinators provide a powerful symbolic expressions in networking domain.
 
-Standard Golang packages implements a low-level HTTP interface, which requires knowledge about protocol itself, understanding of Golang implementation aspects, and a bit of boilerplate coding. It also misses standardized chaining (composition) of individual requests. ᵍ🆄🆁🅻 inherits an ability of pure functional languages to express communication behavior by hiding the networking complexity using combinators. The composition becomes a fundamental operation in the library: the codomain of `𝒇` be the domain of `𝒈` so that the composite operation `𝒇 ◦ 𝒈` is defined.
+Standard Golang packages implements a low-level HTTP interface, which requires knowledge about protocol itself, understanding of Golang implementation aspects, and a bit of boilerplate coding. It also misses standardized chaining (composition) of individual requests. ᵍ🆄🆁🅻 inherits an ability of pure functional languages to express communication behavior by hiding the networking complexity using combinators. The combinator becomes a fundamental operator in the library: the codomain of `𝒇` be the domain of `𝒈` so that the composite operation `𝒇 ◦ 𝒈` is defined.
 
-The library uses `Arrow` as a key abstraction of combinators. It is a *pure function* that takes an abstraction of the protocol context, so called IO category and applies morphism as an "invisible" side-effect of the composition.
+The library uses `Arrow` as a key abstraction of combinators. It is a *pure function* that takes an abstraction of the protocol context, so called *IO category* and applies morphism as an "invisible" side-effect of the composition.
 
 ```go
-/*
-
-Arrow: IO ⟼ IO
-*/
+// Arrow: IO ⟼ IO
 type Arrow func(*Context) error
 ```
 
-There are two classes of arrows. The first class is a writer morphism that focuses inside and reshapes HTTP protocol requests. The writer morphism is used to declare HTTP method, destination URL, request headers and payload. Second one is a reader morphism that focuses on the side-effect of HTTP protocol. The reader morphism is a pattern matcher, and is used to match HTTP response code, headers and response payload.
+There are two classes of arrows. The first class is a writer (emitter) morphism that focuses inside and reshapes HTTP protocol requests. The writer morphism is used to declare HTTP method, destination URL, request headers and payload. Second one is a reader (matcher) morphism that focuses on the side-effect of HTTP protocol. The reader morphism is a pattern matcher, and is used to match HTTP response code, headers and response payload.
 
 Example of HTTP I/O visualization made by curl give **naive** perspective about arrows.
 
@@ -57,16 +54,13 @@ Example of HTTP I/O visualization made by curl give **naive** perspective about 
 ```
 
 
-## Compose HoF 
+## Compose High-Order Functions  
 
-`Arrow` can be composed with another `Arrow` into new `Arrow` and so on. The library supports only "and-then" style. It builds a strict product Arrow: `A × B × C × ... ⟼ D`. The product type takes a protocol context and applies "morphism" sequentially unless some step fails. Use variadic function `http.Join` to compose HTTP primitives:
+`Arrow` can be composed with another `Arrow` into new `Arrow` and so on. The library supports only "and-then" style. It builds a strict product Arrow: `A × B × C × ... ⟼ D`. The product type takes a protocol context and applies "morphism" sequentially unless some step fails. Use variadic function `http.Join`, `http.GET`, `http.POST`, `http.PUT` and so on to compose HTTP primitives:
 
 ```go
-/*
-
-Join composes HTTP arrows to high-order function
-(a ⟼ b, b ⟼ c, c ⟼ d) ⤇ a ⟼ d
-*/
+// Join composes HTTP arrows to high-order function
+// (a ⟼ b, b ⟼ c, c ⟼ d) ⤇ a ⟼ d
 func http.Join(arrows ...http.Arrow) http.Arrow
 
 //
@@ -83,7 +77,7 @@ Ease of the composition is one of major intent why ᵍ🆄🆁🅻 library has d
 ## Life-cycle
 
 ```go
-lazy := http.Join(/* ... */)
+lazy := http.GET(/* ... */)
 ```
 
 The instance of `Arrow` produced by one of `Join` functions does not hold a result of HTTP I/O. It only builds a composable "promise" ("lazy I/O") - a pure computation. The computation needs to be evaluated by applying it over the protocol context. The library provides a simple interface to create and customize the environment.  
@@ -95,9 +89,6 @@ cat := http.New()
 
 // apply the computation over the environment
 err := cat.IO(context.TODO(), lazy)
-
-// alternatively, inline the request
-err := cat.IO(context.TODO(), a, b, c)
 ```
 
 Usage of the library for production workload requires a careful configuration of HTTP protocol timeouts, TLS policies, etc.
@@ -120,19 +111,16 @@ The library consists of multiple packages, import them all
 
 ```go
 import (
-  // core types
-  "github.com/fogfish/gurl"
-
-  // support for http protocol
+  // core http protocol types
   "github.com/fogfish/gurl/http"
 
-  // writer morphism is used to declare HTTP method,
-  // destination URL, request headers and payload
+  // writer (emitter) morphism is used to declare HTTP method,
+  // destination URL, request headers and payload.
   // single letter alias (e.g. ø) makes the code less verbose
   ø "github.com/fogfish/gurl/http/send"
 
-  // reader morphism is a pattern matcher for HTTP response code,
-  // headers and response payload
+  // reader (matcher) morphism is a pattern matcher for HTTP response code,
+  // headers and response payload.
   // single letter alias (e.g. ƒ) makes the code less verbose
   ƒ "github.com/fogfish/gurl/http/recv"
 )
@@ -147,37 +135,52 @@ import (
 
 Writer morphism focuses inside and reshapes HTTP requests. The writer morphism is used to declare HTTP method, destination URL, request headers and payload.
 
+#### Method
 
-#### Method and URL
+The library insists usage of combinators `http.GET`, `http.HEAD`, `http.POST`, `http.PUT`, `http.DELETE` and `http.PATCH` to declare the verb of HTTP request.
 
-Method and URL are only mandatory writer morphism in I/O declaration. Use `type Method string` to declare the verb of HTTP request. It's received method `URL` allows to specify a destination endpoint.
+```go
+http.GET(/* ... */)
+http.PUT(/* ... */)
+```
+
+Use `ø.Method` combinator to declare other verbs
 
 ```go
 http.Join(
-  ø.Method("GET").URL("http://example.com"),
-)
-
-// The library implements a syntax sugar for mostly used HTTP Verbs
-http.Join(
-  ø.GET.URL("http://example.com"),
+  ø.Method("OPTIONS")
+  /* ... */
 )
 ```
 
-The `URL` receiver is equivalent to `fmt.Sprintf`. It uses [percent encoding](https://golang.org/pkg/fmt/) to format and escape values.
+#### Target URI
+
+Target URI is only mandatory writer morphism in I/O declaration. Use `ø.URI` to specify a destination endpoint.
 
 ```go
-http.Join(
-  ø.GET.URL("http://%s/%s", "example.com", "foo"),
+http.GET(
+  ø.URI("http://example.com"),
+)
+```
+
+The `ø.URI` combinator is equivalent to `fmt.Sprintf`. It uses [percent encoding](https://golang.org/pkg/fmt/) to format and escape values.
+
+```go
+http.GET(
+  ø.URI("http://example.com/%s", "foo"),
 )
 
-// All path segments are escaped by default, use ø.Authority or ø.Segment
+// All path segments are escaped by default, use ø.Authority or ø.Path
 // types to disable escaping
-http.Join(
-  // this does not work
-  ø.GET.URL("%s/%s", "http://example.com", "foo/bar"),
 
-  // this works
-  ø.GET.URL("%s/%s", ø.Authority("http://example.com"), ø.Segment("foo/bar")),
+// BAD, DOES NOT WORK
+http.GET(
+  ø.URI("%s/%s", "http://example.com", "foo/bar"),
+)
+
+// GOOD, IT WORKS
+http.GET(
+  ø.URI("%s/%s", ø.Authority("http://example.com"), ø.PATH("foo/bar")),
 )
 ```
 
@@ -187,8 +190,8 @@ http.Join(
 It is possible to inline query parameters into URL. However, this is not a type-safe approach.
 
 ```go
-http.Join(
-  ø.GET.URL("http://example.com/?tag=%s", "foo"),
+http.GET(
+  ø.URI("http://example.com/?tag=%s", "foo"),
 )
 ```
 
@@ -200,32 +203,40 @@ type MyParam struct {
   Host string `json:"host,omitempty"`
 }
 
-http.Join(
+http.GET(
   // ...
-  ø.Params(MyParam{Site: "site", Host: "host"}),
+  ø.Params(MyParam{Site: "example.com", Host: "127.1"}),
 ),
 ```
 
+It is possible to declare individual parameters
+
+```go
+http.GET(
+  ø.Param("site", "example.com"),
+  ø.Param("host", "127.1"),
+)
+```
 
 #### Request Headers
 
-Use `type Header string` to declare headers and its values. Each request might contain declaration of multiple headers.
+Use `func Header[T http.ReadableHeaderValues](header string, value T) http.Arrow` combinator to declare headers and its values. Each request might contain declaration of multiple headers.
 
 ```go
-http.Join(
+http.GET(
   // ...
-  ø.Header("Content-Type").Is("application/json"),
+  ø.Header("Content-Type", "application/json"),
 )
 
 // The library implements a syntax sugar for mostly used HTTP headers
 // https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Request_fields
 http.Join(
   // ...
-  ø.Authorization.Is("Bearer eyJhbGciOiJIU...adQssw5c"),
+  ø.Authorization.Set("Bearer eyJhbGciOiJIU...adQssw5c"),
 )
 
-// The library implements a syntax sugar for content negotiation headers
-http.Join(
+// The library implements a syntax sugar possible enumeration values
+http.GET(
   // ...
   ø.Accept.JSON,
   ø.ContentType.HTML,
@@ -234,7 +245,7 @@ http.Join(
 
 #### Request payload
 
-The `func Send(data interface{}) http.Arrow` transmits the payload to the destination URL. The function takes Go data types (e.g. maps, struct, etc) and encodes it to binary using `Content-Type` header as a hint. The function fails if content type is not defined or not supported by the library.
+The `func Send(data any) http.Arrow` transmits the payload to the destination URL. The function takes Go data types (e.g. maps, struct, etc) and encodes it to binary using `Content-Type` header as a hint. The function fails if content type is not defined or not supported by the library.
 
 ```go
 type MyType struct {
@@ -243,31 +254,38 @@ type MyType struct {
 }
 
 // Encode struct to JSON
-http.Join(
+http.GET(
   // ...
   ø.ContentType.JSON,
-  ø.Send(MyType{Site: "site", Host: "host"}),
+  ø.Send(MyType{Site: "example.com", Host: "127.1"}),
 )
 
 // Encode map to www-form-urlencoded
-http.Join(
+http.GET(
   // ...
   ø.ContentType.Form,
   ø.Send(map[string]string{
-    "site": "site",
-    "host": "host",
+    "site": "example.com",
+    "host": "127.1",
   })
 )
 
 // Send string, []byte or io.Reader. Just define the right Content-Type
-http.Join(
+http.GET(
   // ...
   ø.ContentType.Form,
-  ø.Send([]byte{"site=site&host=host"}),
+  ø.Send([]byte{"site=example.com&host=127.1"}),
 )
 ```
 
-The combinator supports: `string`, `[]byte`, `io.Reader` and any arbitrary `struct`.
+The combinator supports a raw data types:
+- `string`
+- `*strings.Reader`
+- `[]byte`
+- `*bytes.Buffer`
+- `*bytes.Reader`
+- `io.Reader`
+- any arbitrary `struct`.
 
 
 ### Reader morphism
@@ -279,14 +297,14 @@ Reader morphism focuses on the side-effect of HTTP protocol. It does a pattern m
 Status code validation is only mandatory reader morphism in I/O declaration. The status code "arrow" checks the code in HTTP response and fails with error if the status code does not match the expected one. The library defines a `type StatusCode int` and constants (e.g. `Status.OK`) for all known HTTP status codes.
 
 ```go
-http.Join(
+http.GET(
   // ...
   ƒ.Status.OK,
 )
 
 // Sometime a multiple HTTP status codes has to be accepted
 // `ƒ.Code` arrow is variadic function that does it
-http.Join(
+http.GET(
   // ...
   ƒ.Code(http.StatusOK, http.StatusCreated, http.StatusAccepted),
 )
@@ -294,32 +312,49 @@ http.Join(
 
 #### Response Headers
 
-Use `type Header string` to pattern match presence of HTTP header and its value in the response. The matching fails if the response is missing the header or its value do not equal.
+Use `func Header[T http.MatchableHeaderValues](header string, value T) http.Arrow` combinator to pattern match presence of HTTP header and its value in the response. The matching fails if the response is missing the header or its value do not equal.
 
 ```go
-http.Join(
+http.GET(
   // ...
-  ƒ.Header("Content-Type").Is("application/json"),
+  ƒ.Header("Content-Type", "application/json"),
 )
 
 // The library implements a syntax sugar for mostly used HTTP headers
 // https://en.wikipedia.org/wiki/List_of_HTTP_header_fields#Response_fields
-http.Join(
+http.GET(
   // ...
   ƒ.Authorization.Is("Bearer eyJhbGciOiJIU...adQssw5c"),
 )
 
 // The library implements a syntax sugar for content negotiation headers
-http.Join(
+http.GET(
   // ...
   ƒ.ContentType.JSON,
 )
 
-// Any arrow is a syntax sugar of Header("Content-Type").Is("*")
-http.Join(
+// Any arrow is a syntax sugar of Header("Content-Type", "*")
+http.GET(
   // ...
   ƒ.Server.Any,
   ƒ.ContentType.Any,
+)
+```
+
+The combinator support "lifting" of header value into the variable:
+
+```go
+var (
+  date time.Time
+  mime string
+  some string
+)
+
+http.GET(
+  // ...
+  ƒ.Date.To(&date),
+  ƒ.ContentType.To(&mime),
+  ƒ.Header("X-Some", &some),
 )
 ```
 
@@ -334,7 +369,7 @@ type MyType struct {
 }
 
 var data MyType
-http.Join(
+http.GET(
   // ...
   ƒ.Recv(&data), // Note: pointer to data structure is required
 )
@@ -348,7 +383,7 @@ It also receives raw binaries in case data type is not supported.
 
 ```go
 var data []byte
-http.Join(
+http.GET(
   // ...
   ƒ.Bytes(&data), // Note: pointer to data buffer is required
 )
@@ -362,20 +397,20 @@ A pure functional style of development does not have variables or assignment sta
 type MyClient http.Stack
 
 func (cli MyClient) Request(host, token string, req T) (*T, error) {
-  return http.IO[T](cat.WithContext(context.TODO()),
-    //
-    ø.GET.URL("https://%s", host),
-    ø.Authorization.Is(token),
-    ø.Send(req),
-    //
-    ƒ.Status.OK,
+  return http.IO[T](cat.WithContext(context.Background()),
+    http.GET(
+      ø.GET.URL("https://%s", host),
+      ø.Authorization.Set(token),
+      ø.Send(req),
+      ƒ.Status.OK,
+    )
   )
 }
 ```
 
 ## Assert Protocol Payload
 
-ᵍ🆄🆁🅻 library is not only about networking I/O. It also allows to assert the response. It defines a few helper functions that combine assert logic with I/O chain. These functions act as lense that are focused inside the structure, fetching values and asserts them. These helpers abort the evaluation of “program” if expectations do not match actual response. The `func FMap(f func() error) Arrow` lifts any function/closure to composable `Arrow`, allowing to implement assert procedure.  
+ᵍ🆄🆁🅻 library is not only about networking I/O. It also allows to assert the response. The `type Arrow func(*http.Context) error` is "open" interface to combine assert logic with I/O chain. These functions act as lense that are focused inside the structure, fetching values and asserts them. These helpers abort the evaluation of “program” if expectations do not match actual response.
 
 ```go
 type T struct {
@@ -392,7 +427,7 @@ func (t *T) CheckValue(*http.Context) error {
 }
 
 func (t *T) SomeIO() gurl.Arrow {
-  return http.Join(
+  return http.GET(
     // ...
     ƒ.Recv(t),
     // compose the assertion into I/O chain
@@ -409,7 +444,6 @@ Ease of the composition is one of major feature in ᵍ🆄🆁🅻 library. It a
 ```go
 // declare a product type to depict IO context
 type HoF struct {
-  http.Stack
   Token AccessToken
   User  User
   Org   Org
@@ -417,37 +451,41 @@ type HoF struct {
 
 // Declare set of independent HTTP I/O.
 // Each operation either reads or writes the context
-func (hof *HoF) FetchAccessToken() error {
-  return hof.IO(context.TODO(),
+func (hof *HoF) FetchAccessToken() http.Arrow {
+  return http.GET(
     // ...
     ƒ.Recv(&hof.Token),
   )
 }
 
 func (hof *HoF) FetchUser() error {
-  return hof.IO(context.TODO(),
-    ø.POST.URL(/* ... */),
-    ø.Authorization().Val(hof.Token),
+  return http.POST(
+    ø.URI(/* ... */),
+    ø.Authorization.Set(hof.Token),
     // ...
     ƒ.Recv(&hof.User),
   )
 }
 
 func (hof *HoF) FetchContribution() error {
-  return hof.IO(context.TODO(),
-    ø.POST(/* ... */),
-    ø.Authorization().Val(hof.Token),
+  return http.POST(
+    ø.URI(/* ... */),
+    ø.Authorization.Set(hof.Token),
     // ...
     ƒ.Recv(&hof.Org),
   )
 }
 
+stack := http.New()
+
 // Combine HTTP I/O to sequential chain of execution 
-api := &HoF{Stack: http.New()}
-err := gurl.Join(
-  api.FetchAccessToken,
-  api.FetchUser,
-  api.FetchContribution,
+api := &HoF{}
+err := stack.IO(context.Background(),
+  http.Join(
+    api.FetchAccessToken(),
+    api.FetchUser(),
+    api.FetchContribution(),
+  ),
 )
 ```
 

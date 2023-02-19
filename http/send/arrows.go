@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2019 Dmitry Kolesnikov
+// Copyright (C) 2019 - 2023 Dmitry Kolesnikov
 //
 // This file may be modified and distributed under the terms
 // of the MIT license.  See the LICENSE file for details.
@@ -20,8 +20,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fogfish/gurl"
-	"github.com/fogfish/gurl/http"
+	"github.com/fogfish/gurl/v2"
+	"github.com/fogfish/gurl/v2/http"
 )
 
 // Method defines HTTP Method/Verb to the request
@@ -131,11 +131,17 @@ func Params[T any](query T) http.Arrow {
 }
 
 // Param appends query params to request URL.
-func Param(key string, val string) http.Arrow {
+func Param[T interface{ string | int }](key string, val T) http.Arrow {
 	return func(ctx *http.Context) error {
 		uri := ctx.Request.URL
 		q := uri.Query()
-		q.Add(key, val)
+		switch v := any(val).(type) {
+		case string:
+			q.Add(key, v)
+		case int:
+			q.Add(key, strconv.Itoa(v))
+		}
+
 		uri.RawQuery = q.Encode()
 		ctx.Request.URL = uri
 
@@ -340,7 +346,7 @@ const (
 //
 // The function accept a "classical" data container such as string, []bytes or
 // io.Reader interfaces.
-func Send(data interface{}) http.Arrow {
+func Send(data any) http.Arrow {
 	return func(cat *http.Context) error {
 		chunked := cat.Request.Header.Get(string(TransferEncoding)) == "chunked"
 		content := cat.Request.Header.Get(string(ContentType))

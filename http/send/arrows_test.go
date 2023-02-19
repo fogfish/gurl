@@ -17,8 +17,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fogfish/gurl/http"
-	ø "github.com/fogfish/gurl/http/send"
+	"github.com/fogfish/gurl/v2/http"
+	ø "github.com/fogfish/gurl/v2/http/send"
 	"github.com/fogfish/it/v2"
 )
 

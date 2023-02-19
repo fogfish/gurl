@@ -32,8 +32,8 @@ Let's look on step-by-step usage of the category.
 
 **Method and URL** are mandatory. It has to be a first element in the construction.
 
-	http.Join(
-	  ø.GET("http://example.com"),
+	http.GET(
+	  ø.URI("http://example.com"),
 	  ...
 	)
 
@@ -41,10 +41,10 @@ Definition of **request headers** is an optional. You can list as many headers a
 needed. Either using string literals or variables. Some frequently used headers
 implements aliases (e.g. ø.ContentJSON(), ...)
 
-	http.Join(
+	http.GET(
 	  ...
-	  ø.Header("Accept").Is("application/json"),
-	  ø.Header("Authorization").Val(&token),
+	  ø.Header("Accept", "application/json"),
+	  ø.Header("Authorization", &token),
 	  ...
 	)
 
@@ -52,7 +52,7 @@ The **request payload** is also an optional. You can also use native Golang data
 as egress payload. The library implicitly encodes input structures to binary
 using Content-Type as a hint.
 
-	http.Join(
+	http.GET(
 	  ...
 	  ø.Send(MyType{Hello: "World"}),
 	  ...
@@ -61,7 +61,7 @@ using Content-Type as a hint.
 The declaration of expected response is always starts with mandatory HTTP **status
 code**. The execution fails if peer responds with other than specified value.
 
-	http.Join(
+	http.GET(
 	  ...
 	  ƒ.Code(http.StatusCodeOK),
 	  ...
@@ -71,9 +71,9 @@ It is possible to match presence of header in the response, match its entire
 content or lift the header value to a variable. The execution fails if HTTP
 response do not match the expectation.
 
-	http.Join(
+	http.GET(
 	  ...
-	  ƒ.Header("Content-Type").Is("application/json"),
+	  ƒ.Header("Content-Type", "application/json"),
 	  ...
 	)
 
@@ -81,7 +81,7 @@ The library is able to **decode payload** into Golang native data structure
 using Content-Type header as a hint.
 
 	var data MyType
-	http.Join(
+	http.GET(
 	  ...
 	  ƒ.Recv(&data)
 	  ...

@@ -1,36 +1,30 @@
-//
 // Copyright (C) 2019 Dmitry Kolesnikov
 //
 // This file may be modified and distributed under the terms
 // of the MIT license.  See the LICENSE file for details.
 // https://github.com/fogfish/gurl
-//
+
 package main
 
-/*
-
-The example shows recursion of HTTP. The recurion is demonstarted as
-sequential retrival of content until EOF.
-
-In pure functional environment the recursion can be defined as
-
-lookup(Page) ->
-  [m_state ||
-    Head <- request(Token, Url, Page),
-    Tail <- untilEOF(Head, Token, Url, Page),
-    cats:unit(Head ++ Tail)
-  ].
-
-*/
+// The example shows recursion of HTTP. The recurion is demonstarted as
+// sequential retrieval of content until EOF.
+//
+// In pure functional environment the recursion can be defined as
+//
+// lookup(Page) ->
+//   [m_state ||
+//     Head <- request(Token, Url, Page),
+//     Tail <- untilEOF(Head, Token, Url, Page),
+//     cats:unit(Head ++ Tail)
+//   ].
 
 import (
 	"context"
 	"fmt"
-	"strconv"
 
-	"github.com/fogfish/gurl/http"
-	ƒ "github.com/fogfish/gurl/http/recv"
-	ø "github.com/fogfish/gurl/http/send"
+	"github.com/fogfish/gurl/v2/http"
+	ƒ "github.com/fogfish/gurl/v2/http/recv"
+	ø "github.com/fogfish/gurl/v2/http/send"
 )
 
 // repo is a payload returned by api
@@ -42,12 +36,15 @@ type repo struct {
 type seq []repo
 
 // request declares HTTP I/O that fetches a portion (page) from api
-func request(cat http.Stack, page int) (*seq, error) {
-	return http.IO[seq](cat.WithContext(context.TODO()),
-		ø.GET.URL("https://api.github.com/users/fogfish/repos"),
-		ø.Params(map[string]string{"type": "all", "page": strconv.Itoa(page)}),
+func request(page int) (*seq, http.Arrow) {
+	var seq seq
+	return &seq, http.GET(
+		ø.URI("https://api.github.com/users/fogfish/repos"),
+		ø.Param("type", "all"),
+		ø.Param("page", page),
 		ø.Accept.JSON,
 		ƒ.Status.OK,
+		ƒ.Recv(&seq),
 	)
 }
 
@@ -59,7 +56,8 @@ func lookup(cat http.Stack, page int) (seq, error) {
 
 	pid := page
 	for {
-		h, err := request(cat, pid)
+		h, lazy := request(pid)
+		err := cat.IO(context.Background(), lazy)
 		if err != nil {
 			return nil, err
 		}

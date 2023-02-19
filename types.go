@@ -12,26 +12,6 @@ import (
 	"fmt"
 )
 
-/*
-
-Arrow is generic composable I/O
-*/
-type Arrow func() error
-
-/*
-
-Join composes I/O
-*/
-func Join(arrows ...Arrow) error {
-	for _, f := range arrows {
-		if err := f(); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // NotSupported is returned if communication schema is not supported.
 type NotSupported struct{ URL string }
 

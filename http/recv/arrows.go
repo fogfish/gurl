@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2019 Dmitry Kolesnikov
+// Copyright (C) 2019 - 2023 Dmitry Kolesnikov
 //
 // This file may be modified and distributed under the terms
 // of the MIT license.  See the LICENSE file for details.
@@ -18,8 +18,8 @@ import (
 	"time"
 
 	"github.com/ajg/form"
-	"github.com/fogfish/gurl"
-	"github.com/fogfish/gurl/http"
+	"github.com/fogfish/gurl/v2"
+	"github.com/fogfish/gurl/v2/http"
 )
 
 //-------------------------------------------------------------------
@@ -376,6 +376,7 @@ func liftTime(ctx *http.Context, header string, value *time.Time) error {
 	return nil
 }
 
+// Header matches or lifts header value
 func Header[T http.MatchableHeaderValues](header string, value T) http.Arrow {
 	switch v := any(value).(type) {
 	case string:
@@ -405,7 +406,14 @@ func Header[T http.MatchableHeaderValues](header string, value T) http.Arrow {
 //		)
 type HeaderOf[T http.ReadableHeaderValues] string
 
-// Sets value of HTTP header
+// Matches header to any value
+func (h HeaderOf[T]) Any() http.Arrow {
+	return func(ctx *http.Context) error {
+		return match(ctx, string(h), "*")
+	}
+}
+
+// Matches value of HTTP header
 func (h HeaderOf[T]) Is(value T) http.Arrow {
 	switch v := any(value).(type) {
 	case string:
@@ -425,7 +433,7 @@ func (h HeaderOf[T]) Is(value T) http.Arrow {
 	}
 }
 
-// Sets value of HTTP header
+// Lifts value of HTTP header
 func (h HeaderOf[T]) To(value *T) http.Arrow {
 	switch v := any(value).(type) {
 	case *string:
@@ -450,6 +458,13 @@ func (h HeaderOf[T]) To(value *T) http.Arrow {
 //	const ContentType = HeaderEnumContent("Content-Type")
 //	ƒ.ContentType.JSON
 type HeaderEnumContent string
+
+// Matches header to any value
+func (h HeaderEnumContent) Any() http.Arrow {
+	return func(ctx *http.Context) error {
+		return match(ctx, string(h), "*")
+	}
+}
 
 // Matches value of HTTP header
 func (h HeaderEnumContent) Is(value string) http.Arrow {
@@ -506,6 +521,13 @@ func (h HeaderEnumContent) HTML(ctx *http.Context) error {
 //	ƒ.Connection.KeepAlive
 type HeaderEnumConnection string
 
+// Matches header to any value
+func (h HeaderEnumConnection) Any() http.Arrow {
+	return func(ctx *http.Context) error {
+		return match(ctx, string(h), "*")
+	}
+}
+
 // Matches value of HTTP header
 func (h HeaderEnumConnection) Is(value string) http.Arrow {
 	return func(ctx *http.Context) error {
@@ -535,6 +557,13 @@ func (h HeaderEnumConnection) Close(ctx *http.Context) error {
 //	const TransferEncoding = HeaderEnumTransferEncoding("Transfer-Encoding")
 //	ƒ.TransferEncoding.Chunked
 type HeaderEnumTransferEncoding string
+
+// Matches header to any value
+func (h HeaderEnumTransferEncoding) Any() http.Arrow {
+	return func(ctx *http.Context) error {
+		return match(ctx, string(h), "*")
+	}
+}
 
 // Matches value of HTTP header
 func (h HeaderEnumTransferEncoding) Is(value string) http.Arrow {

@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"github.com/ajg/form"
-	"github.com/fogfish/gurl"
+	"github.com/fogfish/gurl/v2"
 )
 
 // Arrow is a morphism applied to HTTP protocol stack

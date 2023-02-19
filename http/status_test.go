@@ -14,7 +14,7 @@ import (
 	"net/http"
 	"testing"
 
-	gurl "github.com/fogfish/gurl/http"
+	gurl "github.com/fogfish/gurl/v2/http"
 	"github.com/fogfish/it/v2"
 )
 

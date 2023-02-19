@@ -15,9 +15,9 @@ import (
 	"testing"
 	"time"
 
-	µ "github.com/fogfish/gurl/http"
-	ƒ "github.com/fogfish/gurl/http/recv"
-	ø "github.com/fogfish/gurl/http/send"
+	µ "github.com/fogfish/gurl/v2/http"
+	ƒ "github.com/fogfish/gurl/v2/http/recv"
+	ø "github.com/fogfish/gurl/v2/http/send"
 	"github.com/fogfish/it/v2"
 )
 
