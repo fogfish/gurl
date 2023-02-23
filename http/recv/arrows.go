@@ -646,3 +646,93 @@ func Bytes(val *[]byte) http.Arrow {
 		return
 	}
 }
+
+// Match received payload to defined pattern
+func Match(val string) http.Arrow {
+	var pat map[string]any
+	if err := json.Unmarshal([]byte(val), &pat); err != nil {
+		panic(err)
+	}
+
+	return func(cat *http.Context) (err error) {
+		var val map[string]any
+
+		err = decode(
+			cat.Response.Header.Get("Content-Type"),
+			cat.Response.Body,
+			&val,
+		)
+		cat.Response.Body.Close()
+		cat.Response = nil
+
+		if !equiv(pat, val) {
+			return &gurl.NoMatch{}
+		}
+
+		return
+	}
+}
+
+func equiv(pat, val map[string]any) bool {
+	for k, p := range pat {
+		v, has := val[k]
+		if !has {
+			return false
+		}
+
+		if p == "_" {
+			continue
+		}
+
+		if !equivVal(p, v) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func equivVal(pat, val any) bool {
+	switch vv := val.(type) {
+	case string:
+		pp, ok := pat.(string)
+		if !ok {
+			return false
+		}
+		return vv == pp
+	case float64:
+		pp, ok := pat.(float64)
+		if !ok {
+			return false
+		}
+		return vv == pp
+	case int:
+		pp, ok := pat.(int)
+		if !ok {
+			return false
+		}
+		return vv == pp
+	case []any:
+		pp, ok := pat.([]any)
+		if !ok {
+			return false
+		}
+		if len(pp) != len(vv) {
+			return false
+		}
+		for i, vvx := range vv {
+			if !equivVal(pp[i], vvx) {
+				return false
+			}
+		}
+		return true
+	case map[string]any:
+		pp, ok := pat.(map[string]any)
+		if !ok {
+			return false
+		}
+		return equiv(pp, vv)
+	}
+
+	return false
+}

@@ -328,6 +328,68 @@ func TestRecvBytes(t *testing.T) {
 	}
 }
 
+func TestMatch(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	t.Run("Match", func(t *testing.T) {
+		for _, pat := range []string{
+			`{"a":"_"}`,
+			`{"b":"_"}`,
+			`{"c":"_"}`,
+			`{"d":"_"}`,
+			`{"e":"_"}`,
+			`{"a":"a"}`,
+			`{"b":101}`,
+			`{"c":1.1}`,
+			`{"a":"a", "b":101, "c":1.1}`,
+			`{"d":["a", "b", "c"]}`,
+			`{"e":{"a":"_"}}`,
+			`{"e":{"a":"a"}}`,
+		} {
+			req := µ.GET(
+				ø.URI("%s/match", ø.Authority(ts.URL)),
+				ƒ.Status.OK,
+				ƒ.Match(pat),
+			)
+
+			cat := µ.New()
+			err := cat.IO(context.Background(), req)
+
+			it.Then(t).Should(
+				it.Nil(err),
+			)
+		}
+	})
+
+	t.Run("NoMatch", func(t *testing.T) {
+		for _, pat := range []string{
+			`{"f":"_"}`,
+			`{"a":"b"}`,
+			`{"b":111}`,
+			`{"c":2.1}`,
+			`{"a":"a", "b":111, "c":1.1}`,
+			`{"d":["a", "b"]}`,
+			`{"d":["a", "d", "c"]}`,
+			`{"e":{"f":"_"}}`,
+			`{"e":{"a":"b"}}`,
+		} {
+			req := µ.GET(
+				ø.URI("%s/match", ø.Authority(ts.URL)),
+				ƒ.Status.OK,
+				ƒ.Match(pat),
+			)
+
+			cat := µ.New()
+			err := cat.IO(context.Background(), req)
+
+			it.Then(t).ShouldNot(
+				it.Nil(err),
+			)
+		}
+	})
+}
+
 func mock() *httptest.Server {
 	return httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -355,6 +417,9 @@ func mock() *httptest.Server {
 			case r.URL.Path == "/code/303":
 				w.Header().Add("Location", "http://127.1")
 				w.WriteHeader(303)
+			case strings.HasPrefix(r.URL.Path, "/match"):
+				w.Header().Add("Content-Type", "application/json")
+				w.Write([]byte(`{"a":"a", "b":101, "c":1.1, "d":["a", "b", "c"], "e": {"a":"a", "b":101, "c":1.1}}`))
 			case strings.HasPrefix(r.URL.Path, "/code"):
 				seq := strings.Split(r.URL.Path, "/")
 				code, _ := strconv.Atoi(seq[2])
