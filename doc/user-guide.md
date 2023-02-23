@@ -19,6 +19,7 @@
     - [Response Payload](#response-payload)
   - [Using Variables for Dynamic Behavior](#using-variables-for-dynamic-behavior)
 - [Assert Protocol Payload](#assert-protocol-payload)
+- [Pattern Match Protocol Payload](#pattern-match-protocol-payload)
 - [Chain Network I/O](#chain-network-io)
 
 ---
@@ -436,6 +437,26 @@ func (t *T) SomeIO() gurl.Arrow {
 }
 ```
 
+## Pattern Match Protocol Payload
+
+ᵍ🆄🆁🅻 library provides utility combinator to match a payload to the patten. It acts as simplest assert method, which requires no type definition:
+
+```go
+http.GET(
+  ƒ.Match(`
+  {
+    "a": "some literal",
+    "b": 1024,
+    "c": 10.5,
+    "d": "_",
+    "e": ["some", "literal", "values", "in", "the", "list"],
+    "f": {
+      "nested": "object",
+    }
+  }
+  `)
+)
+```
 
 ## Chain Network I/O
 
