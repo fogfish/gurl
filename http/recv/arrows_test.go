@@ -339,9 +339,11 @@ func TestMatch(t *testing.T) {
 			`{"c":"_"}`,
 			`{"d":"_"}`,
 			`{"e":"_"}`,
+			`{"f":"_"}`,
 			`{"a":"a"}`,
 			`{"b":101}`,
 			`{"c":1.1}`,
+			`{"f":true}`,
 			`{"a":"a", "b":101, "c":1.1}`,
 			`{"d":["a", "b", "c"]}`,
 			`{"e":{"a":"_"}}`,
@@ -364,10 +366,14 @@ func TestMatch(t *testing.T) {
 
 	t.Run("NoMatch", func(t *testing.T) {
 		for _, pat := range []string{
-			`{"f":"_"}`,
+			`{"g":"_"}`,
 			`{"a":"b"}`,
+			`{"a":101}`,
 			`{"b":111}`,
+			`{"b":"a"}`,
 			`{"c":2.1}`,
+			`{"c":"a"}`,
+			`{"f":false}`,
 			`{"a":"a", "b":111, "c":1.1}`,
 			`{"d":["a", "b"]}`,
 			`{"d":["a", "d", "c"]}`,
@@ -419,7 +425,7 @@ func mock() *httptest.Server {
 				w.WriteHeader(303)
 			case strings.HasPrefix(r.URL.Path, "/match"):
 				w.Header().Add("Content-Type", "application/json")
-				w.Write([]byte(`{"a":"a", "b":101, "c":1.1, "d":["a", "b", "c"], "e": {"a":"a", "b":101, "c":1.1}}`))
+				w.Write([]byte(`{"a":"a", "b":101, "c":1.1, "d":["a", "b", "c"], "e": {"a":"a", "b":101, "c":1.1}, "f": true}`))
 			case strings.HasPrefix(r.URL.Path, "/code"):
 				seq := strings.Split(r.URL.Path, "/")
 				code, _ := strconv.Atoi(seq[2])

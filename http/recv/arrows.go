@@ -706,8 +706,8 @@ func equivVal(pat, val any) bool {
 			return false
 		}
 		return vv == pp
-	case int:
-		pp, ok := pat.(int)
+	case bool:
+		pp, ok := pat.(bool)
 		if !ok {
 			return false
 		}
