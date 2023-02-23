@@ -374,11 +374,14 @@ func TestMatch(t *testing.T) {
 			`{"c":2.1}`,
 			`{"c":"a"}`,
 			`{"f":false}`,
+			`{"f":"false"}`,
 			`{"a":"a", "b":111, "c":1.1}`,
 			`{"d":["a", "b"]}`,
 			`{"d":["a", "d", "c"]}`,
+			`{"d":"abc"}`,
 			`{"e":{"f":"_"}}`,
 			`{"e":{"a":"b"}}`,
+			`{"e":"ab"}`,
 		} {
 			req := µ.GET(
 				ø.URI("%s/match", ø.Authority(ts.URL)),
