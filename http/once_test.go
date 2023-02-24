@@ -1,3 +1,11 @@
+//
+// Copyright (C) 2019 - 2023 Dmitry Kolesnikov
+//
+// This file may be modified and distributed under the terms
+// of the MIT license.  See the LICENSE file for details.
+// https://github.com/fogfish/gurl
+//
+
 package http_test
 
 import (
@@ -6,7 +14,6 @@ import (
 	"testing"
 
 	"github.com/fogfish/gurl/v2/http"
-	µ "github.com/fogfish/gurl/v2/http"
 	ƒ "github.com/fogfish/gurl/v2/http/recv"
 	ø "github.com/fogfish/gurl/v2/http/send"
 	"github.com/fogfish/it/v2"
@@ -17,7 +24,7 @@ func TestWriteOnceSuccess(t *testing.T) {
 	defer ts.Close()
 
 	unittest := func() http.Arrow {
-		return µ.GET(
+		return http.GET(
 			ø.URI("%s/json", ø.Authority(ts.URL)),
 			ƒ.Status.OK,
 		)
@@ -43,7 +50,7 @@ func TestWriteOnceNoMatch(t *testing.T) {
 	defer ts.Close()
 
 	unittest := func() http.Arrow {
-		return µ.GET(
+		return http.GET(
 			ø.URI("%s/json", ø.Authority(ts.URL)),
 			ƒ.Status.OK,
 			ƒ.ContentType.Form,
