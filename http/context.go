@@ -9,6 +9,7 @@
 package http
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"log"
@@ -27,6 +28,7 @@ type Context struct {
 	Method   string
 	Request  *http.Request
 	Response *http.Response
+	Payload  []byte
 	stack    *Protocol
 }
 
@@ -72,6 +74,15 @@ func (ctx *Context) Unsafe() error {
 	in, err := ctx.stack.Do(eg)
 	if err != nil {
 		return err
+	}
+
+	if ctx.stack.Memento {
+		ctx.Payload, err = io.ReadAll(in.Body)
+		if err != nil {
+			return err
+		}
+
+		in.Body = io.NopCloser(bytes.NewBuffer(ctx.Payload))
 	}
 
 	ctx.Response = in

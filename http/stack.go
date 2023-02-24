@@ -39,6 +39,7 @@ type Stack interface {
 type Protocol struct {
 	*http.Client
 	LogLevel int
+	Memento  bool
 }
 
 // Allocate instance of HTTP Stack
@@ -131,6 +132,13 @@ func LogResponse() Config {
 func LogPayload() Config {
 	return func(cat *Protocol) {
 		cat.LogLevel = 3
+	}
+}
+
+// Memorize the response payload
+func Memento() Config {
+	return func(cat *Protocol) {
+		cat.Memento = true
 	}
 }
 
