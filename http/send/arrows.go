@@ -47,6 +47,10 @@ func URI(url string, args ...any) http.Arrow {
 		}
 
 		if !strings.HasPrefix(url, "http") {
+			url = ctx.Host + url
+		}
+
+		if !strings.HasPrefix(url, "http") {
 			return &gurl.NotSupported{URL: url}
 		}
 

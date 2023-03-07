@@ -25,6 +25,7 @@ import (
 type Context struct {
 	context.Context
 
+	Host     string
 	Method   string
 	Request  *http.Request
 	Response *http.Response

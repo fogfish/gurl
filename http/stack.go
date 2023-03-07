@@ -38,6 +38,7 @@ type Stack interface {
 // Protocol is an instance of Stack
 type Protocol struct {
 	*http.Client
+	Host     string
 	LogLevel int
 	Memento  bool
 }
@@ -54,26 +55,22 @@ func New(opts ...Config) Stack {
 }
 
 // WithContext create instance of I/O Context
-func (cat *Protocol) WithContext(ctx context.Context) *Context {
+func (stack *Protocol) WithContext(ctx context.Context) *Context {
 	return &Context{
 		Context:  ctx,
-		Request:  nil,
-		Response: nil,
-		stack:    cat,
-	}
-}
-
-func (stack *Protocol) IO(ctx context.Context, arrows ...Arrow) error {
-	c := Context{
-		Context:  ctx,
+		Host:     stack.Host,
 		Method:   http.MethodGet,
 		Request:  nil,
 		Response: nil,
 		stack:    stack,
 	}
+}
+
+func (stack *Protocol) IO(ctx context.Context, arrows ...Arrow) error {
+	c := stack.WithContext(ctx)
 
 	for _, f := range arrows {
-		if err := f(&c); err != nil {
+		if err := f(c); err != nil {
 			c.discardBody()
 			return err
 		}
@@ -114,36 +111,42 @@ func WithClient(client *http.Client) Config {
 	}
 }
 
-// LogRequest enables debug logging for requests
-func LogRequest() Config {
+// Enables debug logging for requests
+func WithDebugRequest() Config {
 	return func(cat *Protocol) {
 		cat.LogLevel = 1
 	}
 }
 
-// LogResponse enables debug logging for requests
-func LogResponse() Config {
+// Enables debug logging for requests & response
+func WithDebugResponse() Config {
 	return func(cat *Protocol) {
 		cat.LogLevel = 2
 	}
 }
 
-// LogResponse enables debug logging for requests
-func LogPayload() Config {
+// Enables debug logging for requests, responses and payload
+func WithDebugPayload() Config {
 	return func(cat *Protocol) {
 		cat.LogLevel = 3
 	}
 }
 
-// Memorize the response payload
-func Memento() Config {
+// WithMemorize the response payload
+func WithMemento() Config {
 	return func(cat *Protocol) {
 		cat.Memento = true
 	}
 }
 
-// InsecureTLS disables certificates validation
-func InsecureTLS() Config {
+func WithDefaultHost(host string) Config {
+	return func(cat *Protocol) {
+		cat.Host = host
+	}
+}
+
+// WithInsecureTLS disables certificates validation
+func WithInsecureTLS() Config {
 	return func(cat *Protocol) {
 		switch t := cat.Client.Transport.(type) {
 		case *http.Transport:
@@ -157,8 +160,8 @@ func InsecureTLS() Config {
 	}
 }
 
-// CookieJar enables cookie handlings
-func CookieJar() Config {
+// WithCookieJar enables cookie handlings
+func WithCookieJar() Config {
 	return func(cat *Protocol) {
 		jar, err := cookiejar.New(&cookiejar.Options{
 			PublicSuffixList: publicsuffix.List,

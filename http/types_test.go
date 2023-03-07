@@ -52,8 +52,8 @@ func TestStackOptions(t *testing.T) {
 		ƒ.Code(µ.StatusOK),
 	)
 	cat := µ.New(
-		µ.CookieJar(),
-		µ.InsecureTLS(),
+		µ.WithCookieJar(),
+		µ.WithInsecureTLS(),
 	)
 	err := cat.IO(context.Background(), req)
 

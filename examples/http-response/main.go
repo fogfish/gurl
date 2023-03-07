@@ -62,7 +62,7 @@ func request() (*HTTPBin, http.Arrow) {
 
 func main() {
 	// instance of http stack
-	stack := http.New(http.LogPayload())
+	stack := http.New(http.WithDebugPayload())
 
 	data, lazy := request()
 
