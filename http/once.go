@@ -90,9 +90,6 @@ func newStatus(ctx *Context, id string, dur time.Duration, err error) Status {
 
 func arrowName(i interface{}) string {
 	name := runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
-	if strings.HasPrefix(name, "main.") {
-		name = name[5:]
-	}
-
+	name = strings.TrimPrefix(name, "main.")
 	return name
 }
