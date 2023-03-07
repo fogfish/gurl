@@ -40,7 +40,7 @@ func request() http.Arrow {
 
 func main() {
 	// instance of http stack
-	stack := http.New(http.LogPayload())
+	stack := http.New(http.WithDebugPayload())
 
 	// declares http i/o
 	lazy := request()

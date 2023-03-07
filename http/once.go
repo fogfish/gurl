@@ -14,6 +14,7 @@ import (
 	"io"
 	"reflect"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/fogfish/gurl/v2"
@@ -28,8 +29,7 @@ type Status struct {
 }
 
 // Evaluates sequence of tests, returns status object for each
-func Once(tests ...func() Arrow) []Status {
-	stack := New(Memento())
+func Once(stack Stack, tests ...func() Arrow) []Status {
 	status := make([]Status, len(tests))
 
 	for i, test := range tests {
@@ -44,8 +44,8 @@ func Once(tests ...func() Arrow) []Status {
 	return status
 }
 
-func WriteOnce(w io.Writer, tests ...func() Arrow) error {
-	seq := Once(tests...)
+func WriteOnce(w io.Writer, stack Stack, tests ...func() Arrow) error {
+	seq := Once(stack, tests...)
 
 	if bytes, err := json.MarshalIndent(seq, "", "  "); err == nil {
 		if _, err := w.Write(bytes); err != nil {
@@ -89,5 +89,7 @@ func newStatus(ctx *Context, id string, dur time.Duration, err error) Status {
 }
 
 func arrowName(i interface{}) string {
-	return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
+	name := runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
+	name = strings.TrimPrefix(name, "main.")
+	return name
 }

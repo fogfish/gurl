@@ -25,13 +25,14 @@ func TestWriteOnceSuccess(t *testing.T) {
 
 	unittest := func() http.Arrow {
 		return http.GET(
-			ø.URI("%s/json", ø.Authority(ts.URL)),
+			ø.URI("/json"),
 			ƒ.Status.OK,
 		)
 	}
 
 	buf := bytes.Buffer{}
-	err := http.WriteOnce(&buf, unittest)
+	hts := http.New(http.WithMemento(), http.WithDefaultHost(ts.URL))
+	err := http.WriteOnce(&buf, hts, unittest)
 	it.Then(t).Should(it.Nil(err))
 
 	var seq []http.Status
@@ -51,14 +52,15 @@ func TestWriteOnceNoMatch(t *testing.T) {
 
 	unittest := func() http.Arrow {
 		return http.GET(
-			ø.URI("%s/json", ø.Authority(ts.URL)),
+			ø.URI("/json"),
 			ƒ.Status.OK,
 			ƒ.ContentType.Form,
 		)
 	}
 
 	buf := bytes.Buffer{}
-	err := http.WriteOnce(&buf, unittest)
+	hts := http.New(http.WithMemento(), http.WithDefaultHost(ts.URL))
+	err := http.WriteOnce(&buf, hts, unittest)
 	it.Then(t).Should(it.Nil(err))
 
 	var seq []http.Status
