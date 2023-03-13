@@ -120,8 +120,10 @@ func decode[T any](content string, stream io.ReadCloser, data *T) error {
 		return form.NewDecoder(stream).Decode(data)
 	default:
 		return &gurl.NoMatch{
-			Diff:    fmt.Sprintf("- Content-Type: application/*\n+ Content-Type: %s", content),
-			Payload: map[string]string{"Content-Type": content},
+			ID:       "http.Recv",
+			Diff:     fmt.Sprintf("- Content-Type: application/{json | www-form}\n+ Content-Type: %s", content),
+			Protocol: "codec",
+			Actual:   content,
 		}
 	}
 }
