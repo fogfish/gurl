@@ -21,11 +21,11 @@ import (
 )
 
 type Status struct {
-	ID       string `json:"id"`
-	Status   string `json:"status"`
-	Duration string `json:"duration"`
-	Reason   string `json:"reason,omitempty"`
-	Payload  string `json:"payload"`
+	ID       string        `json:"id"`
+	Status   string        `json:"status"`
+	Duration time.Duration `json:"duration"`
+	Reason   string        `json:"reason,omitempty"`
+	Payload  string        `json:"payload"`
 }
 
 // Evaluates sequence of tests, returns status object for each
@@ -66,22 +66,28 @@ func newStatus(ctx *Context, id string, dur time.Duration, err error) Status {
 		return Status{
 			ID:       id,
 			Status:   "success",
-			Duration: dur.String(),
+			Duration: dur,
 			Payload:  string(ctx.Payload),
 		}
 	case *gurl.NoMatch:
+		diff := v.Diff
+		if diff == "" {
+			expect, _ := json.Marshal(v.Expect)
+			actual, _ := json.Marshal(v.Actual)
+			diff = "- " + string(expect) + "\n+ " + string(actual)
+		}
 		return Status{
 			ID:       id,
-			Status:   "failure",
-			Duration: dur.String(),
-			Reason:   v.Diff,
+			Status:   "nomatch",
+			Duration: dur,
+			Reason:   diff,
 			Payload:  string(ctx.Payload),
 		}
 	default:
 		return Status{
 			ID:       id,
 			Status:   "failure",
-			Duration: dur.String(),
+			Duration: dur,
 			Reason:   err.Error(),
 			Payload:  string(ctx.Payload),
 		}

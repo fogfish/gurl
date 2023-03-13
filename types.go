@@ -21,10 +21,11 @@ func (e *NotSupported) Error() string {
 
 // Mismatch is returned by api if expectation at body value is failed
 type NoMatch struct {
-	Diff    string
-	Payload interface{}
+	ID       string // unique ID of failed combinator
+	Protocol any    // protocol primitive caused failure
+	Diff     string // human readable difference between expected & actual values
+	Expect   any    // expected value
+	Actual   any    // actual value
 }
 
-func (e *NoMatch) Error() string {
-	return e.Diff
-}
+func (e *NoMatch) Error() string { return e.Diff }

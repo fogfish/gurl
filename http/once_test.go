@@ -69,7 +69,7 @@ func TestWriteOnceNoMatch(t *testing.T) {
 		it.Nil(err),
 		it.Equal(len(seq), 1),
 		it.Equal(seq[0].ID, "github.com/fogfish/gurl/v2/http_test.TestWriteOnceNoMatch.func1"),
-		it.Equal(seq[0].Status, "failure"),
+		it.Equal(seq[0].Status, "nomatch"),
 		it.Equal(seq[0].Payload, `{"site": "example.com"}`),
 		it.Equal(seq[0].Reason, "+ Content-Type: application/json\n- Content-Type: application/x-www-form-urlencoded"),
 	)

@@ -20,6 +20,7 @@ import (
 	"github.com/ajg/form"
 	"github.com/fogfish/gurl/v2"
 	"github.com/fogfish/gurl/v2/http"
+	"github.com/google/go-cmp/cmp"
 )
 
 //-------------------------------------------------------------------
@@ -39,7 +40,13 @@ func Code(code ...http.StatusCode) http.Arrow {
 
 		status := cat.Response.StatusCode
 		if !hasCode(code, status) {
-			return http.NewStatusCode(status, code[0])
+			return &gurl.NoMatch{
+				ID:       "http.Code",
+				Diff:     fmt.Sprintf("+ Status Code: %d\n- Status Code: %d", status, code[0]),
+				Protocol: "StatusCode",
+				Expect:   code[0],
+				Actual:   status,
+			}
 		}
 		return nil
 	}
@@ -82,7 +89,13 @@ func (StatusCode) eval(code http.StatusCode, cat *http.Context) error {
 
 	status := cat.Response.StatusCode
 	if !hasCode([]http.StatusCode{code}, status) {
-		return http.NewStatusCode(status, code)
+		return &gurl.NoMatch{
+			ID:       "http.Code",
+			Diff:     fmt.Sprintf("+ Status Code: %d\n- Status Code: %d", status, code),
+			Protocol: "StatusCode",
+			Expect:   code,
+			Actual:   status,
+		}
 	}
 
 	return nil
@@ -311,15 +324,21 @@ func match(ctx *http.Context, header string, value string) error {
 	h := ctx.Response.Header.Get(string(header))
 	if h == "" {
 		return &gurl.NoMatch{
-			Diff:    fmt.Sprintf("- %s: %s", string(header), value),
-			Payload: nil,
+			ID:       "http.Header",
+			Diff:     fmt.Sprintf("- %s: %s", string(header), value),
+			Protocol: header,
+			Expect:   value,
+			Actual:   nil,
 		}
 	}
 
 	if value != "*" && !strings.HasPrefix(h, value) {
 		return &gurl.NoMatch{
-			Diff:    fmt.Sprintf("+ %s: %s\n- %s: %s", string(header), h, string(header), value),
-			Payload: map[string]string{string(header): h},
+			ID:       "http.Header",
+			Diff:     fmt.Sprintf("+ %s: %s\n- %s: %s", string(header), h, string(header), value),
+			Protocol: header,
+			Expect:   value,
+			Actual:   h,
 		}
 	}
 
@@ -331,8 +350,9 @@ func liftString(ctx *http.Context, header string, value *string) error {
 	val := ctx.Response.Header.Get(string(header))
 	if val == "" {
 		return &gurl.NoMatch{
-			Diff:    fmt.Sprintf("- %s: *", string(header)),
-			Payload: nil,
+			ID:       "http.Header",
+			Diff:     fmt.Sprintf("- %s: *", string(header)),
+			Protocol: header,
 		}
 	}
 
@@ -344,8 +364,9 @@ func liftInt(ctx *http.Context, header string, value *int) error {
 	val := ctx.Response.Header.Get(string(header))
 	if val == "" {
 		return &gurl.NoMatch{
-			Diff:    fmt.Sprintf("- %s: *", string(header)),
-			Payload: nil,
+			ID:       "http.Header",
+			Diff:     fmt.Sprintf("- %s: *", string(header)),
+			Protocol: header,
 		}
 	}
 
@@ -362,8 +383,9 @@ func liftTime(ctx *http.Context, header string, value *time.Time) error {
 	val := ctx.Response.Header.Get(string(header))
 	if val == "" {
 		return &gurl.NoMatch{
-			Diff:    fmt.Sprintf("- %s: *", string(header)),
-			Payload: nil,
+			ID:       "http.Header",
+			Diff:     fmt.Sprintf("- %s: *", string(header)),
+			Protocol: header,
 		}
 	}
 
@@ -611,15 +633,41 @@ const (
 // native Go data structure. The Content-Type header give a hint to decoder.
 // Supply the pointer to data target data structure.
 func Recv[T any](out *T) http.Arrow {
-	return func(cat *http.Context) (err error) {
-		err = decode(
+	return func(cat *http.Context) error {
+		err := decode(
 			cat.Response.Header.Get("Content-Type"),
 			cat.Response.Body,
 			out,
 		)
 		cat.Response.Body.Close()
 		cat.Response = nil
-		return
+		return err
+	}
+}
+
+func Expect[T any](expect T) http.Arrow {
+	return func(cat *http.Context) error {
+		var actual T
+		err := decode(
+			cat.Response.Header.Get("Content-Type"),
+			cat.Response.Body,
+			&actual,
+		)
+		cat.Response.Body.Close()
+		cat.Response = nil
+
+		diff := cmp.Diff(actual, expect)
+		if diff != "" {
+			return &gurl.NoMatch{
+				ID:       "http.Recv",
+				Diff:     diff,
+				Protocol: "body",
+				Expect:   expect,
+				Actual:   actual,
+			}
+		}
+
+		return err
 	}
 }
 
@@ -631,8 +679,10 @@ func decode[T any](content string, stream io.ReadCloser, data *T) error {
 		return form.NewDecoder(stream).Decode(data)
 	default:
 		return &gurl.NoMatch{
-			Diff:    fmt.Sprintf("- Content-Type: application/*\n+ Content-Type: %s", content),
-			Payload: map[string]string{"Content-Type": content},
+			ID:       "http.Recv",
+			Diff:     fmt.Sprintf("- Content-Type: application/{json | www-form}\n+ Content-Type: %s", content),
+			Protocol: "codec",
+			Actual:   content,
 		}
 	}
 }
@@ -649,13 +699,13 @@ func Bytes(val *[]byte) http.Arrow {
 
 // Match received payload to defined pattern
 func Match(val string) http.Arrow {
-	var pat map[string]any
+	var pat any
 	if err := json.Unmarshal([]byte(val), &pat); err != nil {
 		panic(err)
 	}
 
 	return func(cat *http.Context) (err error) {
-		var val map[string]any
+		var val any
 
 		err = decode(
 			cat.Response.Header.Get("Content-Type"),
@@ -665,8 +715,13 @@ func Match(val string) http.Arrow {
 		cat.Response.Body.Close()
 		cat.Response = nil
 
-		if !equiv(pat, val) {
-			return &gurl.NoMatch{}
+		if !equivVal(pat, val) {
+			return &gurl.NoMatch{
+				ID:       "http.Match",
+				Protocol: "body",
+				Expect:   pat,
+				Actual:   val,
+			}
 		}
 
 		return

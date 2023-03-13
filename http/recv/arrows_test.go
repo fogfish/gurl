@@ -44,19 +44,23 @@ func TestCodeNoMatch(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
-	req := µ.GET(
-		ø.URI("%s/other", ø.Authority(ts.URL)),
-		ø.Accept.JSON,
+	for _, arrow := range []µ.Arrow{
 		ƒ.Status.OK,
-	)
-	cat := µ.New()
-	var err interface{ StatusCode() int }
-	f := func() error { return cat.IO(context.Background(), req) }
+		ƒ.Code(200),
+	} {
 
-	it.Then(t).Should(
-		it.Fail(f).With(&err),
-		it.Equal(err.(µ.StatusCode).StatusCode(), µ.StatusBadRequest.StatusCode()),
-	)
+		req := µ.GET(
+			ø.URI("%s/other", ø.Authority(ts.URL)),
+			ø.Accept.JSON,
+			arrow,
+		)
+		cat := µ.New()
+		err := cat.IO(context.Background(), req)
+
+		it.Then(t).Should(
+			it.Equal(err.Error(), "+ Status Code: 400\n- Status Code: 200"),
+		)
+	}
 }
 
 func TestStatusCodes(t *testing.T) {
@@ -297,6 +301,52 @@ func TestRecvForm(t *testing.T) {
 	it.Then(t).Should(
 		it.Nil(err),
 		it.Equal(site.Site, "example.com"),
+	)
+}
+
+func TestExpectJSON(t *testing.T) {
+	type Site struct {
+		Site string `json:"site"`
+	}
+
+	ts := mock()
+	defer ts.Close()
+
+	req := µ.GET(
+		ø.URI("%s/json", ø.Authority(ts.URL)),
+		ƒ.Status.OK,
+		ƒ.ContentType.ApplicationJSON,
+		ƒ.ContentType.JSON,
+		ƒ.Expect(Site{"example.com"}),
+	)
+	cat := µ.New()
+	err := cat.IO(context.Background(), req)
+
+	it.Then(t).Should(
+		it.Nil(err),
+	)
+}
+
+func TestExpectJSONFailed(t *testing.T) {
+	type Site struct {
+		Site string `json:"site"`
+	}
+
+	ts := mock()
+	defer ts.Close()
+
+	req := µ.GET(
+		ø.URI("%s/json", ø.Authority(ts.URL)),
+		ƒ.Status.OK,
+		ƒ.ContentType.ApplicationJSON,
+		ƒ.ContentType.JSON,
+		ƒ.Expect(Site{"some.com"}),
+	)
+	cat := µ.New()
+	err := cat.IO(context.Background(), req)
+
+	it.Then(t).ShouldNot(
+		it.Equal(err.Error(), ""),
 	)
 }
 

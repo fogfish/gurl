@@ -7,3 +7,5 @@ require (
 	github.com/fogfish/it/v2 v2.0.1
 	golang.org/x/net v0.7.0
 )
+
+require github.com/google/go-cmp v0.5.9
