@@ -78,7 +78,7 @@ func newStatus(ctx *Context, id string, dur time.Duration, err error) Status {
 		}
 		return Status{
 			ID:       id,
-			Status:   "failure",
+			Status:   "nomatch",
 			Duration: dur,
 			Reason:   diff,
 			Payload:  string(ctx.Payload),
