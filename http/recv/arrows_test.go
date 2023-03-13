@@ -44,17 +44,23 @@ func TestCodeNoMatch(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
-	req := µ.GET(
-		ø.URI("%s/other", ø.Authority(ts.URL)),
-		ø.Accept.JSON,
+	for _, arrow := range []µ.Arrow{
 		ƒ.Status.OK,
-	)
-	cat := µ.New()
-	err := cat.IO(context.Background(), req)
+		ƒ.Code(200),
+	} {
 
-	it.Then(t).Should(
-		it.Equal(err.Error(), "+ Status Code: 400\n- Status Code: 200"),
-	)
+		req := µ.GET(
+			ø.URI("%s/other", ø.Authority(ts.URL)),
+			ø.Accept.JSON,
+			arrow,
+		)
+		cat := µ.New()
+		err := cat.IO(context.Background(), req)
+
+		it.Then(t).Should(
+			it.Equal(err.Error(), "+ Status Code: 400\n- Status Code: 200"),
+		)
+	}
 }
 
 func TestStatusCodes(t *testing.T) {
