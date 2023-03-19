@@ -34,7 +34,7 @@ func request() http.Arrow {
 		// specify requirements to the response
 		ƒ.Status.OK,
 		ƒ.ContentType.JSON,
-		ƒ.Recv(&data),
+		ƒ.Body(&data),
 	)
 }
 

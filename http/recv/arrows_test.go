@@ -255,7 +255,7 @@ func TestHeaderUndefinedWithVal(t *testing.T) {
 	)
 }
 
-func TestRecvJSON(t *testing.T) {
+func TestBodyJSON(t *testing.T) {
 	type Site struct {
 		Site string `json:"site"`
 	}
@@ -263,24 +263,30 @@ func TestRecvJSON(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
 
-	var site Site
-	req := µ.GET(
-		ø.URI("%s/json", ø.Authority(ts.URL)),
-		ƒ.Status.OK,
-		ƒ.ContentType.ApplicationJSON,
-		ƒ.ContentType.JSON,
-		ƒ.Recv(&site),
-	)
-	cat := µ.New()
-	err := cat.IO(context.Background(), req)
+	for _, arrow := range []func(out *Site) µ.Arrow{
+		ƒ.Body[Site],
+		ƒ.Recv[Site],
+	} {
 
-	it.Then(t).Should(
-		it.Nil(err),
-		it.Equal(site.Site, "example.com"),
-	)
+		var site Site
+		req := µ.GET(
+			ø.URI("%s/json", ø.Authority(ts.URL)),
+			ƒ.Status.OK,
+			ƒ.ContentType.ApplicationJSON,
+			ƒ.ContentType.JSON,
+			arrow(&site),
+		)
+		cat := µ.New()
+		err := cat.IO(context.Background(), req)
+
+		it.Then(t).Should(
+			it.Nil(err),
+			it.Equal(site.Site, "example.com"),
+		)
+	}
 }
 
-func TestRecvForm(t *testing.T) {
+func TestBodyForm(t *testing.T) {
 	type Site struct {
 		Site string `json:"site"`
 	}
@@ -293,7 +299,7 @@ func TestRecvForm(t *testing.T) {
 		ø.URI("%s/form", ø.Authority(ts.URL)),
 		ƒ.Status.OK,
 		ƒ.ContentType.Form,
-		ƒ.Recv(&site),
+		ƒ.Body(&site),
 	)
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
@@ -395,6 +401,9 @@ func TestMatch(t *testing.T) {
 			`{"c":1.1}`,
 			`{"f":true}`,
 			`{"a":"a", "b":101, "c":1.1}`,
+			`{"d":["_", "_", "_"]}`,
+			`{"d":["a", "_", "_"]}`,
+			`{"d":["_", "b", "_"]}`,
 			`{"d":["a", "b", "c"]}`,
 			`{"e":{"a":"_"}}`,
 			`{"e":{"a":"a"}}`,
