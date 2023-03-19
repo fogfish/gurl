@@ -53,7 +53,7 @@ func request() (*HTTPBin, http.Arrow) {
 		// HTTP Response
 		ƒ.Status.OK,
 		ƒ.ContentType.JSON,
-		ƒ.Recv(&data),
+		ƒ.Body(&data),
 
 		// asserts
 		data.validate,

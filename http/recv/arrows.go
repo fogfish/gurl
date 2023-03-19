@@ -629,10 +629,10 @@ const (
 	Via              = HeaderOf[string]("Via")
 )
 
-// Recv applies auto decoders for response and returns either binary or
+// Body applies auto decoders for response and returns either binary or
 // native Go data structure. The Content-Type header give a hint to decoder.
 // Supply the pointer to data target data structure.
-func Recv[T any](out *T) http.Arrow {
+func Body[T any](out *T) http.Arrow {
 	return func(cat *http.Context) error {
 		err := decode(
 			cat.Response.Header.Get("Content-Type"),
@@ -645,6 +645,12 @@ func Recv[T any](out *T) http.Arrow {
 	}
 }
 
+// Recv is alias for Body, maintained only for compatibility
+func Recv[T any](out *T) http.Arrow {
+	return Body(out)
+}
+
+// Match received payload to defined pattern
 func Expect[T any](expect T) http.Arrow {
 	return func(cat *http.Context) error {
 		var actual T
@@ -728,26 +734,11 @@ func Match(val string) http.Arrow {
 	}
 }
 
-func equiv(pat, val map[string]any) bool {
-	for k, p := range pat {
-		v, has := val[k]
-		if !has {
-			return false
-		}
-
-		if p == "_" {
-			continue
-		}
-
-		if !equivVal(p, v) {
-			return false
-		}
+func equivVal(pat, val any) bool {
+	if pp, ok := pat.(string); ok && pp == "_" {
+		return true
 	}
 
-	return true
-}
-
-func equivVal(pat, val any) bool {
 	switch vv := val.(type) {
 	case string:
 		pp, ok := pat.(string)
@@ -786,8 +777,23 @@ func equivVal(pat, val any) bool {
 		if !ok {
 			return false
 		}
-		return equiv(pp, vv)
+		return equivMap(pp, vv)
 	}
 
 	return false
+}
+
+func equivMap(pat, val map[string]any) bool {
+	for k, p := range pat {
+		v, has := val[k]
+		if !has {
+			return false
+		}
+
+		if !equivVal(p, v) {
+			return false
+		}
+	}
+
+	return true
 }

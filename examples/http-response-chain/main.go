@@ -48,7 +48,7 @@ func (hof *Heap) uuid() http.Arrow {
 
 		ƒ.Status.OK,
 		ƒ.ContentType.JSON,
-		ƒ.Recv(&hof.ID),
+		ƒ.Body(&hof.ID),
 	)
 }
 
@@ -62,7 +62,7 @@ func (hof *Heap) post() http.Arrow {
 		ø.Send(&hof.ID.UUID),
 
 		ƒ.Status.OK,
-		ƒ.Recv(&hof.HTTPBin),
+		ƒ.Body(&hof.HTTPBin),
 	)
 }
 

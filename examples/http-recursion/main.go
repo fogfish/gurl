@@ -44,7 +44,7 @@ func request(page int) (*seq, http.Arrow) {
 		ø.Param("page", page),
 		ø.Accept.JSON,
 		ƒ.Status.OK,
-		ƒ.Recv(&seq),
+		ƒ.Body(&seq),
 	)
 }
 
