@@ -49,6 +49,22 @@ func Join(arrows ...Arrow) Arrow {
 	}
 }
 
+// Bind composes HTTP arrows to high-order function
+// In contrast with Join, input is arrow builders
+// (a ⟼ b, b ⟼ c, c ⟼ d) ⤇ a ⟼ d
+func Bind(arrows ...interface{ Arrow() Arrow }) Arrow {
+	return func(cat *Context) error {
+		for _, arrow := range arrows {
+			f := arrow.Arrow()
+			if err := f(cat); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+}
+
 // GET composes HTTP arrows to high-order function for HTTP GET request
 // (a ⟼ b, b ⟼ c, c ⟼ d) ⤇ a ⟼ d
 func GET(arrows ...Arrow) Arrow { return method(http.MethodGet, arrows) }

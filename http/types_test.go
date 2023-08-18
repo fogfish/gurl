@@ -67,8 +67,13 @@ func TestJoin(t *testing.T) {
 	defer ts.Close()
 
 	req := µ.GET(
-		ø.URI("%s/ok", ø.Authority(ts.URL)),
+		ø.URI("%s/opts", ø.Authority(ts.URL)),
+		µ.Join(
+			ø.Param("a", "1"),
+			ø.Param("b", "2"),
+		),
 		ƒ.Code(µ.StatusOK),
+		ƒ.Match(`{"opts": "a=1&b=2"}`),
 	)
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
@@ -91,6 +96,31 @@ func TestJoinCats(t *testing.T) {
 			ø.URI(ts.URL),
 			ƒ.Code(µ.StatusBadRequest),
 		),
+	)
+	cat := µ.New()
+	err := cat.IO(context.Background(), req)
+
+	it.Then(t).Should(
+		it.Nil(err),
+	)
+}
+
+type opt struct{ key, val string }
+
+func (opt opt) Arrow() µ.Arrow { return ø.Param(opt.key, opt.val) }
+
+func TestBind(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	req := µ.GET(
+		ø.URI("%s/opts", ø.Authority(ts.URL)),
+		µ.Bind(
+			opt{"a", "1"},
+			opt{"b", "2"},
+		),
+		ƒ.Code(µ.StatusOK),
+		ƒ.Match(`{"opts": "a=1&b=2"}`),
 	)
 	cat := µ.New()
 	err := cat.IO(context.Background(), req)
@@ -189,6 +219,9 @@ func mock() *httptest.Server {
 				w.Write([]byte("site=example.com"))
 			case r.URL.Path == "/ok":
 				w.WriteHeader(http.StatusOK)
+			case r.URL.Path == "/opts":
+				w.Header().Add("Content-Type", "application/json")
+				w.Write([]byte(`{"opts": "` + r.URL.RawQuery + `"}`))
 			default:
 				w.WriteHeader(http.StatusBadRequest)
 			}
