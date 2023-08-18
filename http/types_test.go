@@ -10,6 +10,7 @@ package http_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -109,6 +110,10 @@ type opt struct{ key, val string }
 
 func (opt opt) Arrow() µ.Arrow { return ø.Param(opt.key, opt.val) }
 
+type err string
+
+func (err err) Arrow() µ.Arrow { return func(ctx *µ.Context) error { return fmt.Errorf("%s", err) } }
+
 func TestBind(t *testing.T) {
 	ts := mock()
 	defer ts.Close()
@@ -126,6 +131,27 @@ func TestBind(t *testing.T) {
 	err := cat.IO(context.Background(), req)
 
 	it.Then(t).Should(
+		it.Nil(err),
+	)
+}
+
+func TestBindFailed(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	req := µ.GET(
+		ø.URI("%s/opts", ø.Authority(ts.URL)),
+		µ.Bind(
+			opt{"a", "1"},
+			err("failed"),
+		),
+		ƒ.Code(µ.StatusOK),
+		ƒ.Match(`{"opts": "a=1&b=2"}`),
+	)
+	cat := µ.New()
+	err := cat.IO(context.Background(), req)
+
+	it.Then(t).ShouldNot(
 		it.Nil(err),
 	)
 }
