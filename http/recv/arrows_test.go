@@ -498,3 +498,32 @@ func mock() *httptest.Server {
 		}),
 	)
 }
+
+func TestTry(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	var (
+		date  time.Time
+		value int
+	)
+
+	for _, header := range []µ.Arrow{
+		ƒ.Try(ƒ.ContentType.Is("foo/bar")),
+		ƒ.Try(ƒ.Header("X-FOO", &value)),
+		ƒ.Try(ƒ.Header("X-FOO", &date)),
+	} {
+		req := µ.GET(
+			ø.URI("%s/json", ø.Authority(ts.URL)),
+			ø.Accept.JSON,
+			ƒ.Status.OK,
+			header,
+		)
+		cat := µ.New()
+		err := cat.IO(context.Background(), req)
+
+		it.Then(t).Should(
+			it.Nil(err),
+		)
+	}
+}

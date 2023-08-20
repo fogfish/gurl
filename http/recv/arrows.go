@@ -453,7 +453,7 @@ func (h HeaderOf[T]) Is(value T) http.Arrow {
 	}
 }
 
-// Lifts value of HTTP header
+// Lifts value of HTTP header to variable. It fails if header do not exists
 func (h HeaderOf[T]) To(value *T) http.Arrow {
 	switch v := any(value).(type) {
 	case *string:
@@ -796,4 +796,12 @@ func equivMap(pat, val map[string]any) bool {
 	}
 
 	return true
+}
+
+// Try catches error of http.Arrow, allowing to implement optional constraints
+func Try(arrow http.Arrow) http.Arrow {
+	return func(ctx *http.Context) error {
+		arrow(ctx)
+		return nil
+	}
 }
