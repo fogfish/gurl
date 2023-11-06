@@ -9,7 +9,7 @@
     </a>
     <!-- Build Status  -->
     <a href="https://github.com/fogfish/gurl/actions/">
-      <img src="https://github.com/fogfish/gurl/workflows/build/badge.svg" />
+      <img src="https://github.com/fogfish/gurl/workflows/test/badge.svg" />
     </a>
     <!-- GitHub -->
     <a href="http://github.com/fogfish/gurl">
@@ -22,10 +22,6 @@
     <!-- Go Card -->
     <a href="https://goreportcard.com/report/github.com/fogfish/gurl">
       <img src="https://goreportcard.com/badge/github.com/fogfish/gurl" />
-    </a>
-    <!-- Maintainability -->
-    <a href="https://codeclimate.com/github/fogfish/gurl/maintainability">
-      <img src="https://api.codeclimate.com/v1/badges/b9ff76a1f641ce98cd26/maintainability" />
     </a>
   </p>
 </p>

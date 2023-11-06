@@ -10,6 +10,9 @@ package recv_test
 
 import (
 	"context"
+	"encoding/base64"
+	"image"
+	_ "image/png"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -310,6 +313,26 @@ func TestBodyForm(t *testing.T) {
 	)
 }
 
+func TestBodyImage(t *testing.T) {
+	ts := mock()
+	defer ts.Close()
+
+	var img image.Image
+	req := µ.GET(
+		ø.URI("%s/image", ø.Authority(ts.URL)),
+		ƒ.Status.OK,
+		ƒ.ContentType.Is("image/png"),
+		ƒ.Body(&img),
+	)
+	cat := µ.New()
+	err := cat.IO(context.Background(), req)
+
+	it.Then(t).Should(
+		it.Nil(err),
+	// 	it.Equal(site.Site, "example.com"),
+	)
+}
+
 func TestExpectJSON(t *testing.T) {
 	type Site struct {
 		Site string `json:"site"`
@@ -470,6 +493,13 @@ func mock() *httptest.Server {
 			case strings.HasPrefix(r.URL.Path, "/form"):
 				w.Header().Add("Content-Type", "application/x-www-form-urlencoded")
 				w.Write([]byte("site=example.com"))
+			case strings.HasPrefix(r.URL.Path, "/image"):
+				w.Header().Add("Content-Type", "image/png")
+				dst, err := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAAA1BMVEUAAACnej3aAAAAAXRSTlMAQObYZgAAAApJREFUCNdjYAAAAAIAAeIhvDMAAAAASUVORK5CYII=")
+				if err != nil {
+					panic(err)
+				}
+				w.Write(dst)
 			case strings.HasPrefix(r.URL.Path, "/text"):
 				w.Header().Add("Content-Type", "text/plain")
 				w.Write([]byte("site=example.com"))
