@@ -19,38 +19,31 @@ import (
 	ø "github.com/fogfish/gurl/v2/http/send"
 )
 
-type Heap struct {
-	image image.Image
+type api struct {
+	http.Stack
 }
 
-// declares http I/O
-func (h *Heap) request() http.Arrow {
-	return http.GET(
-		// specify specify the request
-		ø.URI("https://avatars.githubusercontent.com/u/716093"),
-		ø.Accept.Set("image/*"),
+func (api api) request(ctx context.Context) (*image.Image, error) {
+	return http.IO[image.Image](api.WithContext(ctx),
+		http.GET(
+			ø.URI("https://avatars.githubusercontent.com/u/716093"),
+			ø.Accept.Set("image/*"),
 
-		// specify requirements to the response
-		ƒ.Status.OK,
-		ƒ.ContentType.Is("image/jpeg"),
-		ƒ.Body(&h.image),
+			ƒ.Status.OK,
+			ƒ.ContentType.Is("image/jpeg"),
+		),
 	)
 }
 
 func main() {
-	// instance of http stack
-	stack := http.New(http.WithDebugPayload())
+	api := api{
+		Stack: http.New(http.WithDebugPayload()),
+	}
 
-	// declares http i/o
-	heap := &Heap{}
-	lazy := heap.request()
-
-	// executes http I/O
-	err := stack.IO(context.Background(), lazy)
+	img, err := api.request(context.Background())
 	if err != nil {
 		panic(err)
 	}
 
-	// process image
-	jpeg.Encode(os.Stdout, heap.image, &jpeg.Options{Quality: 93})
+	jpeg.Encode(os.Stdout, *img, &jpeg.Options{Quality: 93})
 }

@@ -11,6 +11,7 @@ package http
 import (
 	"encoding/json"
 	"fmt"
+	"image"
 	"io"
 	"net/http"
 	"strings"
@@ -116,7 +117,7 @@ func IO[T any](ctx *Context, arrows ...Arrow) (*T, error) {
 	defer ctx.Response.Body.Close()
 
 	var val T
-	err := decode(
+	err := HintedContentCodec(
 		ctx.Response.Header.Get("Content-Type"),
 		ctx.Response.Body,
 		&val,
@@ -128,16 +129,22 @@ func IO[T any](ctx *Context, arrows ...Arrow) (*T, error) {
 	return &val, nil
 }
 
-func decode[T any](content string, stream io.ReadCloser, data *T) error {
+func HintedContentCodec[T any](content string, stream io.ReadCloser, data *T) error {
 	switch {
 	case strings.Contains(content, "json"):
 		return json.NewDecoder(stream).Decode(data)
 	case strings.Contains(content, "www-form"):
 		return form.NewDecoder(stream).Decode(data)
+	case strings.HasPrefix(content, "image/"):
+		img, _, err := image.Decode(stream)
+		if err == nil {
+			*data = img.(T)
+		}
+		return err
 	default:
 		return &gurl.NoMatch{
 			ID:       "http.Recv",
-			Diff:     fmt.Sprintf("- Content-Type: application/{json | www-form}\n+ Content-Type: %s", content),
+			Diff:     fmt.Sprintf("- Content-Type: {json | www-form | image}\n+ Content-Type: %s", content),
 			Protocol: "codec",
 			Actual:   content,
 		}
