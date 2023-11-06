@@ -373,6 +373,25 @@ func SomeXxx() http.Arrow {
 So far, utility support auto decoding of the following `Content-Types` into structs
 * `application/json`
 * `application/x-www-form-urlencoded`
+* `image/*`
+
+The library automatically decodes images into `image.Image` data type.   
+
+```go
+import (
+  _ "image/jpeg"
+)
+
+func SomeXxx() http.Arrow {
+  var data image.Image
+
+  return http.GET(
+    // ...
+    ƒ.Body(&data), // Note: pointer to data structure is required
+  )
+}
+```
+
 
 For all other cases, there is `ƒ.Bytes` combinator that receives raw binaries.  
 

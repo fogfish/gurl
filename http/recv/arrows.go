@@ -12,6 +12,7 @@ package recv
 import (
 	"encoding/json"
 	"fmt"
+	"image"
 	"io"
 	"strconv"
 	"strings"
@@ -683,6 +684,12 @@ func decode[T any](content string, stream io.ReadCloser, data *T) error {
 		return json.NewDecoder(stream).Decode(data)
 	case strings.Contains(content, "www-form"):
 		return form.NewDecoder(stream).Decode(data)
+	case strings.HasPrefix(content, "image/"):
+		img, _, err := image.Decode(stream)
+		if err == nil {
+			*data = img.(T)
+		}
+		return err
 	default:
 		return &gurl.NoMatch{
 			ID:       "http.Recv",

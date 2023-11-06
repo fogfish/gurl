@@ -6,7 +6,7 @@
 
 package main
 
-// The example shows recursion of HTTP. The recurion is demonstarted as
+// The example shows recursion of HTTP. The recursion is demonstrated as
 // sequential retrieval of content until EOF.
 //
 // In pure functional environment the recursion can be defined as
