@@ -12,13 +12,11 @@ package recv
 import (
 	"encoding/json"
 	"fmt"
-	"image"
 	"io"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/ajg/form"
 	"github.com/fogfish/gurl/v2"
 	"github.com/fogfish/gurl/v2/http"
 	"github.com/google/go-cmp/cmp"
@@ -635,7 +633,7 @@ const (
 // Supply the pointer to data target data structure.
 func Body[T any](out *T) http.Arrow {
 	return func(cat *http.Context) error {
-		err := decode(
+		err := http.HintedContentCodec(
 			cat.Response.Header.Get("Content-Type"),
 			cat.Response.Body,
 			out,
@@ -655,7 +653,7 @@ func Recv[T any](out *T) http.Arrow {
 func Expect[T any](expect T) http.Arrow {
 	return func(cat *http.Context) error {
 		var actual T
-		err := decode(
+		err := http.HintedContentCodec(
 			cat.Response.Header.Get("Content-Type"),
 			cat.Response.Body,
 			&actual,
@@ -675,28 +673,6 @@ func Expect[T any](expect T) http.Arrow {
 		}
 
 		return err
-	}
-}
-
-func decode[T any](content string, stream io.ReadCloser, data *T) error {
-	switch {
-	case strings.Contains(content, "json"):
-		return json.NewDecoder(stream).Decode(data)
-	case strings.Contains(content, "www-form"):
-		return form.NewDecoder(stream).Decode(data)
-	case strings.HasPrefix(content, "image/"):
-		img, _, err := image.Decode(stream)
-		if err == nil {
-			*data = img.(T)
-		}
-		return err
-	default:
-		return &gurl.NoMatch{
-			ID:       "http.Recv",
-			Diff:     fmt.Sprintf("- Content-Type: application/{json | www-form}\n+ Content-Type: %s", content),
-			Protocol: "codec",
-			Actual:   content,
-		}
 	}
 }
 
@@ -720,7 +696,7 @@ func Match(val string) http.Arrow {
 	return func(cat *http.Context) (err error) {
 		var val any
 
-		err = decode(
+		err = http.HintedContentCodec(
 			cat.Response.Header.Get("Content-Type"),
 			cat.Response.Body,
 			&val,

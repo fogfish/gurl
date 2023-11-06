@@ -10,9 +10,13 @@ package http_test
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
+	"image"
+	_ "image/png"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -231,6 +235,21 @@ func TestIO(t *testing.T) {
 		)
 	})
 
+	t.Run("Image", func(t *testing.T) {
+		val, err := µ.IO[image.Image](cat.WithContext(context.Background()),
+			µ.GET(
+				ø.URI("%s/image", ø.Authority(ts.URL)),
+				ƒ.Status.OK,
+				ƒ.ContentType.Is("image/png"),
+			),
+		)
+
+		it.Then(t).Should(
+			it.Nil(err),
+		).ShouldNot(
+			it.Nil(val),
+		)
+	})
 }
 
 func mock() *httptest.Server {
@@ -243,6 +262,13 @@ func mock() *httptest.Server {
 			case r.URL.Path == "/form":
 				w.Header().Add("Content-Type", "application/x-www-form-urlencoded")
 				w.Write([]byte("site=example.com"))
+			case strings.HasPrefix(r.URL.Path, "/image"):
+				w.Header().Add("Content-Type", "image/png")
+				dst, err := base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABAQMAAAAl21bKAAAAA1BMVEUAAACnej3aAAAAAXRSTlMAQObYZgAAAApJREFUCNdjYAAAAAIAAeIhvDMAAAAASUVORK5CYII=")
+				if err != nil {
+					panic(err)
+				}
+				w.Write(dst)
 			case r.URL.Path == "/ok":
 				w.WriteHeader(http.StatusOK)
 			case r.URL.Path == "/opts":
