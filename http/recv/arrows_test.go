@@ -329,7 +329,6 @@ func TestBodyImage(t *testing.T) {
 
 	it.Then(t).Should(
 		it.Nil(err),
-	// 	it.Equal(site.Site, "example.com"),
 	)
 }
 
