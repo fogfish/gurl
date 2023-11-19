@@ -172,3 +172,11 @@ func WithCookieJar() Config {
 		cat.Client.Jar = jar
 	}
 }
+
+// WithDefaultRedirectPolicy resets default gurl no-redirect policy to Golang's one.
+// It enables the HTTP stack follows redirects
+func WithDefaultRedirectPolicy() Config {
+	return func(cat *Protocol) {
+		cat.Client.CheckRedirect = nil
+	}
+}

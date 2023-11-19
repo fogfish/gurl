@@ -46,4 +46,14 @@ func TestConfig(t *testing.T) {
 		it.Then(t).Should(it.Equal(cat.Host, "https://example.com"))
 	})
 
+	t.Run("WithCookieJar", func(t *testing.T) {
+		cat := µ.New(µ.WithCookieJar()).(*µ.Protocol)
+		it.Then(t).ShouldNot(it.Nil(cat.Jar))
+	})
+
+	t.Run("WithDefaultRedirectPolicy", func(t *testing.T) {
+		cat := µ.New(µ.WithDefaultRedirectPolicy()).(*µ.Protocol)
+		it.Then(t).Should(it.Equiv(cat.CheckRedirect, nil))
+	})
+
 }
