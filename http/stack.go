@@ -35,9 +35,13 @@ type Stack interface {
 	IO(context.Context, ...Arrow) error
 }
 
+type Socket interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
 // Protocol is an instance of Stack
 type Protocol struct {
-	*http.Client
+	Socket
 	Host     string
 	LogLevel int
 	Memento  bool
@@ -45,7 +49,7 @@ type Protocol struct {
 
 // Allocate instance of HTTP Stack
 func New(opts ...Config) Stack {
-	cat := &Protocol{Client: Client()}
+	cat := &Protocol{Socket: Client()}
 
 	for _, opt := range opts {
 		opt(cat)
@@ -85,29 +89,10 @@ func (stack *Protocol) IO(ctx context.Context, arrows ...Arrow) error {
 // Config option for HTTP client
 type Config func(*Protocol)
 
-// Creates default HTTP client
-func Client() *http.Client {
-	return &http.Client{
-		Timeout: 60 * time.Second,
-		Transport: &http.Transport{
-			ReadBufferSize: 128 * 1024,
-			DialContext: (&net.Dialer{
-				Timeout: 10 * time.Second,
-			}).DialContext,
-			// TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
-			MaxIdleConns:        100,
-			MaxIdleConnsPerHost: 100,
-		},
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-	}
-}
-
 // WithClient replaces default client with custom instance
-func WithClient(client *http.Client) Config {
+func WithClient(client Socket) Config {
 	return func(cat *Protocol) {
-		cat.Client = client
+		cat.Socket = client
 	}
 }
 
@@ -145,10 +130,34 @@ func WithDefaultHost(host string) Config {
 	}
 }
 
+// Creates default HTTP client
+func Client() *http.Client {
+	return &http.Client{
+		Timeout: 60 * time.Second,
+		Transport: &http.Transport{
+			ReadBufferSize: 128 * 1024,
+			DialContext: (&net.Dialer{
+				Timeout: 10 * time.Second,
+			}).DialContext,
+			// TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
+			MaxIdleConns:        100,
+			MaxIdleConnsPerHost: 100,
+		},
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+}
+
 // WithInsecureTLS disables certificates validation
 func WithInsecureTLS() Config {
 	return func(cat *Protocol) {
-		switch t := cat.Client.Transport.(type) {
+		cli, ok := cat.Socket.(*http.Client)
+		if !ok {
+			panic(fmt.Errorf("unsupported transport type %T", cat))
+		}
+
+		switch t := cli.Transport.(type) {
 		case *http.Transport:
 			if t.TLSClientConfig == nil {
 				t.TLSClientConfig = &tls.Config{}
@@ -163,13 +172,18 @@ func WithInsecureTLS() Config {
 // WithCookieJar enables cookie handlings
 func WithCookieJar() Config {
 	return func(cat *Protocol) {
+		cli, ok := cat.Socket.(*http.Client)
+		if !ok {
+			panic(fmt.Errorf("unsupported transport type %T", cat))
+		}
+
 		jar, err := cookiejar.New(&cookiejar.Options{
 			PublicSuffixList: publicsuffix.List,
 		})
 		if err != nil {
 			panic(err)
 		}
-		cat.Client.Jar = jar
+		cli.Jar = jar
 	}
 }
 
@@ -177,6 +191,11 @@ func WithCookieJar() Config {
 // It enables the HTTP stack follows redirects
 func WithDefaultRedirectPolicy() Config {
 	return func(cat *Protocol) {
-		cat.Client.CheckRedirect = nil
+		cli, ok := cat.Socket.(*http.Client)
+		if !ok {
+			panic(fmt.Errorf("unsupported transport type %T", cat))
+		}
+
+		cli.CheckRedirect = nil
 	}
 }
