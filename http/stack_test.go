@@ -52,8 +52,38 @@ func TestConfig(t *testing.T) {
 		it.Then(t).ShouldNot(it.Nil(cat.Socket.(*http.Client).Jar))
 	})
 
+	t.Run("WithCookieJarWithError", func(t *testing.T) {
+		f := func() {
+			µ.New(
+				µ.WithClient(none{}),
+				µ.WithCookieJar(),
+			)
+		}
+
+		it.Then(t).Should(
+			it.Fail(f).Contain("unsupported transport type"),
+		)
+	})
+
 	t.Run("WithDefaultRedirectPolicy", func(t *testing.T) {
 		cat := µ.New(µ.WithDefaultRedirectPolicy()).(*µ.Protocol)
 		it.Then(t).Should(it.Equiv(cat.Socket.(*http.Client).CheckRedirect, nil))
 	})
+
+	t.Run("WithDefaultRedirectPolicyError", func(t *testing.T) {
+		f := func() {
+			µ.New(
+				µ.WithClient(none{}),
+				µ.WithDefaultRedirectPolicy(),
+			)
+		}
+
+		it.Then(t).Should(
+			it.Fail(f).Contain("unsupported transport type"),
+		)
+	})
 }
+
+type none struct{}
+
+func (none) Do(req *http.Request) (*http.Response, error) { return nil, nil }
