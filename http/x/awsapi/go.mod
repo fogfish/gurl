@@ -1,4 +1,4 @@
-module github.com/fogfish/gurl/awsapi
+module github.com/fogfish/gurl/http/x/awsapi
 
 go 1.21.0
 
