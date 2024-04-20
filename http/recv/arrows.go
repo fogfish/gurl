@@ -677,9 +677,29 @@ func Expect[T any](expect T) http.Arrow {
 }
 
 // Bytes receive raw binary from HTTP response
-func Bytes(val *[]byte) http.Arrow {
+func Bytes(w io.Writer) http.Arrow {
 	return func(cat *http.Context) (err error) {
-		*val, err = io.ReadAll(cat.Response.Body)
+		var n int
+		buf := make([]byte, 64*1024) // 64KB is size of chunk to be processed once
+		for {
+			n, err = cat.Response.Body.Read(buf)
+			if err == io.EOF {
+				err = nil
+				// There may be one last chunk to receive before breaking the loop.
+				if n <= 0 {
+					break
+				}
+			}
+			if err != nil {
+				break
+			}
+
+			_, err = w.Write(buf[:n])
+			if err != nil {
+				break
+			}
+		}
+
 		cat.Response.Body.Close()
 		cat.Response = nil
 		return

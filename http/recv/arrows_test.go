@@ -9,6 +9,7 @@
 package recv_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"image"
@@ -389,19 +390,19 @@ func TestRecvBytes(t *testing.T) {
 		"/html/2": ƒ.ContentType.TextHTML,
 	} {
 
-		var data []byte
+		data := &bytes.Buffer{}
 		req := µ.GET(
 			ø.URI(ts.URL+path),
 			ƒ.Status.OK,
 			content,
-			ƒ.Bytes(&data),
+			ƒ.Bytes(data),
 		)
 		cat := µ.New()
 		err := cat.IO(context.Background(), req)
 
 		it.Then(t).Should(
 			it.Nil(err),
-			it.Equal(string(data), "site=example.com"),
+			it.Equal(data.String(), "site=example.com"),
 		)
 	}
 }
