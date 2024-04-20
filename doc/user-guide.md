@@ -9,7 +9,7 @@ This is a "combinator" library for network I/O. Combinators open up an opportuni
 
 - [Background](#background)
   - [Combinators](#combinators)
-  - [High-Order Functions](#high-order-functions)
+  - [High-order functions](#high-order-functions)
   - [Lifecycle](#lifecycle)
 - [Import library](#import-library)
 - [Writer combinators](#writer-combinators)
@@ -17,14 +17,14 @@ This is a "combinator" library for network I/O. Combinators open up an opportuni
   - [Target URI](#target-uri)
   - [Query Params](#query-params)
   - [Request Headers](#request-headers)
-  - [Request Payload](#request-payload)
+  - [Request payload](#request-payload)
 - [Reader combinators](#reader-combinators)
   - [Status Code](#status-code)
   - [Response Headers](#response-headers)
   - [Response Payload](#response-payload)
   - [Assert Payload](#assert-payload)
   - [Using Variables for Dynamic Behavior](#using-variables-for-dynamic-behavior)
-- [Chain Networking I/O](#chain-networking-io)
+- [Chain networking I/O](#chain-networking-io)
 
 ---
 
@@ -397,11 +397,11 @@ For all other cases, there is `ƒ.Bytes` combinator that receives raw binaries.
 
 ```go
 func SomeXxx() http.Arrow {
-  var data []byte
+  data := &bytes.Buffer{}
 
   return http.GET(
     // ...
-    ƒ.Bytes(&data), // Note: pointer to buffer is required
+    ƒ.Bytes(data), // Note: pointer to buffer is required
   )
 }
 ```
