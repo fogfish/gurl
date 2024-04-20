@@ -12,6 +12,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"errors"
 	"image"
 	_ "image/png"
 	"net/http"
@@ -22,6 +23,7 @@ import (
 	"time"
 
 	µ "github.com/fogfish/gurl/v2/http"
+	iomock "github.com/fogfish/gurl/v2/http/mock"
 	ƒ "github.com/fogfish/gurl/v2/http/recv"
 	ø "github.com/fogfish/gurl/v2/http/send"
 	"github.com/fogfish/it/v2"
@@ -380,24 +382,29 @@ func TestExpectJSONFailed(t *testing.T) {
 }
 
 func TestRecvBytes(t *testing.T) {
-	ts := mock()
-	defer ts.Close()
+	opts := iomock.Preset(
+		iomock.Status(http.StatusOK),
+		iomock.Body([]byte("site=example.com")),
+	)
 
-	for path, content := range map[string]µ.Arrow{
-		"/text":   ƒ.ContentType.Text,
-		"/text/1": ƒ.ContentType.TextPlain,
-		"/html":   ƒ.ContentType.HTML,
-		"/html/2": ƒ.ContentType.TextHTML,
+	for _, content := range []struct {
+		arrow  µ.Arrow
+		header string
+	}{
+		{ƒ.ContentType.Text, "text/plain"},
+		{ƒ.ContentType.TextPlain, "text/plain"},
+		{ƒ.ContentType.HTML, "text/html"},
+		{ƒ.ContentType.TextHTML, "text/html"},
 	} {
 
 		data := &bytes.Buffer{}
 		req := µ.GET(
-			ø.URI(ts.URL+path),
+			ø.URI("http://example.com/test"),
 			ƒ.Status.OK,
-			content,
+			content.arrow,
 			ƒ.Bytes(data),
 		)
-		cat := µ.New()
+		cat := µ.New(iomock.New(opts, iomock.Header("Content-Type", content.header)))
 		err := cat.IO(context.Background(), req)
 
 		it.Then(t).Should(
@@ -405,6 +412,29 @@ func TestRecvBytes(t *testing.T) {
 			it.Equal(data.String(), "site=example.com"),
 		)
 	}
+}
+
+func TestRecvBytesFail(t *testing.T) {
+	opts := iomock.Preset(
+		iomock.Status(http.StatusOK),
+		iomock.Header("Content-Type", "text/plain"),
+		iomock.IOError(errors.New("i/o error")),
+	)
+
+	data := &bytes.Buffer{}
+	req := µ.GET(
+		ø.URI("http://example.com/test"),
+		ƒ.Status.OK,
+		ƒ.ContentType.Text,
+		ƒ.Bytes(data),
+	)
+	cat := µ.New(iomock.New(opts))
+	err := cat.IO(context.Background(), req)
+
+	it.Then(t).ShouldNot(
+		it.Nil(err),
+		it.Equal(data.String(), "site=example.com"),
+	)
 }
 
 func TestMatch(t *testing.T) {
