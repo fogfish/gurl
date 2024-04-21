@@ -1,4 +1,4 @@
-module github.com/fogfish/gurl/http/x/xhtml
+module github.com/fogfish/gurl/x/xhtml
 
 go 1.21.0
 

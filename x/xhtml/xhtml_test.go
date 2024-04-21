@@ -12,8 +12,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/fogfish/gurl/http/x/xhtml"
 	"github.com/fogfish/gurl/v2/http/mock"
+	"github.com/fogfish/gurl/x/xhtml"
 	"github.com/fogfish/it/v2"
 )
 
