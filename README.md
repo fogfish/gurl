@@ -125,6 +125,11 @@ err := stack.IO(context.Background(), lazy)
 * Study [User Guide](doc/user-guide.md) if defines library concepts and guides about api usage;
 * Use [examples](examples) as a reference for further development.
 
+## Extensions
+
+The library supplies extensions
+- [x/awsapi](x/awsapi/) enables AWS Signature V4 for HTTP I/O. Allows to use AWS API Gateway with IAM authentication.
+- [x/xhtml](x/xhtml/) enables fetching and parsing xHTML content.
 
 ## How To Contribute
 
