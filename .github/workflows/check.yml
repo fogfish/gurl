@@ -1,0 +1,55 @@
+###
+## Unit Tests & Coverage
+##
+name: check
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+
+jobs:
+
+  unit:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        module: [".", "x/awsapi", "x/xhtml"]
+        
+    steps:
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.21"
+
+      - uses: actions/checkout@v4
+     
+      - name: go build
+        working-directory: ${{ matrix.module }}
+        run: |
+          go build ./...
+    
+      - name: go test
+        working-directory: ${{ matrix.module }}
+        run: |
+          go test -coverprofile=profile.cov $(go list ./... | grep -v /examples/)
+
+      - uses: shogo82148/actions-goveralls@v1
+        continue-on-error: true
+        with:
+          working-directory: ${{ matrix.module }}
+          path-to-profile: profile.cov
+          flag-name: ${{ matrix.module }}
+          parallel: true
+
+      - uses: dominikh/staticcheck-action@v1.3.0
+        with:
+          install-go: false
+          working-directory: ${{ matrix.module }}
+
+  finish:
+    needs: unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: shogo82148/actions-goveralls@v1
+        with:
+          parallel-finished: true
