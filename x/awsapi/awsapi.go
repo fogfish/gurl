@@ -10,6 +10,7 @@ package awsapi
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
@@ -18,17 +19,48 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/fogfish/gurl/v2/http"
 )
 
 // Configure HTTP Stack to use AWS Sign V4
-func WithSignatureV4(config aws.Config) http.Config {
+func WithSignatureV4(conf aws.Config) http.Config {
 	return func(p *http.Protocol) {
 		p.Socket = &signer{
-			config: config,
+			config: conf,
 			signer: v4.NewSigner(),
 			socket: p.Socket,
 		}
+	}
+}
+
+// Configure HTTP Stack to use AWS Sign V4 using assumed role
+func WithAssumedRole(conf aws.Config, role, externalID string) http.Config {
+	if role == "" && externalID == "" {
+		return WithSignatureV4(conf)
+	}
+
+	return func(p *http.Protocol) {
+		assumed, err := config.LoadDefaultConfig(context.Background(),
+			config.WithCredentialsProvider(
+				aws.NewCredentialsCache(
+					stscreds.NewAssumeRoleProvider(sts.NewFromConfig(conf), role,
+						func(aro *stscreds.AssumeRoleOptions) {
+							if externalID != "" {
+								aro.ExternalID = aws.String(externalID)
+							}
+						},
+					),
+				),
+			),
+		)
+		if err != nil {
+			panic(err)
+		}
+
+		WithSignatureV4(assumed)(p)
 	}
 }
 
