@@ -8,4 +8,4 @@
 
 package awsapi
 
-const Version = "x/awsapi/v0.0.3"
+const Version = "x/awsapi/v0.0.4"
