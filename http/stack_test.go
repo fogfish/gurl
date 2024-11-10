@@ -9,8 +9,10 @@
 package http_test
 
 import (
+	"fmt"
 	µ "github.com/fogfish/gurl/v2/http"
 	"github.com/fogfish/it/v2"
+	"github.com/fogfish/opts"
 	"net/http"
 	"testing"
 )
@@ -56,4 +58,16 @@ func TestConfig(t *testing.T) {
 		cat := µ.New(µ.WithRedirects()).(*µ.Protocol)
 		it.Then(t).Should(it.Equiv(cat.Socket.(*http.Client).CheckRedirect, nil))
 	})
+
+	t.Run("WithFailedConfig", func(t *testing.T) {
+		withError := opts.From(func(*µ.Protocol) error {
+			return fmt.Errorf("error")
+		})
+		it.Then(t).Should(
+			it.Fail(func() {
+				µ.New(withError())
+			}).Contain("error"),
+		)
+	})
+
 }
