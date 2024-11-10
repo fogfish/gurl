@@ -31,7 +31,7 @@ func TestWriteOnceSuccess(t *testing.T) {
 	}
 
 	buf := bytes.Buffer{}
-	hts := http.New(http.WithMemento(), http.WithDefaultHost(ts.URL))
+	hts := http.New(http.WithMementoPayload, http.WithHost(ts.URL))
 	err := http.WriteOnce(&buf, hts, unittest)
 	it.Then(t).Should(it.Nil(err))
 
@@ -59,7 +59,7 @@ func TestWriteOnceNoMatch(t *testing.T) {
 	}
 
 	buf := bytes.Buffer{}
-	hts := http.New(http.WithMemento(), http.WithDefaultHost(ts.URL))
+	hts := http.New(http.WithMementoPayload, http.WithHost(ts.URL))
 	err := http.WriteOnce(&buf, hts, unittest)
 	it.Then(t).Should(it.Nil(err))
 

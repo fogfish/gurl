@@ -37,7 +37,7 @@ func (api api) request(ctx context.Context) (*image.Image, error) {
 
 func main() {
 	api := api{
-		Stack: http.New(http.WithDebugPayload()),
+		Stack: http.New(http.WithDebugPayload),
 	}
 
 	img, err := api.request(context.Background())

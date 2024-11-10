@@ -85,7 +85,7 @@ func request() (*Heap, http.Arrow) {
 
 func main() {
 	// instance of http stack
-	stack := http.New(http.WithDebugPayload())
+	stack := http.New(http.WithDebugPayload)
 
 	data, lazy := request()
 

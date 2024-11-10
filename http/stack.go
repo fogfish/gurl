@@ -10,14 +10,11 @@ package http
 
 import (
 	"context"
-	"crypto/tls"
-	"fmt"
 	"net"
 	"net/http"
-	"net/http/cookiejar"
 	"time"
 
-	"golang.org/x/net/publicsuffix"
+	"github.com/fogfish/opts"
 )
 
 //
@@ -47,15 +44,25 @@ type Protocol struct {
 	Memento  bool
 }
 
-// Allocate instance of HTTP Stack
-func New(opts ...Config) Stack {
-	cat := &Protocol{Socket: Client()}
-
-	for _, opt := range opts {
-		opt(cat)
+// New instance of HTTP Stack
+func New(opt ...Option) Stack {
+	cat, err := NewStack(opt...)
+	if err != nil {
+		panic(err)
 	}
 
 	return cat
+}
+
+// New instance of HTTP Stack
+func NewStack(opt ...Option) (Stack, error) {
+	cat := &Protocol{Socket: Client()}
+
+	if err := opts.Apply(cat, opt); err != nil {
+		return nil, err
+	}
+
+	return cat, nil
 }
 
 // WithContext create instance of I/O Context
@@ -86,50 +93,6 @@ func (stack *Protocol) IO(ctx context.Context, arrows ...Arrow) error {
 	return nil
 }
 
-// Config option for HTTP client
-type Config func(*Protocol)
-
-// WithClient replaces default client with custom instance
-func WithClient(client Socket) Config {
-	return func(cat *Protocol) {
-		cat.Socket = client
-	}
-}
-
-// Enables debug logging for requests
-func WithDebugRequest() Config {
-	return func(cat *Protocol) {
-		cat.LogLevel = 1
-	}
-}
-
-// Enables debug logging for requests & response
-func WithDebugResponse() Config {
-	return func(cat *Protocol) {
-		cat.LogLevel = 2
-	}
-}
-
-// Enables debug logging for requests, responses and payload
-func WithDebugPayload() Config {
-	return func(cat *Protocol) {
-		cat.LogLevel = 3
-	}
-}
-
-// WithMemorize the response payload
-func WithMemento() Config {
-	return func(cat *Protocol) {
-		cat.Memento = true
-	}
-}
-
-func WithDefaultHost(host string) Config {
-	return func(cat *Protocol) {
-		cat.Host = host
-	}
-}
-
 // Creates default HTTP client
 func Client() *http.Client {
 	return &http.Client{
@@ -146,56 +109,5 @@ func Client() *http.Client {
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
-	}
-}
-
-// WithInsecureTLS disables certificates validation
-func WithInsecureTLS() Config {
-	return func(cat *Protocol) {
-		cli, ok := cat.Socket.(*http.Client)
-		if !ok {
-			panic(fmt.Errorf("unsupported transport type %T", cat))
-		}
-
-		switch t := cli.Transport.(type) {
-		case *http.Transport:
-			if t.TLSClientConfig == nil {
-				t.TLSClientConfig = &tls.Config{}
-			}
-			t.TLSClientConfig.InsecureSkipVerify = true
-		default:
-			panic(fmt.Errorf("unsupported transport type %T", t))
-		}
-	}
-}
-
-// WithCookieJar enables cookie handlings
-func WithCookieJar() Config {
-	return func(cat *Protocol) {
-		cli, ok := cat.Socket.(*http.Client)
-		if !ok {
-			panic(fmt.Errorf("unsupported transport type %T", cat))
-		}
-
-		jar, err := cookiejar.New(&cookiejar.Options{
-			PublicSuffixList: publicsuffix.List,
-		})
-		if err != nil {
-			panic(err)
-		}
-		cli.Jar = jar
-	}
-}
-
-// WithDefaultRedirectPolicy resets default gurl no-redirect policy to Golang's one.
-// It enables the HTTP stack follows redirects
-func WithDefaultRedirectPolicy() Config {
-	return func(cat *Protocol) {
-		cli, ok := cat.Socket.(*http.Client)
-		if !ok {
-			panic(fmt.Errorf("unsupported transport type %T", cat))
-		}
-
-		cli.CheckRedirect = nil
 	}
 }

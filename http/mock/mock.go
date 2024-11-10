@@ -76,7 +76,7 @@ func IOError(err error) Option {
 }
 
 // Mock HTTP Client
-func New(opts ...Option) µ.Config {
+func New(opts ...Option) µ.Option {
 	m := &Mock{
 		r: &http.Response{
 			StatusCode: http.StatusOK,
