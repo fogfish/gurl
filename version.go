@@ -8,4 +8,4 @@
 
 package gurl
 
-const Version = "v2.9.1"
+const Version = "v2.10.0"

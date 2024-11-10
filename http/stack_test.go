@@ -9,8 +9,10 @@
 package http_test
 
 import (
+	"fmt"
 	µ "github.com/fogfish/gurl/v2/http"
 	"github.com/fogfish/it/v2"
+	"github.com/fogfish/opts"
 	"net/http"
 	"testing"
 )
@@ -23,27 +25,27 @@ func TestConfig(t *testing.T) {
 	})
 
 	t.Run("WithDebugRequest", func(t *testing.T) {
-		cat := µ.New(µ.WithDebugRequest()).(*µ.Protocol)
+		cat := µ.New(µ.WithDebugRequest).(*µ.Protocol)
 		it.Then(t).Should(it.Equal(cat.LogLevel, 1))
 	})
 
 	t.Run("WithDebugResponse", func(t *testing.T) {
-		cat := µ.New(µ.WithDebugResponse()).(*µ.Protocol)
+		cat := µ.New(µ.WithDebugResponse).(*µ.Protocol)
 		it.Then(t).Should(it.Equal(cat.LogLevel, 2))
 	})
 
 	t.Run("WithDebugPayload", func(t *testing.T) {
-		cat := µ.New(µ.WithDebugPayload()).(*µ.Protocol)
+		cat := µ.New(µ.WithDebugPayload).(*µ.Protocol)
 		it.Then(t).Should(it.Equal(cat.LogLevel, 3))
 	})
 
 	t.Run("WithMemento", func(t *testing.T) {
-		cat := µ.New(µ.WithMemento()).(*µ.Protocol)
+		cat := µ.New(µ.WithMemento(true)).(*µ.Protocol)
 		it.Then(t).Should(it.True(cat.Memento))
 	})
 
 	t.Run("WithDefaultHost", func(t *testing.T) {
-		cat := µ.New(µ.WithDefaultHost("https://example.com")).(*µ.Protocol)
+		cat := µ.New(µ.WithHost("https://example.com")).(*µ.Protocol)
 		it.Then(t).Should(it.Equal(cat.Host, "https://example.com"))
 	})
 
@@ -52,38 +54,20 @@ func TestConfig(t *testing.T) {
 		it.Then(t).ShouldNot(it.Nil(cat.Socket.(*http.Client).Jar))
 	})
 
-	t.Run("WithCookieJarWithError", func(t *testing.T) {
-		f := func() {
-			µ.New(
-				µ.WithClient(none{}),
-				µ.WithCookieJar(),
-			)
-		}
-
-		it.Then(t).Should(
-			it.Fail(f).Contain("unsupported transport type"),
-		)
-	})
-
 	t.Run("WithDefaultRedirectPolicy", func(t *testing.T) {
-		cat := µ.New(µ.WithDefaultRedirectPolicy()).(*µ.Protocol)
+		cat := µ.New(µ.WithRedirects()).(*µ.Protocol)
 		it.Then(t).Should(it.Equiv(cat.Socket.(*http.Client).CheckRedirect, nil))
 	})
 
-	t.Run("WithDefaultRedirectPolicyError", func(t *testing.T) {
-		f := func() {
-			µ.New(
-				µ.WithClient(none{}),
-				µ.WithDefaultRedirectPolicy(),
-			)
-		}
-
+	t.Run("WithFailedConfig", func(t *testing.T) {
+		withError := opts.From(func(*µ.Protocol) error {
+			return fmt.Errorf("error")
+		})
 		it.Then(t).Should(
-			it.Fail(f).Contain("unsupported transport type"),
+			it.Fail(func() {
+				µ.New(withError())
+			}).Contain("error"),
 		)
 	})
+
 }
-
-type none struct{}
-
-func (none) Do(req *http.Request) (*http.Response, error) { return nil, nil }
