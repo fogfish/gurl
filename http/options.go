@@ -66,46 +66,36 @@ var (
 )
 
 func withInsecureTLS(cat *Protocol) error {
-	cli, ok := cat.Socket.(*http.Client)
-	if !ok {
-		return fmt.Errorf("unsupported transport type %T", cat)
-	}
-
-	switch t := cli.Transport.(type) {
-	case *http.Transport:
-		if t.TLSClientConfig == nil {
-			t.TLSClientConfig = &tls.Config{}
+	if cli, ok := cat.Socket.(*http.Client); ok {
+		switch t := cli.Transport.(type) {
+		case *http.Transport:
+			if t.TLSClientConfig == nil {
+				t.TLSClientConfig = &tls.Config{}
+			}
+			t.TLSClientConfig.InsecureSkipVerify = true
+		default:
+			return fmt.Errorf("unsupported transport type %T", t)
 		}
-		t.TLSClientConfig.InsecureSkipVerify = true
-		return nil
-	default:
-		return fmt.Errorf("unsupported transport type %T", t)
 	}
+	return nil
 }
 
 func withCookieJar(cat *Protocol) error {
-	cli, ok := cat.Socket.(*http.Client)
-	if !ok {
-		return fmt.Errorf("unsupported transport type %T", cat)
+	if cli, ok := cat.Socket.(*http.Client); ok {
+		jar, err := cookiejar.New(&cookiejar.Options{
+			PublicSuffixList: publicsuffix.List,
+		})
+		if err != nil {
+			return err
+		}
+		cli.Jar = jar
 	}
-
-	jar, err := cookiejar.New(&cookiejar.Options{
-		PublicSuffixList: publicsuffix.List,
-	})
-	if err != nil {
-		return err
-	}
-	cli.Jar = jar
-
 	return nil
 }
 
 func withRedirects(cat *Protocol) error {
-	cli, ok := cat.Socket.(*http.Client)
-	if !ok {
-		return fmt.Errorf("unsupported transport type %T", cat)
+	if cli, ok := cat.Socket.(*http.Client); ok {
+		cli.CheckRedirect = nil
 	}
-
-	cli.CheckRedirect = nil
 	return nil
 }
