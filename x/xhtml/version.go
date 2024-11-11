@@ -8,4 +8,4 @@
 
 package xhtml
 
-const Version = "x/xhtml/v0.0.2"
+const Version = "x/xhtml/v0.0.3"

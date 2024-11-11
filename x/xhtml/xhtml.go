@@ -47,7 +47,7 @@ type Client struct {
 
 // Create new instance of HTTP Client tailored for fetching HTML content
 // from public resources.
-func New(opts ...http.Config) Client {
+func New(opts ...http.Option) Client {
 	return Client{Stack: http.New(opts...)}
 }
 
