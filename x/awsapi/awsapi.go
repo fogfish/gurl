@@ -23,26 +23,19 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/fogfish/gurl/v2/http"
+	"github.com/fogfish/opts"
 )
 
 // Configure HTTP Stack to use AWS Sign V4
-func WithSignatureV4(conf aws.Config) http.Config {
-	return func(p *http.Protocol) {
-		p.Socket = &signer{
-			config: conf,
-			signer: v4.NewSigner(),
-			socket: p.Socket,
-		}
-	}
-}
+var WithSignatureV4 = opts.FMap(optsSigner)
 
 // Configure HTTP Stack to use AWS Sign V4 using assumed role
-func WithAssumedRole(conf aws.Config, role, externalID string) http.Config {
+func WithAssumedRole(conf aws.Config, role, externalID string) http.Option {
 	if role == "" && externalID == "" {
 		return WithSignatureV4(conf)
 	}
 
-	return func(p *http.Protocol) {
+	return opts.From(func(p *http.Protocol) error {
 		assumed, err := config.LoadDefaultConfig(context.Background(),
 			config.WithCredentialsProvider(
 				aws.NewCredentialsCache(
@@ -57,17 +50,26 @@ func WithAssumedRole(conf aws.Config, role, externalID string) http.Config {
 			),
 		)
 		if err != nil {
-			panic(err)
+			return err
 		}
 
-		WithSignatureV4(assumed)(p)
-	}
+		return optsSigner(p, assumed)
+	})()
 }
 
 type signer struct {
 	config aws.Config
 	signer *v4.Signer
 	socket http.Socket
+}
+
+func optsSigner(p *http.Protocol, conf aws.Config) error {
+	p.Socket = &signer{
+		config: conf,
+		signer: v4.NewSigner(),
+		socket: p.Socket,
+	}
+	return nil
 }
 
 func (s *signer) Do(req *net.Request) (*net.Response, error) {

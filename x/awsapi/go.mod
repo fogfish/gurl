@@ -1,13 +1,14 @@
 module github.com/fogfish/gurl/x/awsapi
 
-go 1.21.0
+go 1.23
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.30.5
 	github.com/aws/aws-sdk-go-v2/config v1.27.33
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.32
 	github.com/aws/aws-sdk-go-v2/service/sts v1.30.7
-	github.com/fogfish/gurl/v2 v2.8.3
+	github.com/fogfish/gurl/v2 v2.10.0
+	github.com/fogfish/opts v0.0.2
 )
 
 require (
@@ -21,5 +22,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sso v1.22.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.26.7 // indirect
 	github.com/aws/smithy-go v1.20.4 // indirect
+	github.com/fogfish/golem/hseq v1.2.0 // indirect
+	github.com/fogfish/golem/optics v0.13.1 // indirect
 	golang.org/x/net v0.17.0 // indirect
 )
