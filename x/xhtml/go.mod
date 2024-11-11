@@ -2,8 +2,6 @@ module github.com/fogfish/gurl/x/xhtml
 
 go 1.23
 
-toolchain go1.23.1
-
 require (
 	github.com/PuerkitoBio/goquery v1.9.1
 	github.com/fogfish/gurl/v2 v2.10.0
